@@ -25,10 +25,10 @@ Bridging the gap between mobile and desktop using ultra-low latency WebRTC strea
 ### The Agent Lineup
 Neurocomputer hosts a suite of specialized agents, each optimized for specific domains:
 
-* **🧠 Neuro (General)**: The core agentic framework. A highly capable general-purpose assistant that evaluates intents and intelligently routes requests to specific skills.
-* **💜 OpenClaw**: A dedicated browser automation agent that physically browses the web, captures DOM trees, and interacts with web applications on your behalf.
-* **[ ] OpenCode**: An IDE-integrated coding agent built to navigate repositories, write code, and manage complex development tasks.
-* **📱 NeuroUpwork**: A focused workflow agent that hunts for freelance jobs, analyzes postings for your skill fit, creates POC concepts, and drafts tailored proposals.
+* <img src="assets/neuro.png" width="24" height="24" style="vertical-align:middle"> **Neuro (General)**: The core agentic framework. A highly capable general-purpose assistant that evaluates intents and intelligently routes requests to specific skills.
+* <img src="assets/openclaw.png" width="24" height="24" style="vertical-align:middle"> **OpenClaw**: A dedicated browser automation agent that physically browses the web, captures DOM trees, and interacts with web applications on your behalf.
+* <img src="assets/opencode.png" width="24" height="24" style="vertical-align:middle"> **OpenCode**: An IDE-integrated coding agent built to navigate repositories, write code, and manage complex development tasks.
+* <img src="assets/upwork.png" width="24" height="24" style="vertical-align:middle"> **NeuroUpwork**: A focused workflow agent that hunts for freelance jobs, analyzes postings for your skill fit, creates POC concepts, and drafts tailored proposals.
 
 ---
 

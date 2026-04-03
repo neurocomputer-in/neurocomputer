@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurocomputer | The AI-Native Ecosystem</title>
+    <title>Neurocomputer | The AI-Native Computing Ecosystem</title>
+    <meta name="description" content="Neurocomputer is an AI-native computing ecosystem bringing desktop power to mobile. Orchestrate specialized autonomous agents like Neuro, OpenClaw, and OpenCode in a secure sandbox.">
+    <meta name="keywords" content="Neurocomputer, AI Agent, Autonomous Agents, Remote Desktop, AI OS, OpenClaw, OpenCode, AI Native, Machine Learning, Secure Sandbox">
+    <meta name="author" content="Neurocomputer team">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://neurocomputer.in/">
+    <meta property="og:title" content="Neurocomputer | The AI-Native Computing Ecosystem">
+    <meta property="og:description" content="Command specialized autonomous AI agents within a secure, isolated framework — accessible entirely from your pocket.">
+    <meta property="og:image" content="https://neurocomputer.in/assets/neuro.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://neurocomputer.in/">
+    <meta property="twitter:title" content="Neurocomputer | The AI-Native Computing Ecosystem">
+    <meta property="twitter:description" content="Command specialized autonomous AI agents within a secure, isolated framework — accessible entirely from your pocket.">
+    <meta property="twitter:image" content="https://neurocomputer.in/assets/neuro.png">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,18 +104,14 @@
             letter-spacing: -0.5px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+        .logo-img {
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
+            object-fit: cover;
         }
 
         .nav-links a {
@@ -135,6 +148,7 @@
             transform: translateY(30px);
             background: linear-gradient(to right, #fff, #a0a0ab);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -238,6 +252,108 @@
             margin-bottom: 20px;
         }
 
+        .card-img {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.05); /* subtle glow */
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Detail Section */
+        .details-section {
+            margin-top: 100px;
+            opacity: 0;
+            margin-bottom: 80px;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 60px;
+            margin-bottom: 80px;
+        }
+
+        .detail-row:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .detail-content {
+            flex: 1;
+        }
+
+        .detail-content h3 {
+            font-size: 2rem;
+            font-family: 'Outfit', sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .detail-content p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .detail-visual {
+            flex: 1;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            min-height: 250px;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .detail-visual p {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Footer Section */
+        footer {
+            margin-top: 150px;
+            padding: 80px 0;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            opacity: 0;
+        }
+
+        .footer-content h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            margin: 30px 0;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .copyright {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.8rem;
+            margin-top: 40px;
+        }
+
         .glass-card h3 {
             font-size: 1.3rem;
             margin-bottom: 12px;
@@ -283,7 +399,7 @@
     <div class="container">
         <nav class="nav-elem">
             <div class="logo">
-                <span class="logo-icon">🧠</span>
+                <img src="assets/neuro.png" alt="Neuro Logo" class="logo-img" />
                 Neurocomputer
             </div>
             <div class="nav-links">
@@ -303,31 +419,75 @@
         </section>
 
         <section id="ecosystem" class="features feature-elem">
-            <span class="section-tag">Agents & Infrastructure</span>
-            <h2>A New Generation of Computating</h2>
+            <span class="section-tag">Autonomous Specialized Agents</span>
+            <h2>Meet the Agent Lineup</h2>
             <div class="grid">
                 <div class="glass-card">
-                    <div class="card-icon">🧠</div>
+                    <img src="assets/neuro.png" alt="Neuro Core" class="card-img" />
                     <h3>Neuro Core</h3>
                     <p>The reasoning hub. A specialized ReAct framework that evaluates intents, plans Directed Acyclic Graphs of tasks, and triggers dozens of modular skills.</p>
                 </div>
                 <div class="glass-card">
-                    <div class="card-icon">📱</div>
-                    <h3>Smart Remote Control</h3>
-                    <p>Ultra-low latency streaming combined with glass-morphic touchpads. Control a high-powered isolated OS seamlessly from your Android device.</p>
-                </div>
-                <div class="glass-card">
-                    <div class="card-icon">💜</div>
+                    <img src="assets/openclaw.png" alt="OpenClaw Automation" class="card-img" />
                     <h3>OpenClaw Automation</h3>
-                    <p>A specialized sub-agent dedicated to interacting with native physical forms—browsing the web, clicking complex UIs, and acting autonomously.</p>
+                    <p>A specialized sub-agent strictly dedicated to interacting with native physical forms—browsing the web, clicking complex UIs, and acting autonomously.</p>
                 </div>
                 <div class="glass-card">
-                    <div class="card-icon">[]</div>
+                    <img src="assets/opencode.png" alt="OpenCode Specialization" class="card-img" />
                     <h3>OpenCode Specialization</h3>
                     <p>Built for the developer. Seamlessly navigates codebases, executes IDE-level patching, creates diffs, and manages massive infrastructure natively.</p>
                 </div>
+                <div class="glass-card">
+                    <img src="assets/upwork.png" alt="NeuroUpwork Agent" class="card-img" />
+                    <h3>NeuroUpwork Workflow</h3>
+                    <p>An intelligent agent designed for freelance assistance. It hunts for jobs, scores them for your fit, builds POCs, and writes tailored proposals.</p>
+                </div>
             </div>
         </section>
+
+        <!-- Expanded Detail Section -->
+        <section id="deep-dive" class="details-section feature-elem">
+            <span class="section-tag">Vision & Workflows</span>
+            
+            <div class="detail-row">
+                <div class="detail-content">
+                    <h3>The Agent OS Sandbox</h3>
+                    <p>To ensure total security and privacy, Neurocomputer advocates placing this entire environment inside an isolated OS container or a dedicated private machine.</p>
+                    <p>This paradigm essentially creates a secure "Agent Sandbox" where you confidently drop only the specific files or tasks you want the agents to work with, keeping your main workstation utterly walled off from autonomous AI operations.</p>
+                </div>
+                <div class="detail-visual">
+                    <p>// Secure Isolation Layer // </p>
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-content">
+                    <h3>Mobile-to-Desktop Bridge</h3>
+                    <p>The ultimate goal is to accomplish any desktop task from your pocket. The system leverages an ultra-low latency LiveKit streaming pipeline allowing you to see your full desktop mapped seamlessly to your mobile display.</p>
+                    <p>A specialized glassmorphic touch interface translates your gestures into precise native desktop cursor controls alongside macro-level hotkeys for specialized tasks.</p>
+                </div>
+                <div class="detail-visual">
+                    <p>// WebRTC Streaming Engine //</p>
+                </div>
+            </div>
+            
+        </section>
+
+        <!-- Footer -->
+        <footer class="feature-elem">
+            <div class="footer-content">
+                <h3>Ready to enter the ecosystem?</h3>
+                <p>Join our open-source movement to bridge the gap between AI and personal computing.</p>
+                <div class="footer-links">
+                    <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">Documentation</a>
+                    <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                    <a href="#">Privacy Policy</a>
+                </div>
+                <div class="copyright">
+                    &copy; 2026 Neurocomputer. Built for a new generation of workflows.
+                </div>
+            </div>
+        </footer>
     </div>
 
     <!-- Three.js Interactive Animation Script -->
