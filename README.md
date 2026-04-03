@@ -1,82 +1,169 @@
-# Neurocomputer
+<p align="center">
+  <img src="assets/neuro.png" width="80" height="80" alt="Neurocomputer Logo">
+</p>
 
-**An AI-native computing ecosystem designed to bring the full power of a desktop into the palm of your hand.**
+<h1 align="center">Neurocomputer</h1>
+<p align="center"><strong>Your desktop, your agents, your pocket.</strong></p>
+<p align="center">An open-source AI-native ecosystem that lets you see, control, and automate any desktop — entirely from a mobile application.</p>
 
-## The Vision
-
-Neurocomputer is more than a remote desktop tool; it is a conceptual shift in how we interact with computers. The goal is to build a complete ecosystem where anything you can do sitting at a physical desktop can be done elegantly from a mobile application—driven entirely by specialized, open-source AI agents.
-
-### Core Philosophy
-
-1. **AI-Native Workflows**: The system treats AI agents as first-class citizens. Instead of bolting an AI onto an existing OS, the workspace is built to facilitate seamless interaction between the user, the agent, and the desktop environment.
-2. **Secure Isolation (The Agent OS Concept)**: To ensure privacy and security, this environment runs optimally inside a private, isolated machine. You confidently drop only the files and context you want the agent to see into this environment, keeping your personal host OS safe and separate. 
-3. **Prompt-to-Desktop (Research/Roadmap)**: Our ultimate vision involves autonomous visual reasoning. You issue a prompt on mobile, and the agent literally looks at the desktop screen, clicks, types, and operates the machine to fulfill your request, just like a human operator.
+<p align="center">
+  <a href="https://github.com/neurocomputer-in/neurocomputer">GitHub</a> · <a href="#quick-start">Quick Start</a> · <a href="#the-agents">Agents</a> · <a href="#neuro-framework">Framework</a>
+</p>
 
 ---
 
-## Capabilities & Use Cases
+## What Is Neurocomputer?
 
-### Smart Remote Control
-Bridging the gap between mobile and desktop using ultra-low latency WebRTC streaming.
-* **Responsive Visuals**: View your high-resolution desktop perfectly scaled on your mobile device.
-* **Precision Control**: A glass-morphic touchpad layer allows relative mouse movement, scrolling, and clicking.
-* **Hotkey Automation**: Access specialized tasks quickly through macro-style hotkeys designed for mobile thumbs.
+Neurocomputer is a complete ecosystem that bridges the gap between a powerful desktop machine and the device you always have with you — your phone.
 
-### The Agent Lineup
-Neurocomputer hosts a suite of specialized agents, each optimized for specific domains:
+It works at **two layers simultaneously**:
 
-* <img src="assets/neuro.png" width="24" height="24" style="vertical-align:middle"> **Neuro (General)**: The core agentic framework. A highly capable general-purpose assistant that evaluates intents and intelligently routes requests to specific skills.
-* <img src="assets/openclaw.png" width="24" height="24" style="vertical-align:middle"> **OpenClaw**: A dedicated browser automation agent that physically browses the web, captures DOM trees, and interacts with web applications on your behalf.
-* <img src="assets/opencode.png" width="24" height="24" style="vertical-align:middle"> **OpenCode**: An IDE-integrated coding agent built to navigate repositories, write code, and manage complex development tasks.
-* <img src="assets/upwork.png" width="24" height="24" style="vertical-align:middle"> **NeuroUpwork**: A focused workflow agent that hunts for freelance jobs, analyzes postings for your skill fit, creates POC concepts, and drafts tailored proposals.
+1. **Application Layer** — A mobile app that gives you a live view of your desktop screen, lets you control the mouse and keyboard with precision gestures, and chat with specialized AI agents that can execute tasks on your behalf.
+
+2. **Framework Layer** — A modular agentic engine called **Neuro** where any workflow can be captured as a reusable skill, chained into multi-step plans, and executed autonomously. The system reasons about what to do, acts, observes the result, and iterates — just like a human operator.
+
+The result: you can issue a command from your couch, your commute, or across the world, and watch your desktop respond in real time.
 
 ---
 
-## Technical Infrastructure
+## Core Capabilities
 
-Beneath the visionary UI is a robust backend engine. **Any developer can build new skills ("neuros") and plug them into the core framework.**
+### 📺 Remote Desktop — See & Control
 
-### The Brain (ReAct Loop)
-The heart of Neuro is a Reason + Act engine:
-1. **Smart Router**: Evaluates incoming text/voice requests and decides if they require direct answering or multi-step execution.
-2. **Planner**: Breaks complex goals down into a Directed Acyclic Graph (DAG) of manageable node executions.
-3. **Executor**: Runs hot-swappable plugins ("neuros") such as file reading, screenshot taking, or code writing.
+Stream your full desktop to your Android device over WebRTC with ultra-low latency.
 
-### Voice & Streaming Pipeline
-* **Real-time Voice**: Microphone input streams through a tuned Silero VAD into Sarvam Streaming STT, hitting the LLM interface and returning via ElevenLabs TTS.
-* **Desktop Stream**: MSS captures the native screen on Linux (with Windows/Mac fallbacks), transmitting a dynamic VideoTrack via a local LiveKit server.
+| Feature | How It Works |
+|---|---|
+| **Live Screen** | MSS captures frames → LiveKit publishes a VideoTrack → phone renders natively |
+| **Mouse Control** | Glassmorphic touchpad overlay: drag to move, tap to click, two-finger scroll |
+| **Keyboard** | Full on-screen keyboard with special keys, Ctrl/Alt combos, and macro hotkeys |
+| **Multi-Monitor** | Switch between displays with a single tap |
+| **Zoom & Pan** | Pinch to zoom up to 10x on any area of the screen |
+
+### 🎙 Voice — Speak & Listen
+
+Talk to the agent hands-free. The voice pipeline is optimized for low latency:
+
+**Mic → Silero VAD → Sarvam Streaming STT → Brain → ElevenLabs TTS → Speaker**
+
+All audio travels through LiveKit, the same transport used for the desktop stream.
+
+### 🤖 Automation — Command & Execute
+
+Tell the agent what you want done. It will plan the steps, operate the mouse and keyboard, read the screen, and complete the task.
+
+- *"Lock my PC"* — executes instantly
+- *"Open the file explorer and find my project folder"* — plans two steps, runs them in sequence
+- *"Analyze this Upwork job and draft a proposal"* — chains multiple specialized skills together
+
+Every action can be saved as a **skill** and reused later, building a personal library of automations.
 
 ---
 
-## Implementation Status vs. Roadmap
+## The Agents
 
-We are moving fast to make the vision a reality. Here is where the ecosystem currently stands.
+Neurocomputer ships with four specialized agents. Each one shares the same Brain engine but is tuned for a different domain.
 
-### Currently Implemented
-- [x] **Core ReAct Framework**: Brain, Agent Manager, and 50+ loadable modular skills.
-- [x] **Mobile Agent UI**: Beautiful, immersive Android application with agent selection, chat histories, and voice typing.
-- [x] **Remote PC Streaming**: Low-latency video track delivery of the desktop display context over WebRTC.
-- [x] **Smart Remote Inputs**: Configurable mouse touchpad overlay, full keyboard access, and multi-monitor switching capabilities.
-- [x] **Multi-Agent Architecture**: Discrete profiles for Neuro, OpenClaw, OpenCode, and Upwork parsing.
+| Agent | Logo | What It Does |
+|---|---|---|
+| **Neuro** | <img src="assets/neuro.png" width="20"> | General-purpose assistant. Routes intents, plans tasks, and orchestrates skills. |
+| **OpenClaw** | <img src="assets/openclaw.png" width="20"> | Browser automation. Connects to a local WebSocket gateway to physically browse the web, click elements, and extract data. |
+| **OpenCode** | <img src="assets/opencode.png" width="20"> | Coding agent. Reads, writes, diffs, and patches code across entire repositories. |
+| **NeuroUpwork** | <img src="assets/upwork.png" width="20"> | Freelance workflow. Captures job listings, scores them for fit, and drafts tailored proposals and POCs. |
 
-### Research & Roadmap (To-Do)
-- [ ] **Autonomous Vision-Action Loop**: Integrating vision-language models capable of analyzing screen captures to auto-drive the desktop based on high-level prompts.
-- [ ] **Seamless File Sandboxing**: Better cross-platform tooling to seamlessly "drop" files into the isolated OS environment from mobile.
-- [ ] **Expanded Mobile Hotkeys**: Customizable macros in the draggable toolbar to speed up common professional tasks.
-- [ ] **Offline Execution Features**: Migrating key reasoning layers to extremely efficient local LLMs to prevent reliance on cloud APIs.
+Switch agents instantly from the mobile app — either through the header bar or the floating toolbar during remote desktop sessions.
 
 ---
 
-## Running the Ecosystem Locally
+## Neuro Framework
 
-### Requirements
-* Python 3.11+
-* Local LiveKit server (for WebRTC signaling)
-* TURN Server (for remote network traversal)
+At the core of every agent is the **Neuro** agentic framework. It is designed around three principles:
 
-### Quick Start
+1. **Skills are modular.** Each skill ("neuro") lives in its own folder with a `conf.json` and a `code.py`. Drop a new folder in, and the Brain picks it up at runtime — no restart needed.
 
-1. Clone and install dependencies:
+2. **Planning is automatic.** Complex requests are broken into a DAG (Directed Acyclic Graph) of skill calls. The Planner generates the graph; the Executor runs it node by node, passing outputs forward.
+
+3. **Reasoning is built-in.** The Smart Router classifies every request in a single LLM call: is this a direct reply, or does it need a skill? If a skill, which one? This keeps simple conversations fast and complex tasks structured.
+
+### Architecture
+
+```
+User Input (text or voice)
+     │
+     ▼
+ Smart Router ──── reply? ──── Direct Answer
+     │
+     ▼ skill
+  Planner ──── generates DAG
+     │
+     ▼
+  Executor ──── runs nodes ──── Neuro A → Neuro B → Neuro C
+     │
+     ▼
+  Reply Neuro ──── final answer back to user
+```
+
+### 50+ Built-In Skills
+
+| Category | Examples |
+|---|---|
+| **Desktop** | Lock screen, unlock, take screenshot, open file explorer, move mouse to position |
+| **Code** | Read/write/diff files, scan projects, plan code changes, generate patches |
+| **Upwork** | List jobs, analyze fit, finalize scoring, draft proposals, capture screenshots |
+| **Browser** | Delegate tasks to OpenClaw gateway for web interaction |
+| **Meta** | List available skills, create new skills, edit existing skills at runtime |
+| **Utilities** | TTS playback, LinkedIn post drafts, video generation, prime checker (demo) |
+
+### Profiles
+
+Profiles control which skills are visible to the Brain:
+
+| Profile | Use Case |
+|---|---|
+| `general` | Default. All general-purpose skills available. |
+| `code_dev` | Code editing and project management focus. |
+| `neuro_dev` | Full meta-programming — build and edit skills themselves. |
+
+Switch with `/profile code_dev` or `/dev on` in chat.
+
+---
+
+## The Mobile App
+
+A Jetpack Compose Android application that serves as the unified interface for the entire ecosystem.
+
+### Key UI Elements
+
+- **Agent Selector** — Tap the agent pill in the header to switch between Neuro, OpenClaw, OpenCode, and NeuroUpwork.
+- **Chat Interface** — Full conversation history with text, voice waveforms, and TTS playback per message.
+- **Voice Typing** — Hold the mic button to dictate; transcription populates the input field.
+- **Tab Bar** — Multiple conversations per agent, each tracked independently.
+- **Side Drawer** — Access remote desktop, settings, and overlay controls.
+
+### Remote Desktop Mode
+
+Tap "Remote Desktop" in the side drawer to enter fullscreen landscape mode:
+
+- **Right Sidebar**: Mic, mouse toggle, monitor switch, exit fullscreen
+- **Left Toolbar**: Draggable floating panel with voice typing, keyboard, scroll/click/focus modes, and agent switcher
+- **Touchpad Overlay**: Single-finger drag (move), tap (click), double-tap (double click), two-finger drag (scroll), two-finger tap (right click)
+
+---
+
+## The Secure Sandbox Approach
+
+Neurocomputer is designed to run inside a **private, isolated machine** — a dedicated workstation, a VM, or a containerized environment that is separate from your personal host OS.
+
+Why? Because autonomous agents need access to your screen, your files, and your inputs. By isolating this to a dedicated environment, you control exactly what the agents can see and touch. You drop in only the files you want to work with, and keep everything else safely walled off.
+
+This is not just a feature — it is the recommended deployment model.
+
+---
+
+## Quick Start
+
+### 1. Clone & Install
+
 ```bash
 git clone https://github.com/neurocomputer-in/neurocomputer.git
 cd neurocomputer
@@ -84,21 +171,69 @@ python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Configure environment (API Keys):
-```bash
-cp livekit.yaml.example livekit.yaml
-# Add OPENAI_API_KEY, ELEVENLABS_API_KEY, SARVAM_API_KEY to a `.env` file
+### 2. Configure
+
+Create a `.env` file with your API keys:
+
+```dotenv
+OPENAI_API_KEY=sk-...
+ELEVENLABS_API_KEY=...
+SARVAM_API_KEY=...
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
 ```
 
-3. Run servers:
+Set up LiveKit:
+
 ```bash
-livekit-server --config livekit.yaml & 
+cp livekit.yaml.example livekit.yaml   # edit with your public IP
+livekit-server --config livekit.yaml &
+```
+
+### 3. Run
+
+```bash
 python server.py
+# Server starts at http://0.0.0.0:8000
 ```
 
-4. Build and deploy the Android App:
+### 4. Connect the Mobile App
+
 ```bash
 cd neuro_mobile_app
-./gradlew assembleDebug 
+./gradlew assembleDebug
+# Install the APK, then set your server URL in Settings
 ```
-*(Point the mobile app's server configuration to `http://<your-machine-ip>:8000`)*
+
+---
+
+## API Overview
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /chat` | Send a message to the active agent |
+| `GET /agents` | List running agents |
+| `POST /agents/{type}` | Switch to a specific agent |
+| `POST /stream/start` | Begin desktop screen streaming |
+| `POST /mouse/move`, `/click`, `/scroll` | Remote input controls |
+| `POST /keyboard/send` | Send keystrokes and combos |
+| `GET /voice/token` | Get LiveKit token for voice sessions |
+| `POST /conversation` | Create a new conversation |
+| `GET /conversations?agent_id=` | List conversations filtered by agent |
+
+Full endpoint documentation is available in `server.py`.
+
+---
+
+## Roadmap
+
+- [ ] **Vision-Action Loop** — Integrate vision-language models so agents can autonomously read the screen and decide what to click next, driven purely by a high-level prompt.
+- [ ] **Cross-Platform Inputs** — Extend remote control to Windows and macOS hosts.
+- [ ] **Custom Hotkey Macros** — Let users define their own mobile toolbar buttons mapped to complex desktop actions.
+- [ ] **Local LLM Offloading** — Run reasoning on efficient local models (Gemma, Llama) to reduce cloud API dependency.
+- [ ] **File Drop Sandbox** — Seamless mechanism to push files from mobile into the isolated agent environment.
+
+---
+
+<p align="center"><sub>Built for a new generation of workflows.</sub></p>
