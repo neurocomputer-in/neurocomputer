@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog — Neurocomputer</title>
+    <meta name="description" content="Insights on building the future of AI-native computing. Coming soon.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <!-- Navigation -->
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="docs.html">Docs</a>
+                <a href="blog.html" class="active">Blog</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <!-- Blog Empty State -->
+        <div class="blog-empty">
+            <div class="section-tag" style="margin-bottom: var(--sp-4);">Blog</div>
+            <h2>Coming soon.</h2>
+            <p>We're building something new. When we're ready, this is where we'll share insights on AI-native computing, autonomous agents, and the future of human-computer interaction.</p>
+            <div style="margin-top: var(--sp-6);">
+                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-ghost" target="_blank">Follow us on GitHub</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>An open-source AI-native ecosystem. Built for a new generation of workflows.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Product</h5>
+                        <a href="index.html">Home</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2026 Neurocomputer. Open source under MIT License.
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+    </script>
+</body>
+</html>

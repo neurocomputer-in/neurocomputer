@@ -3,666 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurocomputer | The AI-Native Computing Ecosystem</title>
-    <meta name="description" content="Neurocomputer is an AI-native computing ecosystem bringing desktop power to mobile. Orchestrate specialized autonomous agents like Neuro, OpenClaw, and OpenCode in a secure sandbox.">
-    <meta name="keywords" content="Neurocomputer, AI Agent, Autonomous Agents, Remote Desktop, AI OS, OpenClaw, OpenCode, AI Native, Machine Learning, Secure Sandbox">
-    <meta name="author" content="Neurocomputer team">
-    
-    <!-- Open Graph / Social Media -->
+    <title>Neurocomputer — The AI-Native Computing Ecosystem</title>
+    <meta name="description" content="Neurocomputer is an open-source AI-native ecosystem. See, control, and automate any desktop from your phone with specialized autonomous agents.">
+    <meta name="keywords" content="Neurocomputer, AI Agent, Autonomous Agents, Remote Desktop, AI OS, OpenClaw, OpenCode, AI Native, Neuro Framework, Secure Sandbox">
+    <meta name="author" content="Neurocomputer">
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://neurocomputer.in/">
-    <meta property="og:title" content="Neurocomputer | The AI-Native Computing Ecosystem">
-    <meta property="og:description" content="Command specialized autonomous AI agents within a secure, isolated framework — accessible entirely from your pocket.">
+    <meta property="og:title" content="Neurocomputer — The AI-Native Computing Ecosystem">
+    <meta property="og:description" content="See, control, and automate any desktop from your phone. Open-source ecosystem powered by specialized AI agents.">
     <meta property="og:image" content="https://neurocomputer.in/assets/neuro.png">
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://neurocomputer.in/">
-    <meta property="twitter:title" content="Neurocomputer | The AI-Native Computing Ecosystem">
-    <meta property="twitter:description" content="Command specialized autonomous AI agents within a secure, isolated framework — accessible entirely from your pocket.">
-    <meta property="twitter:image" content="https://neurocomputer.in/assets/neuro.png">
-    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Neurocomputer — The AI-Native Computing Ecosystem">
+    <meta name="twitter:description" content="See, control, and automate any desktop from your phone. Open-source ecosystem powered by specialized AI agents.">
+    <meta name="twitter:image" content="https://neurocomputer.in/assets/neuro.png">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Three.js and GSAP -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <!-- Three.js + GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-    <style>
-        :root {
-            --bg-color: #050507;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0ab;
-            --accent-1: #667eea;
-            --accent-2: #764ba2;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* 3D Canvas Background */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            pointer-events: none; /* Let clicks pass through to content */
-        }
-
-        /* Overlay Gradient */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, transparent 0%, var(--bg-color) 100%);
-            z-index: -1;
-            opacity: 0.8;
-            pointer-events: none;
-        }
-
-        /* Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 5%;
-        }
-
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 30px 0;
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-
-        .logo {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-img {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            object-fit: cover;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin-left: 30px;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-primary);
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            position: relative;
-        }
-
-        .hero h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: clamp(3rem, 8vw, 5.5rem);
-            font-weight: 700;
-            line-height: 1.1;
-            letter-spacing: -1.5px;
-            margin-bottom: 24px;
-            max-width: 800px;
-            opacity: 0;
-            transform: translateY(30px);
-            background: linear-gradient(to right, #fff, #a0a0ab);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero p {
-            font-size: clamp(1.1rem, 2vw, 1.3rem);
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin-bottom: 40px;
-            opacity: 0;
-            transform: translateY(30px);
-            font-weight: 300;
-        }
-
-        .cta-group {
-            display: flex;
-            gap: 15px;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        .btn {
-            padding: 14px 28px;
-            border-radius: 30px;
-            font-size: 1rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-primary {
-            background: var(--text-primary);
-            color: var(--bg-color);
-            border: 1px solid transparent;
-        }
-
-        .btn-primary:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-secondary {
-            background: var(--glass-bg);
-            color: var(--text-primary);
-            border: 1px solid var(--glass-border);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-        }
-
-        /* Glass Cards Section */
-        .features {
-            padding: 100px 0;
-            opacity: 0;
-        }
-
-        .section-tag {
-            color: var(--accent-1);
-            font-size: 0.85rem;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        .features h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.5rem;
-            margin-bottom: 50px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-        }
-
-        .glass-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 40px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease;
-            cursor: default;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .card-icon {
-            font-size: 2rem;
-            margin-bottom: 20px;
-        }
-
-        .card-img {
-            width: 52px;
-            height: 52px;
-            margin-bottom: 20px;
-            border-radius: 50%;
-            object-fit: cover;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.05); /* subtle glow */
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0,0,0,0.3);
-        }
-
-        /* Detail Section */
-        .details-section {
-            margin-top: 100px;
-            opacity: 0;
-            margin-bottom: 80px;
-        }
-
-        .detail-row {
-            display: flex;
-            align-items: center;
-            gap: 60px;
-            margin-bottom: 80px;
-        }
-
-        .detail-row:nth-child(even) {
-            flex-direction: row-reverse;
-        }
-
-        .detail-content {
-            flex: 1;
-        }
-
-        .detail-content h3 {
-            font-size: 2rem;
-            font-family: 'Outfit', sans-serif;
-            margin-bottom: 20px;
-        }
-
-        .detail-content p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            font-weight: 300;
-        }
-
-        .detail-visual {
-            flex: 1;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            min-height: 250px;
-            padding: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-        }
-
-        .detail-visual p {
-            color: var(--text-secondary);
-            font-style: italic;
-        }
-
-        /* Footer Section */
-        footer {
-            margin-top: 150px;
-            padding: 80px 0;
-            border-top: 1px solid var(--glass-border);
-            text-align: center;
-            opacity: 0;
-        }
-
-        .footer-content h3 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
-            margin-bottom: 20px;
-        }
-
-        .footer-links {
-            margin: 30px 0;
-        }
-
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            color: var(--text-primary);
-        }
-
-        .copyright {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 0.8rem;
-            margin-top: 40px;
-        }
-
-        .glass-card h3 {
-            font-size: 1.3rem;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .glass-card p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            font-weight: 300;
-        }
-
-        /* Mobile specific adjustments */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-            .hero {
-                align-items: center;
-                text-align: center;
-            }
-            .hero h1 {
-                background-position: center;
-            }
-            .cta-group {
-                flex-direction: column;
-                width: 100%;
-                max-width: 300px;
-            }
-            .btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
-    </style>
+    <!-- Design System -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Target for Three.js Canvas -->
+    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
     <div class="overlay"></div>
 
     <div class="container">
-        <nav class="nav-elem">
-            <div class="logo">
-                <img src="assets/neuro.png" alt="Neuro Logo" class="logo-img" />
+        <!-- ═══ Navigation ═══ -->
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
                 Neurocomputer
-            </div>
+            </a>
             <div class="nav-links">
-                <a href="#vision">Vision</a>
-                <a href="#ecosystem">Ecosystem</a>
+                <a href="index.html" class="active">Home</a>
+                <a href="docs.html">Docs</a>
+                <a href="blog.html">Blog</a>
                 <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
             </div>
         </nav>
 
+        <!-- ═══ Hero ═══ -->
         <section class="hero">
-            <h1 class="hero-elem">The AI-Native OS Ecosystem</h1>
-            <p class="hero-elem">Bridging desktop power with mobile agility. Command specialized autonomous AI agents within a secure, isolated framework—accessible entirely from your pocket.</p>
-            <div class="cta-group hero-elem">
-                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-primary" target="_blank">View on GitHub</a>
-                <a href="#ecosystem" class="btn btn-secondary">Explore the Vision</a>
+            <div class="hero-label" id="hero-label">
+                <span class="dot"></span>
+                Open Source · AI Native
+            </div>
+            <h1 id="hero-h1">Your desktop.<br>Your agents.<br><span class="highlight">Your pocket.</span></h1>
+            <p class="hero-sub" id="hero-sub">An open-source ecosystem that lets you see your desktop screen, control it with touch gestures, and command specialized AI agents to automate anything — all from a mobile app.</p>
+            <div class="hero-actions" id="hero-actions">
+                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-accent" target="_blank">→ View on GitHub</a>
+                <a href="docs.html" class="btn btn-ghost">Read the Docs</a>
             </div>
         </section>
 
-        <section id="ecosystem" class="features feature-elem">
+        <!-- ═══ Stats ═══ -->
+        <div class="stats" id="stats">
+            <div class="stat">
+                <div class="stat-value">50+</div>
+                <div class="stat-label">Modular Skills</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">4</div>
+                <div class="stat-label">Specialized Agents</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">&lt;100ms</div>
+                <div class="stat-label">Stream Latency</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">∞</div>
+                <div class="stat-label">Extensible Skills</div>
+            </div>
+        </div>
+
+        <!-- ═══ How It Works ═══ -->
+        <section class="section" id="how-it-works">
+            <span class="section-tag">How It Works</span>
+            <h2 class="section-title">Three steps. Full control.</h2>
+            <p class="section-desc">From your phone to your desktop in seconds. No complicated setup, no VPN headaches.</p>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">01</div>
+                    <h3>Connect</h3>
+                    <p>Point the mobile app at your Neurocomputer server. A secure WebRTC stream brings your full desktop to your phone's screen in real time.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">02</div>
+                    <h3>Command</h3>
+                    <p>Type or speak a request. The Brain routes it to the right agent, plans the steps, and begins execution — mouse movements, keyboard input, everything.</p>
+                </div>
+                <div class="step">
+                    <div class="step-num">03</div>
+                    <h3>Watch</h3>
+                    <p>See the agent work on your live screen. Every click, every keypress, every file opened — visible in real time. Step in manually anytime with touch gestures.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Agents ═══ -->
+        <section class="section" id="agents">
             <span class="section-tag">Autonomous Specialized Agents</span>
-            <h2>Meet the Agent Lineup</h2>
-            <div class="grid">
+            <h2 class="section-title">Meet the lineup.</h2>
+            <p class="section-desc">Each agent shares the same Brain engine but is tuned for a different domain. Switch instantly from the mobile app.</p>
+            <div class="card-grid">
                 <div class="glass-card">
-                    <img src="assets/neuro.png" alt="Neuro Core" class="card-img" />
-                    <h3>Neuro Core</h3>
-                    <p>The reasoning hub. A specialized ReAct framework that evaluates intents, plans Directed Acyclic Graphs of tasks, and triggers dozens of modular skills.</p>
+                    <div class="card-header">
+                        <img src="assets/neuro.png" alt="Neuro" class="card-icon">
+                        <span class="card-badge">Agent</span>
+                    </div>
+                    <h3>Neuro</h3>
+                    <p>The general-purpose core. It reasons about your intent, plans multi-step tasks as directed acyclic graphs, and orchestrates 50+ modular skills to get things done — from locking your screen to generating code.</p>
                 </div>
                 <div class="glass-card">
-                    <img src="assets/openclaw.png" alt="OpenClaw Automation" class="card-img" />
-                    <h3>OpenClaw Automation</h3>
-                    <p>A specialized sub-agent strictly dedicated to interacting with native physical forms—browsing the web, clicking complex UIs, and acting autonomously.</p>
+                    <div class="card-header">
+                        <img src="assets/openclaw.png" alt="OpenClaw" class="card-icon">
+                        <span class="card-badge">Agent</span>
+                    </div>
+                    <h3>OpenClaw</h3>
+                    <p>The browser operator. Connects to a local WebSocket gateway to physically browse the web — clicking buttons, filling forms, extracting data, and navigating complex web applications autonomously.</p>
                 </div>
                 <div class="glass-card">
-                    <img src="assets/opencode.png" alt="OpenCode Specialization" class="card-img" />
-                    <h3>OpenCode Specialization</h3>
-                    <p>Built for the developer. Seamlessly navigates codebases, executes IDE-level patching, creates diffs, and manages massive infrastructure natively.</p>
+                    <div class="card-header">
+                        <img src="assets/opencode.png" alt="OpenCode" class="card-icon">
+                        <span class="card-badge">Agent</span>
+                    </div>
+                    <h3>OpenCode</h3>
+                    <p>The developer's companion. It reads entire repositories, writes and patches code, generates diffs, and manages complex infrastructure. Think of it as an IDE-level coding partner that lives inside your OS.</p>
                 </div>
                 <div class="glass-card">
-                    <img src="assets/upwork.png" alt="NeuroUpwork Agent" class="card-img" />
-                    <h3>NeuroUpwork Workflow</h3>
-                    <p>An intelligent agent designed for freelance assistance. It hunts for jobs, scores them for your fit, builds POCs, and writes tailored proposals.</p>
+                    <div class="card-header">
+                        <img src="assets/upwork.png" alt="NeuroUpwork" class="card-icon">
+                        <span class="card-badge">Agent</span>
+                    </div>
+                    <h3>NeuroUpwork</h3>
+                    <p>The freelance workflow engine. It hunts job listings, scores them for your skill fit, captures screenshots as evidence, builds proof-of-concept ideas, and drafts tailored cover letters and proposals.</p>
                 </div>
             </div>
         </section>
 
-        <!-- Expanded Detail Section -->
-        <section id="deep-dive" class="details-section feature-elem">
-            <span class="section-tag">Vision & Workflows</span>
-            
+        <!-- ═══ Architecture ═══ -->
+        <section class="section" id="architecture">
+            <span class="section-tag">Under the Hood</span>
+            <h2 class="section-title">The Brain architecture.</h2>
+            <p class="section-desc">A Reason + Act loop that classifies, plans, and executes — keeping simple things fast and complex things structured.</p>
+
             <div class="detail-row">
                 <div class="detail-content">
-                    <h3>The Agent OS Sandbox</h3>
-                    <p>To ensure total security and privacy, Neurocomputer advocates placing this entire environment inside an isolated OS container or a dedicated private machine.</p>
-                    <p>This paradigm essentially creates a secure "Agent Sandbox" where you confidently drop only the specific files or tasks you want the agents to work with, keeping your main workstation utterly walled off from autonomous AI operations.</p>
+                    <h3>Smart Router</h3>
+                    <p>Every message hits the router first. In a single LLM call, it classifies the request: direct reply, or skill execution? If a skill is needed, it identifies which one.</p>
+                    <p>Simple questions get answered instantly. Complex tasks get planned and executed step by step. No unnecessary overhead.</p>
                 </div>
                 <div class="detail-visual">
-                    <p>// Secure Isolation Layer // </p>
+User Input
+    │
+    ▼
+ Router ─── "just chat?" ─── Direct Reply
+    │
+    ▼ needs a skill
+ Planner ─── builds DAG
+    │
+    ▼
+ Executor ─── Skill A → B → C
+    │
+    ▼
+ Reply ─── Final Answer
                 </div>
             </div>
 
             <div class="detail-row">
                 <div class="detail-content">
-                    <h3>Mobile-to-Desktop Bridge</h3>
-                    <p>The ultimate goal is to accomplish any desktop task from your pocket. The system leverages an ultra-low latency LiveKit streaming pipeline allowing you to see your full desktop mapped seamlessly to your mobile display.</p>
-                    <p>A specialized glassmorphic touch interface translates your gestures into precise native desktop cursor controls alongside macro-level hotkeys for specialized tasks.</p>
+                    <h3>Skills Are Modular</h3>
+                    <p>Each skill lives in its own folder: a <code>conf.json</code> for metadata and a <code>code.py</code> for logic. Drop a new folder in, and the Brain discovers it at runtime. No restart needed.</p>
+                    <p>You can even create and edit skills at runtime using meta-skills — the framework can modify itself.</p>
                 </div>
                 <div class="detail-visual">
-                    <p>// WebRTC Streaming Engine //</p>
+skills/
+├── lock_screen/
+│   ├── conf.json
+│   └── code.py
+├── read_file/
+│   ├── conf.json
+│   └── code.py
+├── take_screenshot/
+│   ├── conf.json
+│   └── code.py
+└── [your_skill]/
+    ├── conf.json
+    └── code.py
                 </div>
             </div>
-            
+
+            <div class="detail-row">
+                <div class="detail-content">
+                    <h3>Secure Sandbox</h3>
+                    <p>Neurocomputer is designed to run inside a private, isolated machine — a dedicated workstation, a VM, or a container that is separate from your personal host OS.</p>
+                    <p>Autonomous agents need access to your screen, files, and inputs. By isolating this to a dedicated environment, you control exactly what they can see and touch. This is the recommended deployment model.</p>
+                </div>
+                <div class="detail-visual">
+┌─────────────────────────┐
+│   Your Phone (Client)   │
+│  ┌───────────────────┐  │
+│  │  Neurocomputer    │  │
+│  │  Mobile App       │  │
+│  └────────┬──────────┘  │
+└───────────┼─────────────┘
+            │ WebRTC
+┌───────────┼─────────────┐
+│  Isolated │ Agent OS    │
+│  ┌────────▼──────────┐  │
+│  │  Brain + Agents   │  │
+│  │  Desktop Control  │  │
+│  └───────────────────┘  │
+│  Your files stay here   │
+└─────────────────────────┘
+                </div>
+            </div>
         </section>
 
-        <!-- Footer -->
-        <footer class="feature-elem">
-            <div class="footer-content">
-                <h3>Ready to enter the ecosystem?</h3>
-                <p>Join our open-source movement to bridge the gap between AI and personal computing.</p>
-                <div class="footer-links">
-                    <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">Documentation</a>
-                    <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
-                    <a href="#">Privacy Policy</a>
+        <!-- ═══ CTA ═══ -->
+        <section class="section" id="cta" style="text-align: center;">
+            <h2 class="section-title" style="max-width: none;">Ready to try it?</h2>
+            <p class="section-desc" style="margin: 0 auto var(--sp-5);">Neurocomputer is fully open source. Clone it, run it, build your own skills.</p>
+            <div style="display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap;">
+                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-accent" target="_blank">→ Clone from GitHub</a>
+                <a href="docs.html#getting-started" class="btn btn-ghost">Quick Start Guide</a>
+            </div>
+        </section>
+
+        <!-- ═══ Footer ═══ -->
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>An open-source AI-native ecosystem. Built for a new generation of workflows.</p>
                 </div>
-                <div class="copyright">
-                    &copy; 2026 Neurocomputer. Built for a new generation of workflows.
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Product</h5>
+                        <a href="index.html">Home</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/pulls" target="_blank">Contribute</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Legal</h5>
+                        <a href="#">Privacy</a>
+                        <a href="#">Terms</a>
+                    </div>
                 </div>
+            </div>
+            <div class="footer-bottom">
+                © 2026 Neurocomputer. Open source under MIT License.
             </div>
         </footer>
     </div>
 
-    <!-- Three.js Interactive Animation Script -->
+    <!-- 3D Scene -->
+    <script src="js/scene.js"></script>
+
+    <!-- Entrance Animations -->
     <script>
-        // Set up scene, camera, renderer
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        // GSAP entrance animations
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // optimize for high dpi
-        container.appendChild(renderer.domElement);
+        tl.to('#nav',          { opacity: 1, duration: 0.6, delay: 0.2 })
+          .to('#hero-label',   { opacity: 1, y: 0, duration: 0.5 }, '-=0.3')
+          .to('#hero-h1',      { opacity: 1, y: 0, duration: 0.7 }, '-=0.3')
+          .to('#hero-sub',     { opacity: 1, y: 0, duration: 0.6 }, '-=0.4')
+          .to('#hero-actions', { opacity: 1, y: 0, duration: 0.5 }, '-=0.3');
 
-        // Track Mouse
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
-        const windowHalfX = window.innerWidth / 2;
-        const windowHalfY = window.innerHeight / 2;
-
-        document.addEventListener('mousemove', (event) => {
-            // Normalized coordinates ending up near -1 to 1 slightly amplified
-            mouseX = (event.clientX - windowHalfX) * 0.05;
-            mouseY = (event.clientY - windowHalfY) * 0.05;
-        });
-
-        // Create Particles (Representing "Neuros" / Data Nodes)
-        const particleCount = window.innerWidth < 768 ? 200 : 500; 
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const velocities = [];
-
-        // Distribute in a wide sphere structure
-        for (let i = 0; i < particleCount * 3; i += 3) {
-            const radius = 40 + Math.random() * 20;
-            const theta = Math.random() * 2 * Math.PI;
-            const phi = Math.acos(2 * Math.random() - 1);
-
-            positions[i] = radius * Math.sin(phi) * Math.cos(theta);
-            positions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
-            positions[i + 2] = radius * Math.cos(phi);
-
-            velocities.push({
-                x: (Math.random() - 0.5) * 0.02,
-                y: (Math.random() - 0.5) * 0.02,
-                z: (Math.random() - 0.5) * 0.02
-            });
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        // Create sleek point material
-        const material = new THREE.PointsMaterial({
-            color: 0x8BE9FD, // Cyan-ish tech color
-            size: 0.15,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
-        });
-
-        const particles = new THREE.Points(geometry, material);
-        scene.add(particles);
-
-        // Lines connecting close particles (Abstract Neural Web)
-        const lineMaterial = new THREE.LineBasicMaterial({
-            color: 0x764ba2,
-            transparent: true,
-            opacity: 0.15,
-            blending: THREE.AdditiveBlending
-        });
-        
-        // Use a generic line segement approach (static links for performance, rotating with points)
-        // For higher tech feel, we just rotate the entire sphere of points and link them.
-        const lineGeometry = new THREE.BufferGeometry();
-        const lineIndices = [];
-        
-        // Find nearest neighbors to connect
-        const distThreshold = 12;
-        for (let i = 0; i < particleCount; i++) {
-            let connections = 0;
-            for (let j = i + 1; j < particleCount; j++) {
-                const ix = i * 3, jx = j * 3;
-                const dx = positions[ix] - positions[jx];
-                const dy = positions[ix+1] - positions[jx+1];
-                const dz = positions[ix+2] - positions[jx+2];
-                const distSq = dx*dx + dy*dy + dz*dz;
-                
-                if (distSq < distThreshold * distThreshold && connections < 3) {
-                    lineIndices.push(i, j);
-                    connections++;
+        // Scroll-triggered sections
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
                 }
-            }
-        }
-        
-        lineGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        lineGeometry.setIndex(lineIndices);
-        const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
-        scene.add(lines);
+            });
+        }, { threshold: 0.15 });
 
-        // Add subtle ambient floating object "The Brain Core"
-        const coreGeo = new THREE.IcosahedronGeometry(8, 1);
-        const coreMat = new THREE.MeshBasicMaterial({
-            color: 0x667eea,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
-        });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        scene.add(core);
-
-        // Animation Loop
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const delta = clock.getDelta();
-
-            // Smooth mouse follow interpolation
-            targetX = mouseX * 0.05;
-            targetY = mouseY * 0.05;
-            
-            // Group rotation based on mouse
-            particles.rotation.y += 0.001 + (targetX - particles.rotation.y) * 0.02;
-            particles.rotation.x += 0.001 + (targetY - particles.rotation.x) * 0.02;
-            
-            lines.rotation.y = particles.rotation.y;
-            lines.rotation.x = particles.rotation.x;
-
-            core.rotation.y -= 0.002;
-            core.rotation.x -= 0.001;
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Responsive resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // GSAP UI Animations (Entrance)
-        gsap.to('.nav-elem', {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            ease: "power3.out"
-        });
-
-        gsap.to('.hero-elem', {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            stagger: 0.15,
-            ease: "power3.out",
-            delay: 0.2
-        });
-
-        // Scroll animation for features
-        window.addEventListener('scroll', () => {
-            const h = window.innerHeight;
-            const featuresArea = document.querySelector('.features');
-            if (featuresArea.getBoundingClientRect().top < h * 0.75) {
-                gsap.to('.features', {
-                    opacity: 1,
-                    duration: 1,
-                    ease: "power2.out"
-                });
-            }
+        document.querySelectorAll('.section, .stats, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
         });
     </script>
 </body>
