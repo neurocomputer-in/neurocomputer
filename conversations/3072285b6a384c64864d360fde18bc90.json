@@ -1,0 +1,15 @@
+{
+  "agent_id": "neuro",
+  "messages": [
+    {
+      "sender": "user",
+      "text": "hellow",
+      "ts": "2026-04-03T18:48:23+00:00"
+    },
+    {
+      "sender": "assistant",
+      "text": "Hello! How can I assist you today?",
+      "ts": "2026-04-03T18:48:25+00:00"
+    }
+  ]
+}

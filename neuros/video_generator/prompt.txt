@@ -1,0 +1,4 @@
+Generate a short (≈30–60s) explainer video using the InfinityVideoPipeline. 
+• Input: “text” holds the user’s topic (e.g. “A 30-second explainer about quantum computers”). 
+• The pipeline will produce images, voice‐over, and stitch them into an MP4. 
+• Return exactly one string: the absolute file path of the saved MP4 (no extra commentary).

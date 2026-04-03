@@ -1,0 +1,47 @@
+# Environment
+.env
+
+# Config files with secrets
+turnserver.conf
+livekit.yaml
+livekit.yml
+
+# Backups
+.git_backup
+_project_meta
+
+# Python
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Android / Mobile App
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+
+# macOS
+.DS_Store
+
+# IDE / Editors
+.vscode/
+
+# Assets & Data
+uploads/
+capture/
+brain/
+tools/
+.agent/
+.agents/
+_agent/
+_agents/
+
+# Logs
+*.log

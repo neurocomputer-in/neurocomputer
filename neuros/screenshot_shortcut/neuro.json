@@ -1,0 +1,10 @@
+{
+  "name": "screenshot_shortcut",
+  "description": "Takes a screenshot on Windows by simulating the Windows + Print Screen key press.",
+  "version": "0.1.0",
+  "main": "code.py",
+  "prompt": "prompt.txt",
+  "outputs": {},
+  "inputs": {},
+  "icon": "📸"
+}

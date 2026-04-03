@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroComputer - AI Agents That Work For You</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fafafa;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: #1a1a2e;
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.3rem;
+            color: #a0a0a0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        section {
+            padding: 60px 0;
+        }
+
+        .what-is {
+            background: white;
+        }
+
+        .what-is h2 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .what-is p {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto 20px;
+            text-align: center;
+            color: #555;
+        }
+
+        .features {
+            background: #f5f5f5;
+        }
+
+        .features h2 {
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .feature {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .feature h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #1a1a2e;
+        }
+
+        .feature p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .agents {
+            background: white;
+        }
+
+        .agents h2 {
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .agent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .agent h3 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .agent p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .how-it-works {
+            background: #f5f5f5;
+        }
+
+        .how-it-works h2 {
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .step {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 200px;
+            text-align: center;
+        }
+
+        .step-num {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+
+        .step h4 {
+            margin-bottom: 8px;
+            color: #1a1a2e;
+        }
+
+        .step p {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .get-started {
+            background: #1a1a2e;
+            color: white;
+            text-align: center;
+            padding: 80px 0;
+        }
+
+        .get-started h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .get-started p {
+            color: #a0a0a0;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .get-started code {
+            background: #2a2a4e;
+            padding: 15px 30px;
+            border-radius: 8px;
+            display: inline-block;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 1rem;
+        }
+
+        footer {
+            background: #0f0f1a;
+            color: #666;
+            text-align: center;
+            padding: 30px 0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .step {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="logo">🧠</div>
+        <h1>NeuroComputer</h1>
+        <p>AI agents that handle your tasks — from coding to freelancing to browser work</p>
+    </div>
+</header>
+
+<section class="what-is">
+    <div class="container">
+        <h2>What It Does</h2>
+        <p>NeuroComputer is an AI agent system. You give it a task, it breaks it down into steps and executes them using specialized skills called "neuros." It can code, analyze job postings, control your browser, and more — all through conversation.</p>
+        <p>No complex setup. No rigid workflows. Just tell it what you need.</p>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2>What You Can Do</h2>
+        <div class="feature-grid">
+            <div class="feature">
+                <h3>💻 Code Projects</h3>
+                <p>Create files, edit code, manage entire projects. It plans the structure, writes the code, and tracks changes.</p>
+            </div>
+            <div class="feature">
+                <h3>📋 Upwork Jobs</h3>
+                <p>Capture job postings, analyze them for fit, and draft proposals — all from one conversation.</p>
+            </div>
+            <div class="feature">
+                <h3>🌐 Browser Work</h3>
+                <p>Delegate web tasks to an AI browser agent. Opens sites, fills forms, extracts data automatically.</p>
+            </div>
+            <div class="feature">
+                <h3>🛠️ Build New Skills</h3>
+                <p>Create new neuros on the fly during conversation. No restart needed — they're live instantly.</p>
+            </div>
+            <div class="feature">
+                <h3>💬 Natural Chat</h3>
+                <p>Talk to it like a colleague. It understands context, remembers your work, and figures out what to do.</p>
+            </div>
+            <div class="feature">
+                <h3>🎙️ Voice Support</h3>
+                <p>Talk to your agents. Get spoken responses. Works with your microphone and speakers.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="agents">
+    <div class="container">
+        <h2>Specialized Agents</h2>
+        <div class="agent-grid">
+            <div class="agent">
+                <h3>Neuro</h3>
+                <p>General purpose. Handles whatever you throw at it.</p>
+            </div>
+            <div class="agent">
+                <h3>Upwork</h3>
+                <p>Built for freelance job hunting and proposals.</p>
+            </div>
+            <div class="agent">
+                <h3>OpenClaw</h3>
+                <p>Browser automation expert.</p>
+            </div>
+            <div class="agent">
+                <h3>Windsurf</h3>
+                <p>Works inside your IDE for coding tasks.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <div class="container">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <h4>Ask</h4>
+                <p>Tell the agent what you need in plain English</p>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <h4>Plan</h4>
+                <p>It breaks down the task into executable steps</p>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <h4>Execute</h4>
+                <p>Runs each step using the right skills</p>
+            </div>
+            <div class="step">
+                <div class="step-num">4</div>
+                <h4>Reply</h4>
+                <p>You get results and can ask follow-ups</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="get-started">
+    <div class="container">
+        <h2>Get Started</h2>
+        <p>Requires Python 3.11+ and an OpenAI API key</p>
+        <code>pip install -r requirements.txt && python server.py</code>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p>NeuroComputer — AI agents that work for you</p>
+    </div>
+</footer>
+
+</body>
+</html>

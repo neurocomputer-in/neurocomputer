@@ -1,0 +1,17 @@
+{
+    "name": "smart_router",
+    "description": "Unified router that decides to reply directly OR invoke a skill. Combines intent classification and response generation in one call.",
+    "inputs": [
+        "history",
+        "text",
+        "skills"
+    ],
+    "outputs": [
+        "action",
+        "reply",
+        "skill",
+        "params"
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+}

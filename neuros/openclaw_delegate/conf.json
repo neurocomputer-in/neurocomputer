@@ -1,0 +1,13 @@
+{
+    "name": "openclaw_delegate",
+    "description": "Delegate tasks to OpenClaw agent. You MUST refine the user's request into a precise, self-contained instruction for a web agent (e.g. 'Open Chrome and navigate to...'). If the request is ambiguous, formulate a clarifying question instead of calling this.",
+    "inputs": [
+        "task"
+    ],
+    "outputs": [
+        "response",
+        "status"
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+}

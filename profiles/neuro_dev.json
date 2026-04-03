@@ -1,0 +1,6 @@
+{
+  "planner": "dev_planner",
+  "replier": "dev_reply",
+  "neuros": ["dev_*", "neuro_list", "load_neuro",
+             "dev_codegen", "dev_diff", "dev_patch"]
+}

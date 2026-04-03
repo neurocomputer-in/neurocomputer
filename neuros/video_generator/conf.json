@@ -1,0 +1,19 @@
+{
+    "name": "video_generator",
+    "description": "Generate a narrated video using InfinityVideoPipeline (lib/video_gen)",
+    "inputs": ["topic", "duration"],
+    "outputs": ["reply", "video_path", "video_task_id"],
+    "input_limits": {},
+    "model": "gpt-4o-mini",
+    "temperature": 0.0,
+    "functions": {
+        "run": {
+            "inputs": ["topic", "duration"],
+            "outputs": ["reply", "video_task_id"]
+        },
+        "check_status": {
+            "inputs": ["task_id"],
+            "outputs": ["reply", "video_path"]
+        }
+    }
+}

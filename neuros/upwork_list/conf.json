@@ -1,0 +1,8 @@
+{
+    "name": "upwork_list",
+    "description": "List all saved Upwork jobs",
+    "inputs": [],
+    "outputs": ["jobs", "count"],
+    "model": "none",
+    "temperature": 0
+}
