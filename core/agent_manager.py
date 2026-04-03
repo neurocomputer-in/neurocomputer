@@ -51,9 +51,9 @@ class AgentManager:
         """Get an existing agent by type.
 
         Matches by:
-        1. Config key (neuro, upwork, windsurf, openclaw)
-        2. Config name (Neuro, Upwork, Windsurf, OpenClaw)
-        3. Partial substring match (wind -> windsurf, open -> openclaw)
+        1. Config key (neuro, upwork, openclaw, opencode)
+        2. Config name (Neuro, Upwork, OpenClaw, OpenCode)
+        3. Partial substring match (open -> openclaw)
         """
         agent_type_lower = agent_type.lower().strip()
 
@@ -69,7 +69,7 @@ class AgentManager:
             if config_name_lower == agent_type_lower:
                 return agent
 
-            # Partial substring match (e.g., "wind" matches "Windsurf")
+            # Partial substring match (e.g., "open" matches "OpenClaw")
             if agent_type_lower in config_name_lower or config_name_lower in agent_type_lower:
                 return agent
 

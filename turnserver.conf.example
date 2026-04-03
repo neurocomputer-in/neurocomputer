@@ -1,0 +1,14 @@
+# Basic Coturn config for LiveKit Template
+# Copy this to turnserver.conf and fill in your values
+listening-port=3478
+tls-listening-port=5349
+min-port=49160
+max-port=65535
+user=YOUR_TURN_USERNAME:YOUR_TURN_PASSWORD
+realm=livekit
+server-name=livekit
+external-ip=YOUR_EXTERNAL_IP
+no-cli
+no-stun
+fingerprint
+lt-cred-mech

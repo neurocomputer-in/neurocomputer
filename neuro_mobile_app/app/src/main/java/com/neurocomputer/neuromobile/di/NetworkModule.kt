@@ -7,7 +7,6 @@ import com.neurocomputer.neuromobile.data.service.OcrService
 import com.neurocomputer.neuromobile.data.service.OpenClawService
 import com.neurocomputer.neuromobile.data.service.VoiceService
 import com.neurocomputer.neuromobile.data.service.WebSocketService
-import com.neurocomputer.neuromobile.data.service.WindSurfService
 import com.neurocomputer.neuromobile.data.service.LiveKitService
 import dagger.Module
 import dagger.Provides
@@ -70,13 +69,6 @@ object NetworkModule {
         return OcrService(context)
     }
 
-    @Provides
-    @Singleton
-    fun provideWindSurfService(
-        backendUrlRepository: BackendUrlRepository
-    ): WindSurfService {
-        return WindSurfService(backendUrlRepository)
-    }
 
     @Provides
     @Singleton

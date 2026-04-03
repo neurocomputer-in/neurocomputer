@@ -15,7 +15,6 @@ User Message → Smart Router (intent) → Planner (DAG) → Executor (runs neur
 | **Neuro** | General-purpose task execution |
 | **Upwork** | Job capture, analysis, and proposal generation |
 | **OpenClaw** | Browser automation delegation |
-| **Windsurf** | IDE-integrated coding workflows |
 
 ## Neuros (50+ hot-swappable skills)
 
@@ -39,7 +38,6 @@ Organized under `neuros/` as self-contained folders with `conf.json` + `code.py`
 
 ### Integrations
 - `openclaw_delegate` - Delegates to OpenClaw browser agent
-- `windsurf_controller` - Bridges to Windsurf IDE via Playwright
 
 ## Profiles
 

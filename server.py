@@ -1206,15 +1206,13 @@ async def websocket_endpoint(ws: WebSocket, cid: str):
         logger.info(f"WebSocket connection closed for conversation: {cid}")
 
 # ----------------------------------------------------------------------------------
-# Windsurf Control API - Proxies to TS server on port 9333
+# OpenClaw Control API
 # ----------------------------------------------------------------------------------
 
 import httpx
 import uuid
 import sys
 import os
-
-WINDSURF_TS_SERVER = "http://localhost:9333"
 
 # Global HTTP client to prevent port exhaustion (TIME_WAIT socket leaks)
 _httpx_client = None
@@ -1225,20 +1223,18 @@ def get_httpx_client():
         _httpx_client = httpx.AsyncClient(timeout=60.0)
     return _httpx_client
 
+# OpenClaw state
 openclaw_state: Dict[str, Any] = {
     "connected": False,
     "last_response": "",
     "last_error": "",
 }
 
-windsurf_state_global: Dict[str, Any] = {}
-
 @app.on_event("startup")
 async def startup_event():
     logger.info("Initializing database...")
     await db.init()
     logger.info("Starting background pollers...")
-    asyncio.create_task(_global_windsurf_poller())
     asyncio.create_task(_global_openclaw_poller())
 
 @app.on_event("shutdown")
@@ -1248,15 +1244,6 @@ async def shutdown_event():
         await _httpx_client.aclose()
         _httpx_client = None
 
-async def _global_windsurf_poller():
-    global windsurf_state_global
-    while True:
-        try:
-            state = await _proxy_windsurf("GET", "/state")
-            windsurf_state_global = state
-        except Exception:
-            pass
-        await asyncio.sleep(1)
 
 async def _global_openclaw_poller():
     global openclaw_state
@@ -1629,92 +1616,6 @@ class _OpenClawWsClient:
 
 openclaw_ws_client = _OpenClawWsClient()
 
-async def _proxy_windsurf(method: str, path: str, body: dict = None) -> dict:
-    """Proxy request to Windsurf TS server using a persistent client pool"""
-    try:
-        client = get_httpx_client()
-        url = f"{WINDSURF_TS_SERVER}{path}"
-        if method == "GET":
-            r = await client.get(url)
-        else:
-            r = await client.post(url, json=body or {})
-        return r.json()
-    except httpx.ConnectError:
-        return {"error": "Windsurf TS server not running. Start with: npx ts-node experiments/windsurf_automation/windsurf_server.ts"}
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/windsurf/connect")
-async def windsurf_connect(body: dict = {}):
-    """Connect to Windsurf IDE via CDP"""
-    return await _proxy_windsurf("POST", "/connect", body)
-
-@app.post("/windsurf/disconnect")
-async def windsurf_disconnect():
-    """Disconnect from Windsurf"""
-    return await _proxy_windsurf("POST", "/disconnect")
-
-@app.get("/windsurf/state")
-async def windsurf_state():
-    """Get current Windsurf state"""
-    return await _proxy_windsurf("GET", "/state")
-
-@app.post("/windsurf/send")
-async def windsurf_send(body: dict):
-    """Send a message to Windsurf"""
-    text = body.get("text", "")
-    if not text:
-        raise HTTPException(status_code=400, detail="text required")
-    return await _proxy_windsurf("POST", "/send", {"text": text})
-
-@app.post("/windsurf/run")
-async def windsurf_run():
-    """Run the pending command in Windsurf"""
-    return await _proxy_windsurf("POST", "/run")
-
-@app.post("/windsurf/skip")
-async def windsurf_skip():
-    """Skip the pending command in Windsurf"""
-    return await _proxy_windsurf("POST", "/skip")
-
-@app.post("/windsurf/accept")
-async def windsurf_accept():
-    """Accept all pending file changes in Windsurf"""
-    return await _proxy_windsurf("POST", "/accept")
-
-@app.post("/windsurf/reject")
-async def windsurf_reject():
-    """Reject all pending file changes in Windsurf"""
-    return await _proxy_windsurf("POST", "/reject")
-
-# WebSocket for Windsurf state updates - polls TS server
-# NOTE: cannot be /ws/windsurf because /ws/{cid} would capture it depending on route order.
-@app.websocket("/ws/windsurf/state")
-async def windsurf_websocket(ws: WebSocket):
-    """WebSocket for real-time Windsurf state updates"""
-    await ws.accept()
-    logger.info("Windsurf WebSocket connected (/ws/windsurf/state)")
-    
-    last_state = {}
-    
-    try:
-        while True:
-            # Use globally polled state instead of fetching per-client
-            state = dict(windsurf_state_global)
-            
-            # Only send if state changed
-            if state != last_state:
-                await ws.send_json({"type": "state", **state})
-                last_state = state.copy()
-            else:
-                # Send heartbeat
-                await ws.send_json({"type": "heartbeat"})
-            
-            await asyncio.sleep(1)  # Poll every second
-    except WebSocketDisconnect:
-        logger.info("Windsurf WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"Windsurf WebSocket error: {e}")
 
 
 # ----------------------------------------------------------------------------------

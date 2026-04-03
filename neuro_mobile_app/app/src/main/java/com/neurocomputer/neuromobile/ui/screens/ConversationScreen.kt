@@ -53,7 +53,6 @@ import com.neurocomputer.neuromobile.data.service.VoiceConnectionState
 import com.neurocomputer.neuromobile.data.service.WebSocketService
 import com.neurocomputer.neuromobile.data.service.ChatDataChannelService
 import com.neurocomputer.neuromobile.data.service.ChatMessage
-import com.neurocomputer.neuromobile.data.service.WindSurfService
 import com.neurocomputer.neuromobile.data.service.OpenClawService
 import com.neurocomputer.neuromobile.data.service.LiveKitService
 import com.neurocomputer.neuromobile.data.service.WsMessage
@@ -98,7 +97,6 @@ class ConversationViewModel @Inject constructor(
     private val voiceService: VoiceService,
     private val backendUrlRepository: BackendUrlRepository,
     private val startupRepository: StartupRepository,
-    private val windSurfService: WindSurfService,
     private val openClawService: OpenClawService,
     private val liveKitService: LiveKitService,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
@@ -145,8 +143,7 @@ class ConversationViewModel @Inject constructor(
     private val _isKeyboardOpen = MutableStateFlow(false)
     val isKeyboardOpen: StateFlow<Boolean> = _isKeyboardOpen.asStateFlow()
 
-    // WindSurf & OpenClaw screen control
-    val isWindsurfActive: StateFlow<Boolean> = windSurfService.state.map { it.connected }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    // OpenClaw screen control
     val isOpenClawActive: StateFlow<Boolean> = openClawService.state.map { it.connected }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // Remote PC state
@@ -740,16 +737,6 @@ class ConversationViewModel @Inject constructor(
         _isKeyboardOpen.value = !_isKeyboardOpen.value
     }
 
-    fun toggleWindsurf() {
-        viewModelScope.launch {
-            val currentlyConnected = windSurfService.state.value.connected
-            if (currentlyConnected) {
-                windSurfService.disconnect()
-            } else {
-                windSurfService.connect()
-            }
-        }
-    }
 
     fun toggleOpenClaw() {
         viewModelScope.launch {
@@ -1182,7 +1169,6 @@ fun ConversationScreen(
     val toolbarOffset by viewModel.toolbarOffset.collectAsState()
     val voiceConnectionState by viewModel.voiceConnectionState.collectAsState()
     val healthState by viewModel.healthState.collectAsState()
-    val isWindsurfActive by viewModel.isWindsurfActive.collectAsState()
     val isOpenClawActive by viewModel.isOpenClawActive.collectAsState()
     val isScreenMode by viewModel.isScreenMode.collectAsState()
     val isFullscreen by viewModel.isFullscreen.collectAsState()
