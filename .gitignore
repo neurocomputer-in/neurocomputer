@@ -2,7 +2,7 @@
 .env
 
 # Config files with secrets
-turnserver.conf
+turnserver.conf*
 livekit.yaml
 livekit.yml
 
