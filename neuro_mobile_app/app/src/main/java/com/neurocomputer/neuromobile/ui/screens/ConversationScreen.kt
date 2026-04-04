@@ -27,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -111,6 +112,9 @@ class ConversationViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isTabLoading = MutableStateFlow(false)
+    val isTabLoading: StateFlow<Boolean> = _isTabLoading.asStateFlow()
+
     val isConnected: StateFlow<Boolean> = chatDataChannelService.connectionState.map { it.connected }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _showSideDrawer = MutableStateFlow(false)
@@ -184,6 +188,14 @@ class ConversationViewModel @Inject constructor(
     private val _autoPlayTrigger = MutableStateFlow<Pair<String, String>?>(null)
     val autoPlayTrigger: StateFlow<Pair<String, String>?> = _autoPlayTrigger.asStateFlow()
 
+    // Currently playing message ID (shared between AudioPlayer and MessageBubble)
+    private val _playingMessageId = MutableStateFlow<String?>(null)
+    val playingMessageId: StateFlow<String?> = _playingMessageId.asStateFlow()
+
+    fun setPlayingMessage(msgId: String?) {
+        _playingMessageId.value = msgId
+    }
+
     // Voice connection state
     val voiceConnectionState: StateFlow<VoiceConnectionState> = voiceService.connectionState
 
@@ -256,24 +268,19 @@ class ConversationViewModel @Inject constructor(
                         android.util.Log.d("ChatDC", "Received text message: ${msg.text.take(50)}, sender=${msg.sender}")
                         // Skip user messages — they are already added locally when the user sends them.
                         if (msg.sender == "user") return@collect
-                        val speakOn = _isSpeakEnabled.value
+                        val wantVoice = _isSpeakEnabled.value && msg.text.isNotEmpty() && msg.origin != "overlay"
                         val newMsg = Message(
                             id = msg.messageId,
                             text = msg.text,
-                            isUser = false,  // Only agent messages come in here now
-                            isVoice = speakOn
+                            isUser = false,
+                            isVoice = wantVoice  // Show voice box immediately if speak is on
                         )
                         _tabMessages.value = _tabMessages.value + newMsg
                         _isLoading.value = false
-                        android.util.Log.d("ChatDC", "Updated _tabMessages, count=${_tabMessages.value.size}")
-                        
-                        if (_isSpeakEnabled.value && msg.text.isNotEmpty()) {
-                            if (msg.origin != "overlay") {
-                                android.util.Log.d("ChatDC", "Calling generateTts for msg ${newMsg.id}")
-                                generateTts(newMsg.id, msg.text)
-                            } else {
-                                android.util.Log.d("ChatDC", "Skipping TTS: msg.origin is overlay")
-                            }
+                        android.util.Log.d("ChatDC", "Updated _tabMessages, count=${_tabMessages.value.size}, isVoice=$wantVoice")
+
+                        if (wantVoice) {
+                            generateTts(newMsg.id, msg.text)
                         }
                     }
                     is ChatMessage.VoiceMessage -> {
@@ -319,8 +326,9 @@ class ConversationViewModel @Inject constructor(
 
         _inputText.value = ""
 
-        // If no active tab, create a new conversation first
-        if (_activeTabCid.value == null) {
+        // If no active tab or placeholder tab, create a new conversation first
+        val currentCid = _activeTabCid.value
+        if (currentCid == null || currentCid.startsWith("new_")) {
             createNewTabAndSend(text)
             return
         }
@@ -340,9 +348,9 @@ class ConversationViewModel @Inject constructor(
 
         viewModelScope.launch {
             val cid = _activeTabCid.value ?: return@launch
-            
+
             // Ensure connected to the chat room
-            if (!chatDataChannelService.connectionState.value.connected || 
+            if (!chatDataChannelService.connectionState.value.connected ||
                 chatDataChannelService.connectionState.value.conversationId != cid) {
                 android.util.Log.d("ChatDC", "Connecting to chat room for cid: $cid")
                 val connected = chatDataChannelService.connect(cid)
@@ -356,7 +364,7 @@ class ConversationViewModel @Inject constructor(
                     return@launch
                 }
             }
-            
+
             val success = chatDataChannelService.sendTextMessage(text)
             if (!success) {
                 _isLoading.value = false
@@ -365,6 +373,15 @@ class ConversationViewModel @Inject constructor(
                     text = "Failed to send message",
                     isUser = false
                 )
+            }
+        }
+
+        // Timeout: clear loading if no response after 45s
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(45_000)
+            if (_isLoading.value) {
+                android.util.Log.w("ChatDC", "Loading timeout - clearing loading state after 45s")
+                _isLoading.value = false
             }
         }
     }
@@ -379,7 +396,8 @@ class ConversationViewModel @Inject constructor(
             try {
                 val baseUrl = backendUrlRepository.currentUrl.value
                 android.util.Log.d("TTS", "generateTts: baseUrl=$baseUrl")
-                val reqBody = """{"text":"$text","cid":"$cid","voice":"alloy"}"""
+                val escapedText = text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
+                val reqBody = """{"text":"$escapedText","cid":"$cid","voice":"alloy","msg_id":"$msgId"}"""
                     .toRequestBody("application/json".toMediaType())
                 val request = okhttp3.Request.Builder()
                     .url("$baseUrl/tts")
@@ -407,7 +425,9 @@ class ConversationViewModel @Inject constructor(
                 _tabMessages.value = _tabMessages.value.map { msg ->
                     if (msg.id == msgId) {
                         android.util.Log.d("TTS", "Updating msg ${msg.id} with audioUrl=$audioUrl")
-                        msg.copy(audioUrl = audioUrl, isVoice = true)
+                        // Show voice box for agent replies when speak is enabled
+                        if (!msg.isUser) msg.copy(audioUrl = audioUrl, isVoice = true)
+                        else msg.copy(audioUrl = audioUrl)
                     } else msg
                 }
                 android.util.Log.d("TTS", "Updated message $msgId with audioUrl")
@@ -424,10 +444,16 @@ class ConversationViewModel @Inject constructor(
     }
 
     private fun createNewTabAndSend(text: String) {
+        val agent = selectedAgent.value.type
+        // Show message immediately
+        val msgId = "user_${UUID.randomUUID()}"
+        _tabMessages.value = listOf(Message(id = msgId, text = text, isUser = true))
+        _isLoading.value = true
+
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val baseUrl = backendUrlRepository.currentUrl.value
-                val agentType = selectedAgent.value.type.name.lowercase()
+                val agentType = agent.name.lowercase()
                 val requestBody = """{"agent_id": "$agentType"}""".toRequestBody("application/json".toMediaType())
                 val request = okhttp3.Request.Builder()
                     .url("$baseUrl/conversation")
@@ -440,22 +466,29 @@ class ConversationViewModel @Inject constructor(
                         val body = response.body?.string()
                         val json = org.json.JSONObject(body ?: "{}")
                         val cid = json.getString("cid")
-                        // Open the new conversation
+
+                        // Open the conversation (adds tab, sets active)
                         openConversation(cid)
-                        // Now send the message
-                        _tabMessages.value = _tabMessages.value + Message(
-                            id = "user_${UUID.randomUUID()}",
-                            text = text,
-                            isUser = true
-                        )
-                        _isLoading.value = true
-                        webSocketService.markMessageOrigin("app")
-                        val result = webSocketService.sendMessage(text, cid = cid)
-                        if (result.isFailure) {
+                        // Restore the optimistic message (openConversation clears tabMessages)
+                        _tabMessages.value = listOf(Message(id = msgId, text = text, isUser = true))
+
+                        // Connect and send via DataChannel
+                        val connected = chatDataChannelService.connect(cid)
+                        if (connected) {
+                            val success = chatDataChannelService.sendTextMessage(text)
+                            if (!success) {
+                                _isLoading.value = false
+                                _tabMessages.value = _tabMessages.value + Message(
+                                    id = "error_${UUID.randomUUID()}",
+                                    text = "Failed to send message",
+                                    isUser = false
+                                )
+                            }
+                        } else {
                             _isLoading.value = false
                             _tabMessages.value = _tabMessages.value + Message(
                                 id = "error_${UUID.randomUUID()}",
-                                text = "Failed to send: ${result.exceptionOrNull()?.message}",
+                                text = "Failed to connect to chat",
                                 isUser = false
                             )
                         }
@@ -463,6 +496,15 @@ class ConversationViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 android.util.Log.e("ConversationVM", "Failed to create conversation and send", e)
+                _isLoading.value = false
+            }
+        }
+
+        // Loading timeout
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(45_000)
+            if (_isLoading.value) {
+                _isLoading.value = false
             }
         }
     }
@@ -533,8 +575,10 @@ class ConversationViewModel @Inject constructor(
     }
 
     fun openConversation(cid: String) {
+        // Skip if already on this tab
+        if (_activeTabCid.value == cid) return
+
         val agent = selectedAgent.value.type
-        // Add to open tabs if not already there
         val currentTabs = _openTabs.value.toMutableMap()
         val agentTabs = currentTabs[agent]?.toMutableList() ?: mutableListOf()
 
@@ -545,16 +589,27 @@ class ConversationViewModel @Inject constructor(
             agentTabs.add(Tab(cid = cid, title = title, isActive = true))
         }
 
-        // Mark selected tab as active
+        // Mark only the selected tab as active
         val updatedTabs = agentTabs.map { it.copy(isActive = it.cid == cid) }
         currentTabs[agent] = updatedTabs
         _openTabs.value = currentTabs
 
         // Set active tab CID
         _activeTabCid.value = cid
+        // Clear stale loading state from previous tab
+        _isLoading.value = false
 
-        // Load messages for this conversation
-        loadMessages(cid)
+        // Only load messages from server for real CIDs (not placeholder tabs)
+        if (!cid.startsWith("new_")) {
+            loadMessages(cid)
+            // Reconnect DataChannel to this conversation's room
+            viewModelScope.launch {
+                chatDataChannelService.connect(cid)
+            }
+        } else {
+            _isTabLoading.value = false
+            _tabMessages.value = emptyList()
+        }
     }
 
     fun closeTab(cid: String) {
@@ -615,10 +670,24 @@ class ConversationViewModel @Inject constructor(
     }
 
     fun createNewTab() {
+        val agent = selectedAgent.value.type
+        val tempCid = "new_${UUID.randomUUID().toString().take(8)}"
+
+        // Add placeholder tab and activate it
+        val currentTabs = _openTabs.value.toMutableMap()
+        val agentTabs = (currentTabs[agent] ?: emptyList())
+            .map { it.copy(isActive = false) } + Tab(cid = tempCid, title = "New Chat", isActive = true)
+        currentTabs[agent] = agentTabs
+        _openTabs.value = currentTabs
+        _activeTabCid.value = tempCid
+        _tabMessages.value = emptyList()
+        _isLoading.value = false
+
+        // Background: create on server and swap CID (only if user is still on this tab)
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val baseUrl = backendUrlRepository.currentUrl.value
-                val agentType = selectedAgent.value.type.name.lowercase()
+                val agentType = agent.name.lowercase()
                 val requestBody = """{"agent_id": "$agentType"}""".toRequestBody("application/json".toMediaType())
                 val request = okhttp3.Request.Builder()
                     .url("$baseUrl/conversation")
@@ -630,9 +699,22 @@ class ConversationViewModel @Inject constructor(
                     if (response.isSuccessful) {
                         val body = response.body?.string()
                         val json = org.json.JSONObject(body ?: "{}")
-                        val cid = json.getString("cid")
-                        // Open the new conversation
-                        openConversation(cid)
+                        val realCid = json.getString("cid")
+
+                        // Swap placeholder CID in tab list
+                        val tabs = _openTabs.value.toMutableMap()
+                        val list = tabs[agent]?.toMutableList() ?: mutableListOf()
+                        val idx = list.indexOfFirst { it.cid == tempCid }
+                        if (idx >= 0) {
+                            // Preserve whatever isActive state the tab currently has
+                            list[idx] = list[idx].copy(cid = realCid)
+                            tabs[agent] = list
+                            _openTabs.value = tabs
+                        }
+                        // Only update activeTabCid if user hasn't switched away
+                        if (_activeTabCid.value == tempCid) {
+                            _activeTabCid.value = realCid
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -680,6 +762,7 @@ class ConversationViewModel @Inject constructor(
     }
 
     private fun loadMessages(cid: String) {
+        _isTabLoading.value = true
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val baseUrl = backendUrlRepository.currentUrl.value
@@ -713,6 +796,8 @@ class ConversationViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 android.util.Log.e("ConversationVM", "Failed to load messages", e)
+            } finally {
+                _isTabLoading.value = false
             }
         }
     }
@@ -961,7 +1046,15 @@ class ConversationViewModel @Inject constructor(
         _isLoading.value = true
 
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            webSocketService.markMessageOrigin("app")
+            // Ensure DataChannel is connected so we receive the agent response
+            if (!chatDataChannelService.connectionState.value.connected ||
+                chatDataChannelService.connectionState.value.conversationId != cid) {
+                val connected = chatDataChannelService.connect(cid)
+                if (!connected) {
+                    android.util.Log.w("VoiceMsg", "DataChannel not connected, response may be missed")
+                }
+            }
+
             val baseUrl = backendUrlRepository.currentUrl.value
             val requestBody = okhttp3.MultipartBody.Builder()
                 .setType(okhttp3.MultipartBody.FORM)
@@ -985,7 +1078,7 @@ class ConversationViewModel @Inject constructor(
                         val transcription = json.optString("transcription", "")
                         val audioUrl = json.optString("audio_url", "").takeIf { it.isNotEmpty() }
 
-                        // Replace placeholder in-place with transcription + audio URL
+                        // Replace placeholder with transcription + audio URL
                         _tabMessages.value = _tabMessages.value.map { msg ->
                             if (msg.id == placeholderId) msg.copy(
                                 text = transcription.ifEmpty { "(No transcription)" },
@@ -993,7 +1086,7 @@ class ConversationViewModel @Inject constructor(
                                 audioUrl = audioUrl
                             ) else msg
                         }
-                        // WS will deliver the assistant reply — no polling needed
+                        // Agent response will arrive via DataChannel → observeMessages
                     } else {
                         _tabMessages.value = _tabMessages.value.map { msg ->
                             if (msg.id == placeholderId) msg.copy(text = "(Transcription failed)") else msg
@@ -1006,6 +1099,15 @@ class ConversationViewModel @Inject constructor(
                 _tabMessages.value = _tabMessages.value.map { msg ->
                     if (msg.id == placeholderId) msg.copy(text = "(Upload failed)") else msg
                 }
+                _isLoading.value = false
+            }
+        }
+
+        // Timeout: clear loading if no response after 45s
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(45_000)
+            if (_isLoading.value) {
+                android.util.Log.w("VoiceMsg", "Loading timeout after 45s")
                 _isLoading.value = false
             }
         }
@@ -1151,6 +1253,7 @@ fun ConversationScreen(
     val messages by viewModel.messages.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isTabLoading by viewModel.isTabLoading.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
     val showSideDrawer by viewModel.showSideDrawer.collectAsState()
     val showChatHistoryDrawer by viewModel.showChatHistoryDrawer.collectAsState()
@@ -1237,7 +1340,8 @@ fun ConversationScreen(
     // Audio player for auto-play (outside LazyColumn so not recycled)
     AudioPlayer(
         autoPlayTrigger = viewModel.autoPlayTrigger,
-        backendUrl = viewModel.backendUrl
+        backendUrl = viewModel.backendUrl,
+        onPlayingChanged = { viewModel.setPlayingMessage(it) }
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -1316,6 +1420,7 @@ fun ConversationScreen(
                     onTabSelect = { cid -> viewModel.openConversation(cid) },
                     onTabClose = { cid -> viewModel.closeTab(cid) },
                     onTabRename = { cid, title -> viewModel.renameConversation(cid, title) },
+                    onNewTab = { viewModel.createNewTab() },
                     onHistoryClick = { viewModel.toggleChatHistoryDrawer() }
                 )
             }
@@ -1374,22 +1479,43 @@ fun ConversationScreen(
                 // Messages area - either chat list or active conversation
                 if (activeTabCid != null) {
                     // Show active conversation messages
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(vertical = 16.dp)
-                    ) {
-                        items(tabMessages, key = { it.id }) { message ->
-                            MessageBubble(message = message)
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp)
+                                .then(if (isTabLoading) Modifier.blur(3.dp) else Modifier),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(tabMessages, key = { it.id }) { message ->
+                                AnimatedMessageBubble(
+                                    message = message,
+                                    backendUrl = viewModel.backendUrl,
+                                    isAutoPlaying = viewModel.playingMessageId.collectAsState().value == message.id
+                                )
+                            }
+
+                            if (isLoading) {
+                                item {
+                                    ThinkingIndicator(agentName = selectedAgent.name)
+                                }
+                            }
                         }
 
-                        if (isLoading) {
-                            item {
-                                ThinkingIndicator(agentName = selectedAgent.name)
+                        if (isTabLoading) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(NeuroColors.BackgroundDark.copy(alpha = 0.4f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = NeuroColors.Primary,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(32.dp)
+                                )
                             }
                         }
                     }
@@ -1459,16 +1585,65 @@ fun ConversationScreen(
                 }
             }
 
-            // Voice Recording Modal
-            if (showVoiceRecording) {
-                VoiceRecordingPanel(
-                    onDismiss = { viewModel.toggleVoiceRecording() },
-                    onSend = { viewModel.sendMessage() }
-                )
-            }
-
-            // Input bar
+            // Input bar area
             if (!isFullscreen) {
+                // Attachment strip — sits directly above input bar
+                if (isAttachmentMenuOpen && !showVoiceRecording) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF1C1C1E))
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Camera
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.clickable { /* TODO */ viewModel.toggleAttachmentMenu() }
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(44.dp).background(NeuroColors.Primary.copy(alpha = 0.12f), CircleShape)
+                            ) {
+                                Icon(Icons.Default.CameraAlt, null, tint = NeuroColors.Primary, modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text("Camera", color = NeuroColors.TextMuted, fontSize = 11.sp)
+                        }
+                        // Gallery
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.clickable { /* TODO */ viewModel.toggleAttachmentMenu() }
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(44.dp).background(Color(0xFF4CAF50).copy(alpha = 0.12f), CircleShape)
+                            ) {
+                                Icon(Icons.Default.Image, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text("Gallery", color = NeuroColors.TextMuted, fontSize = 11.sp)
+                        }
+                        // File
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.clickable { /* TODO */ viewModel.toggleAttachmentMenu() }
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(44.dp).background(Color(0xFFFF9800).copy(alpha = 0.12f), CircleShape)
+                            ) {
+                                Icon(Icons.Default.AttachFile, null, tint = Color(0xFFFF9800), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text("File", color = NeuroColors.TextMuted, fontSize = 11.sp)
+                        }
+                    }
+                }
+
                 if (showVoiceRecording) {
                     VoiceRecordingBar(
                         onCancel = { viewModel.toggleVoiceRecording() },
@@ -1478,73 +1653,27 @@ fun ConversationScreen(
                     )
                 } else {
                     MessageInputBar(
-                    text = inputText,
-                    onTextChange = { viewModel.updateInputText(it) },
-                    onSend = { viewModel.sendMessage() },
-                    onVoiceClick = { viewModel.toggleVoiceRecording() },
-                    isVoiceTyping = isVoiceTyping,
-                    onVoiceTypeToggle = { viewModel.toggleVoiceTyping() },
-                    isAttachmentMenuOpen = isAttachmentMenuOpen,
-                    onAttachmentMenuToggle = { viewModel.toggleAttachmentMenu() }
-                )
+                        text = inputText,
+                        onTextChange = { viewModel.updateInputText(it) },
+                        onSend = { viewModel.sendMessage() },
+                        onVoiceClick = { viewModel.toggleVoiceRecording() },
+                        isVoiceTyping = isVoiceTyping,
+                        onVoiceTypeToggle = { viewModel.toggleVoiceTyping() },
+                        isAttachmentMenuOpen = isAttachmentMenuOpen,
+                        onAttachmentMenuToggle = { viewModel.toggleAttachmentMenu() }
+                    )
                 }
             }
         }
 
-        // Attachment Menu Popup
+        // Attachment menu — horizontal strip directly above input bar
         if (isAttachmentMenuOpen) {
+            // Dismiss scrim
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable(enabled = true) { viewModel.toggleAttachmentMenu() }
-                    .background(Color.Black.copy(alpha = 0.3f)),
-                contentAlignment = Alignment.BottomStart
-            ) {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .offset(y = (-80).dp)
-                        .padding(start = 16.dp, bottom = 100.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(NeuroColors.BackgroundMid)
-                        .border(1.dp, NeuroColors.BorderSubtle, RoundedCornerShape(16.dp))
-                        .padding(vertical = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* TODO: Open camera */ viewModel.toggleAttachmentMenu() }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = NeuroColors.Primary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Camera", color = NeuroColors.TextPrimary, fontSize = 14.sp)
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* TODO: Open gallery */ viewModel.toggleAttachmentMenu() }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Image, contentDescription = null, tint = NeuroColors.Primary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Gallery", color = NeuroColors.TextPrimary, fontSize = 14.sp)
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { /* TODO: Open file picker */ viewModel.toggleAttachmentMenu() }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null, tint = NeuroColors.Primary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("File", color = NeuroColors.TextPrimary, fontSize = 14.sp)
-                    }
-                }
-            }
+                    .clickable { viewModel.toggleAttachmentMenu() }
+            )
         }
 
         // Side Drawer
@@ -1876,7 +2005,8 @@ fun ConversationHeader(
 @Composable
 fun AudioPlayer(
     autoPlayTrigger: kotlinx.coroutines.flow.StateFlow<Pair<String, String>?>,
-    backendUrl: String
+    backendUrl: String,
+    onPlayingChanged: (String?) -> Unit = {}
 ) {
     val trigger by autoPlayTrigger.collectAsState()
     val context = LocalContext.current
@@ -1918,10 +2048,15 @@ fun AudioPlayer(
                         try {
                             currentMediaPlayer = android.media.MediaPlayer().apply {
                                 setDataSource(file.absolutePath)
-                                setOnPreparedListener { start(); android.util.Log.d("AudioPlayer", "Playing!") }
+                                setOnPreparedListener {
+                                    start()
+                                    onPlayingChanged(msgId)
+                                    android.util.Log.d("AudioPlayer", "Playing!")
+                                }
                                 setOnCompletionListener {
                                     release()
                                     currentMediaPlayer = null
+                                    onPlayingChanged(null)
                                     file.delete()
                                 }
                                 setOnErrorListener { _, what, extra ->
@@ -1948,166 +2083,168 @@ fun AudioPlayer(
 }
 
 @Composable
-fun MessageBubble(message: Message) {
-    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
-    val backgroundColor = if (message.isUser) NeuroColors.GlassUserBubble else NeuroColors.GlassAssistantBubble
-    val borderColor = if (message.isUser) NeuroColors.BorderAccent.copy(alpha = 0.35f) else NeuroColors.BorderSubtle
+fun AnimatedMessageBubble(message: Message, backendUrl: String = "", isAutoPlaying: Boolean = false) {
+    // Only animate messages less than 2 seconds old (freshly sent/received)
+    val isNew = (System.currentTimeMillis() - message.timestamp) < 2000
+    if (!isNew) {
+        MessageBubble(message = message, backendUrl = backendUrl, isAutoPlaying = isAutoPlaying)
+        return
+    }
+
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    val offsetX = if (message.isUser) 24f else -24f
+    val animatedOffset by animateFloatAsState(
+        targetValue = if (visible) 0f else offsetX,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        label = "slideX"
+    )
+    val animatedAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(200),
+        label = "fadeIn"
+    )
+
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(animatedOffset.roundToInt(), 0) }
+            .alpha(animatedAlpha)
+    ) {
+        MessageBubble(message = message, backendUrl = backendUrl, isAutoPlaying = isAutoPlaying)
+    }
+}
+
+@Composable
+fun MessageBubble(message: Message, backendUrl: String = "", isAutoPlaying: Boolean = false) {
+    val isUser = message.isUser
     var isPlaying by remember { mutableStateOf(false) }
+    val effectivePlaying = isPlaying || isAutoPlaying
     var isLoading by remember { mutableStateOf(false) }
     var mediaPlayer by remember { mutableStateOf<android.media.MediaPlayer?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    DisposableEffect(Unit) {
-        onDispose {
-            mediaPlayer?.release()
-        }
-    }
+    DisposableEffect(Unit) { onDispose { mediaPlayer?.release() } }
+
+    // WhatsApp-style asymmetric corners
+    val bubbleShape = if (isUser)
+        RoundedCornerShape(16.dp, 4.dp, 16.dp, 16.dp)
+    else
+        RoundedCornerShape(4.dp, 16.dp, 16.dp, 16.dp)
+
+    val bgColor = if (isUser) Color(0xFF8B5CF6).copy(alpha = 0.18f) else Color(0xFF1C1C1E)
 
     Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = if (isUser) 48.dp else 0.dp,
+                end = if (isUser) 0.dp else 48.dp
+            ),
+        contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 300.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(backgroundColor)
-                .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-                .padding(12.dp)
+                .clip(bubbleShape)
+                .background(bgColor)
+                .padding(horizontal = 10.dp, vertical = 7.dp)
         ) {
-            android.util.Log.d("MsgBubble", "id=${message.id} isVoice=${message.isVoice} audioUrl=${message.audioUrl} isUser=${message.isUser}")
             if (message.isVoice) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    IconButton(
-                        onClick = {
-                            if (isPlaying) {
-                                mediaPlayer?.stop()
-                                mediaPlayer?.release()
-                                mediaPlayer = null
-                                isPlaying = false
-                            } else if (message.audioUrl != null) {
-                                isLoading = true
-                                scope.launch(Dispatchers.IO) {
-                                    try {
-                                        val audioUrl = message.audioUrl!!
-                                        val fullUrl = if (audioUrl.startsWith("http")) audioUrl else "https://5148-152-58-121-41.ngrok-free.app$audioUrl"
-                                        val client = okhttp3.OkHttpClient()
-                                        val request = okhttp3.Request.Builder().url(fullUrl).build()
-                                        client.newCall(request).execute().use { response ->
-                                            if (response.isSuccessful && response.body != null) {
-                                                val file = java.io.File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
-                                                file.parentFile?.mkdirs()
-                                                file.writeBytes(response.body!!.bytes())
-                                                android.util.Log.d("VoicePlay", "Downloaded to ${file.absolutePath}")
+                // Single-row voice: play button + text + timestamp
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Play/stop button
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(30.dp)
+                            .background(
+                                if (effectivePlaying) NeuroColors.Error.copy(alpha = 0.15f)
+                                else NeuroColors.Primary.copy(alpha = 0.12f),
+                                CircleShape
+                            )
+                            .clickable {
+                                if (effectivePlaying) {
+                                    mediaPlayer?.stop(); mediaPlayer?.release(); mediaPlayer = null; isPlaying = false
+                                } else if (message.audioUrl != null) {
+                                    isLoading = true
+                                    scope.launch(Dispatchers.IO) {
+                                        try {
+                                            val fullUrl = if (message.audioUrl!!.startsWith("http")) message.audioUrl!! else "$backendUrl${message.audioUrl}"
+                                            val resp = okhttp3.OkHttpClient().newCall(okhttp3.Request.Builder().url(fullUrl).build()).execute()
+                                            if (resp.isSuccessful && resp.body != null) {
+                                                val f = java.io.File(context.cacheDir, "v_${System.currentTimeMillis()}.m4a")
+                                                f.writeBytes(resp.body!!.bytes())
                                                 withContext(Dispatchers.Main) {
-                                                    try {
-                                                        mediaPlayer = android.media.MediaPlayer().apply {
-                                                            setDataSource(file.absolutePath)
-                                                            setOnPreparedListener { start(); isLoading = false; isPlaying = true }
-                                                            setOnCompletionListener {
-                                                                isPlaying = false
-                                                                release()
-                                                                mediaPlayer = null
-                                                                file.delete()
-                                                            }
-                                                            setOnErrorListener { _, _, _ ->
-                                                                isPlaying = false
-                                                                isLoading = false
-                                                                release()
-                                                                mediaPlayer = null
-                                                                file.delete()
-                                                                true
-                                                            }
-                                                            prepare()
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        android.util.Log.e("VoicePlay", "Play error: ${e.message}")
-                                                        isLoading = false
-                                                        file.delete()
+                                                    mediaPlayer = android.media.MediaPlayer().apply {
+                                                        setDataSource(f.absolutePath)
+                                                        setOnPreparedListener { start(); isLoading = false; isPlaying = true }
+                                                        setOnCompletionListener { isPlaying = false; release(); mediaPlayer = null; f.delete() }
+                                                        setOnErrorListener { _, _, _ -> isPlaying = false; isLoading = false; release(); mediaPlayer = null; f.delete(); true }
+                                                        prepare()
                                                     }
                                                 }
-                                            } else {
-                                                android.util.Log.e("VoicePlay", "Download failed: ${response.code}")
-                                                withContext(Dispatchers.Main) {
-                                                    isLoading = false
-                                                }
-                                            }
-                                        }
-                                    } catch (e: Exception) {
-                                        android.util.Log.e("VoicePlay", "Error: ${e.message}")
-                                        withContext(Dispatchers.Main) {
-                                            isLoading = false
-                                        }
+                                            } else withContext(Dispatchers.Main) { isLoading = false }
+                                        } catch (e: Exception) { withContext(Dispatchers.Main) { isLoading = false } }
                                     }
                                 }
                             }
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(
-                                when {
-                                    isLoading -> NeuroColors.TextMuted.copy(alpha = 0.2f)
-                                    isPlaying -> NeuroColors.Error.copy(alpha = 0.2f)
-                                    else -> NeuroColors.Primary.copy(alpha = 0.2f)
-                                },
-                                CircleShape
-                            )
                     ) {
                         when {
-                            isLoading || (message.isVoice && message.audioUrl == null) -> CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = NeuroColors.TextMuted,
-                                strokeWidth = 2.dp
-                            )
-                            isPlaying -> Icon(
-                                Icons.Default.Stop,
-                                contentDescription = "Stop",
-                                tint = NeuroColors.Error,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            else -> Icon(
-                                Icons.Default.PlayArrow,
-                                contentDescription = "Play voice",
-                                tint = NeuroColors.Primary,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            isLoading -> CircularProgressIndicator(Modifier.size(12.dp), color = NeuroColors.TextMuted, strokeWidth = 1.5.dp)
+                            effectivePlaying -> Icon(Icons.Default.Stop, null, tint = NeuroColors.Error, modifier = Modifier.size(14.dp))
+                            message.audioUrl != null -> Icon(Icons.Default.PlayArrow, null, tint = NeuroColors.Primary, modifier = Modifier.size(14.dp))
+                            !isUser -> CircularProgressIndicator(Modifier.size(10.dp), color = NeuroColors.Primary, strokeWidth = 1.5.dp)
+                            else -> Icon(Icons.Default.Mic, null, tint = NeuroColors.TextMuted, modifier = Modifier.size(12.dp))
                         }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        Icons.Default.Mic,
-                        contentDescription = null,
-                        tint = NeuroColors.TextMuted,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Spacer(Modifier.width(8.dp))
+
+                    // Transcription text inline (or placeholder)
+                    val displayText = if (message.text.isEmpty() || message.text == "(Transcribing...)") "Voice message" else message.text
                     Text(
-                        text = message.text,
-                        color = NeuroColors.TextPrimary,
+                        text = displayText,
+                        color = if (message.text.isEmpty() || message.text == "(Transcribing...)") NeuroColors.TextMuted else Color.White,
                         fontSize = 14.sp,
+                        lineHeight = 18.sp,
                         modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp)),
+                        color = NeuroColors.TextDim, fontSize = 10.sp
                     )
                 }
             } else {
-                Text(
-                    text = message.text,
-                    color = NeuroColors.TextPrimary,
-                    fontSize = 14.sp
-                )
+                // Plain text with inline timestamp (WhatsApp-style)
+                val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
+                // Append invisible timestamp-width spacer so real timestamp can overlay without clipping text
+                val spacer = "  $timeStr"
+                Box {
+                    Text(
+                        text = message.text + spacer,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.alpha(0f) // invisible layout-only copy to reserve space
+                    )
+                    Text(
+                        text = message.text,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                    Text(
+                        text = timeStr,
+                        color = NeuroColors.TextDim,
+                        fontSize = 10.sp,
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
+                }
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp)),
-                color = NeuroColors.TextDim,
-                fontSize = 10.sp,
-                modifier = Modifier.align(Alignment.End)
-            )
         }
     }
 }
@@ -2123,151 +2260,66 @@ fun MessageInputBar(
     isAttachmentMenuOpen: Boolean,
     onAttachmentMenuToggle: () -> Unit
 ) {
-    Column(
+    Row(
+        verticalAlignment = Alignment.Bottom,
         modifier = Modifier
             .fillMaxWidth()
-            .background(NeuroColors.BackgroundMid)
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .padding(bottom = 24.dp)
+            .background(Color(0xFF0A0A0A))
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(bottom = 20.dp)
             .imePadding()
     ) {
-        // Typing Preview - floating pill above input
-        if (text.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(
-                                    NeuroColors.Primary.copy(alpha = 0.3f),
-                                    NeuroColors.GlassAccent.copy(alpha = 0.4f)
-                                )
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                colors = listOf(
-                                    NeuroColors.Primary.copy(alpha = 0.5f),
-                                    NeuroColors.GlassAccent.copy(alpha = 0.6f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Animated typing indicator
-                    val infiniteTransition = rememberInfiniteTransition(label = "typing")
-                    val alpha by infiniteTransition.animateFloat(
-                        initialValue = 0.3f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(600, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "alpha"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(NeuroColors.Primary.copy(alpha = alpha), CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = text,
-                        color = NeuroColors.TextPrimary,
-                        fontSize = 14.sp,
-                        maxLines = 3,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+        // Attachment
+        IconButton(
+            onClick = onAttachmentMenuToggle,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Icon(Icons.Default.AttachFile, null, tint = NeuroColors.TextMuted, modifier = Modifier.size(20.dp))
         }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Attachment button
-            IconButton(
-                onClick = onAttachmentMenuToggle,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    Icons.Default.AttachFile,
-                    contentDescription = "Attachment",
-                    tint = NeuroColors.TextMuted
-                )
-            }
-
-            Spacer(modifier = Modifier.width(4.dp))
-
-            // Text input
-            BasicTextField(
-                value = text,
-                onValueChange = onTextChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(NeuroColors.GlassSecondary)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                textStyle = LocalTextStyle.current.copy(color = NeuroColors.TextPrimary),
-                cursorBrush = SolidColor(NeuroColors.TextPrimary),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { onSend() }),
-                singleLine = true,
-                decorationBox = { innerTextField ->
-                    Box {
-                        if (text.isEmpty()) {
-                            Text(
-                                text = "Ask Neuro anything...",
-                                color = NeuroColors.TextMuted,
-                                fontSize = 14.sp
-                            )
-                        }
-                        innerTextField()
+        // Input field — grows with content, max 4 lines
+        BasicTextField(
+            value = text,
+            onValueChange = onTextChange,
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 40.dp, max = 120.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xFF1C1C1E))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            textStyle = LocalTextStyle.current.copy(color = Color.White, fontSize = 15.sp, lineHeight = 20.sp),
+            cursorBrush = SolidColor(NeuroColors.Primary),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(onSend = { onSend() }),
+            maxLines = 4,
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (text.isEmpty()) {
+                        Text("Message", color = NeuroColors.TextDim, fontSize = 15.sp)
                     }
+                    innerTextField()
                 }
-            )
+            }
+        )
 
-            Spacer(modifier = Modifier.width(8.dp))
+        Spacer(Modifier.width(6.dp))
 
-            // Send or Mic button
-            if (text.isNotBlank()) {
-                // Send button
-                IconButton(
-                    onClick = onSend,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(NeuroColors.Primary, CircleShape)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
-                        tint = NeuroColors.BackgroundDark
-                    )
-                }
-            } else {
-                // Mic button for voice message
-                IconButton(
-                    onClick = onVoiceClick,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Mic,
-                        contentDescription = "Voice Message",
-                        tint = NeuroColors.Primary
-                    )
-                }
+        // Send / Mic button
+        if (text.isNotBlank()) {
+            IconButton(
+                onClick = onSend,
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(NeuroColors.Primary, CircleShape)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+        } else {
+            IconButton(
+                onClick = onVoiceClick,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(Icons.Default.Mic, null, tint = NeuroColors.Primary, modifier = Modifier.size(22.dp))
             }
         }
     }
@@ -2275,31 +2327,52 @@ fun MessageInputBar(
 
 @Composable
 fun ThinkingIndicator(agentName: String = "Neuro") {
+    val infiniteTransition = rememberInfiniteTransition(label = "think")
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 0.dp, end = 48.dp, top = 2.dp, bottom = 2.dp),
         horizontalArrangement = Arrangement.Start
     ) {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(NeuroColors.GlassAssistantBubble)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .clip(RoundedCornerShape(4.dp, 16.dp, 16.dp, 16.dp))
+                .background(Color(0xFF1C1C1E))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Animated dots with staggered purple pulse
             repeat(3) { i ->
+                val delay = i * 200
+                val alpha by infiniteTransition.animateFloat(
+                    initialValue = 0.25f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, delayMillis = delay, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "dot$i"
+                )
+                val scale by infiniteTransition.animateFloat(
+                    initialValue = 0.7f,
+                    targetValue = 1.0f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, delayMillis = delay, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "scale$i"
+                )
                 Box(
                     modifier = Modifier
-                        .size(8.dp)
-                        .background(NeuroColors.TextMuted, CircleShape)
-                        .padding(2.dp)
+                        .size((6 * scale).dp)
+                        .background(NeuroColors.Primary.copy(alpha = alpha), CircleShape)
                 )
-                if (i < 2) Spacer(modifier = Modifier.width(4.dp))
+                if (i < 2) Spacer(Modifier.width(4.dp))
             }
-            Spacer(modifier = Modifier.width(8.dp))
+
+            Spacer(Modifier.width(8.dp))
+
             Text(
-                text = "$agentName is thinking...",
+                text = "$agentName is thinking",
                 color = NeuroColors.TextMuted,
                 fontSize = 12.sp
             )
@@ -2316,17 +2389,22 @@ fun VoiceRecordingBar(
 ) {
     var showCancelDialog by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
+    val infiniteTransition = rememberInfiniteTransition(label = "rec")
+
+    // Pulsing red dot
+    val dotAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Reverse),
+        label = "dot"
+    )
 
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Discard Recording?", color = Color.White) },
-            text = { Text("Your voice message will be discarded.", color = Color.White) },
+            title = { Text("Discard?", color = Color.White, fontSize = 16.sp) },
+            text = { Text("Voice message will be discarded.", color = NeuroColors.TextSecondary, fontSize = 14.sp) },
             confirmButton = {
-                TextButton(onClick = {
-                    showCancelDialog = false
-                    onCancel()
-                }) {
+                TextButton(onClick = { showCancelDialog = false; onCancel() }) {
                     Text("Discard", color = NeuroColors.Error)
                 }
             },
@@ -2335,116 +2413,97 @@ fun VoiceRecordingBar(
                     Text("Keep", color = Color.White)
                 }
             },
-            containerColor = NeuroColors.BackgroundMid
+            containerColor = Color(0xFF1C1C1E),
+            shape = RoundedCornerShape(16.dp)
         )
     }
 
-    Column(
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .background(NeuroColors.BackgroundDark)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .padding(bottom = 24.dp)
+            .background(Color(0xFF0A0A0A))
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(bottom = 20.dp)
     ) {
+        // Cancel
+        IconButton(onClick = { showCancelDialog = true }, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Default.Close, null, tint = NeuroColors.TextMuted, modifier = Modifier.size(20.dp))
+        }
+
+        // Waveform + recording indicator
         Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(NeuroColors.GlassPrimary.copy(alpha = 0.3f))
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .weight(1f)
+                .height(40.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color(0xFF1C1C1E))
+                .padding(horizontal = 12.dp)
         ) {
-            val infiniteTransition = rememberInfiniteTransition(label = "waveform")
-            
-            repeat(20) { index ->
-                val height by infiniteTransition.animateFloat(
-                    initialValue = 20f,
-                    targetValue = if (isPaused) 20f else 40f + (index % 3 * 10),
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(
-                            durationMillis = 300 + (index * 30),
-                            easing = LinearEasing
+            // Red pulsing dot
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .background(
+                        if (isPaused) NeuroColors.TextMuted else NeuroColors.Error.copy(alpha = dotAlpha),
+                        CircleShape
+                    )
+            )
+            Spacer(Modifier.width(8.dp))
+
+            // Animated waveform bars
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f).height(24.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                repeat(24) { i ->
+                    val h by infiniteTransition.animateFloat(
+                        initialValue = 3f,
+                        targetValue = if (isPaused) 3f else (6f + (i % 5) * 3f),
+                        animationSpec = infiniteRepeatable(
+                            tween(250 + (i * 20), easing = LinearEasing), RepeatMode.Reverse
                         ),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "bar$index"
-                )
-                
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .height(height.dp)
-                        .padding(horizontal = 1.dp)
-                        .background(
-                            if (isPaused) NeuroColors.TextMuted else NeuroColors.Primary,
-                            RoundedCornerShape(2.dp)
-                        )
+                        label = "b$i"
+                    )
+                    Box(
+                        Modifier
+                            .width(2.dp)
+                            .height(h.dp)
+                            .padding(horizontal = 0.5.dp)
+                            .background(
+                                if (isPaused) NeuroColors.TextDim else NeuroColors.Primary.copy(alpha = 0.8f),
+                                RoundedCornerShape(1.dp)
+                            )
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(8.dp))
+
+            // Pause/Resume
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable { isPaused = !isPaused; if (isPaused) onPause() else onResume() }
+            ) {
+                Icon(
+                    if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                    null, tint = NeuroColors.Primary, modifier = Modifier.size(18.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(Modifier.width(6.dp))
 
-        Text(
-            text = if (isPaused) "Paused" else "Recording...",
-            color = if (isPaused) NeuroColors.TextMuted else NeuroColors.Error,
-            fontSize = 12.sp,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+        // Send
+        IconButton(
+            onClick = onSend,
+            modifier = Modifier.size(36.dp).background(NeuroColors.Primary, CircleShape)
         ) {
-            IconButton(
-                onClick = { showCancelDialog = true },
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(NeuroColors.GlassPrimary.copy(alpha = 0.3f), CircleShape)
-            ) {
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Cancel",
-                    tint = NeuroColors.TextMuted,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            IconButton(
-                onClick = {
-                    isPaused = !isPaused
-                    if (isPaused) onPause() else onResume()
-                },
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(NeuroColors.Primary.copy(alpha = 0.2f), CircleShape)
-            ) {
-                Icon(
-                    if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                    contentDescription = if (isPaused) "Resume" else "Pause",
-                    tint = NeuroColors.Primary,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-
-            IconButton(
-                onClick = onSend,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(NeuroColors.Primary, CircleShape)
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White, modifier = Modifier.size(18.dp))
         }
     }
 }

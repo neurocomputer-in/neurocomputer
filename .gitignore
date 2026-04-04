@@ -45,4 +45,15 @@ _agents/
 
 # Logs
 *.log
-data/
+/data/
+
+# Conversation history (user data)
+conversations/
+
+# Mobile app build artifacts
+neuro_mobile_app/local.properties
+neuro_mobile_app/.gradle/
+neuro_mobile_app/app/build/
+neuro_mobile_app/build/
+*.apk
+*.aab

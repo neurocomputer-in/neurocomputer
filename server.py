@@ -359,18 +359,19 @@ async def tts(body: dict):
         await asyncio.to_thread(_render_tts)
         audio_url = f"/audio/{audio_filename}"
 
-        # Save audio_url back to the conversation message if msg_id is a numeric index
-        if msg_id.isdigit():
+        # Persist audio_url to DB so voice box survives tab refresh
+        if msg_id:
             try:
-                conv = Conversation(cid)
-                idx = int(msg_id)
-                if 0 <= idx < len(conv._log):
-                    conv._log[idx]["audio_url"] = audio_url
-                    conv._log[idx]["is_voice"] = True
-                    conv._save()
-                    logger.info(f"[TTS] Saved audio_url to conversation {cid} msg {idx}")
+                import aiosqlite
+                async with aiosqlite.connect(db.db_path) as conn:
+                    await conn.execute(
+                        "UPDATE messages SET audio_url = ?, type = 'voice' WHERE id = ?",
+                        (audio_url, msg_id)
+                    )
+                    await conn.commit()
+                    logger.info(f"[TTS] Saved audio_url to DB for msg {msg_id}")
             except Exception as e:
-                logger.warning(f"[TTS] Could not update conversation msg: {e}")
+                logger.warning(f"[TTS] Could not update DB msg: {e}")
 
         return {"audio_url": audio_url}
     except Exception as e:
@@ -610,12 +611,31 @@ async def list_conversations(agent_id: str = None):
 
 @app.get("/conversation/{cid}")
 async def get_conversation(cid: str):
-    """Get a specific conversation"""
+    """Get a specific conversation — reads from DB first, falls back to JSON file."""
+    # Try database first (has accurate voice/audio metadata)
+    db_messages = await db.get_messages(cid, limit=200)
+    if db_messages:
+        conv_info = await db.get_conversation(cid)
+        agent_id = conv_info.get("agent_id") if conv_info else None
+        formatted = []
+        for msg in db_messages:
+            is_voice = msg.get("type") == "voice"
+            audio_url = msg.get("audio_url")
+            formatted.append({
+                "id": msg.get("id", ""),
+                "role": "user" if msg.get("sender") == "user" else "assistant",
+                "content": msg.get("content", ""),
+                "timestamp": msg.get("created_at", ""),
+                "audioUrl": audio_url,
+                "isVoice": is_voice or (audio_url is not None and audio_url != ""),
+            })
+        return {"id": cid, "agentId": agent_id, "messages": formatted}
+
+    # Fallback to JSON file for older conversations
     conv_file = Path(__file__).parent / "conversations" / f"{cid}.json"
     if conv_file.exists():
         with open(conv_file) as fp:
             data = json.load(fp)
-            # Handle both old format (array) and new format (object)
             if isinstance(data, list):
                 messages = data
                 agent_id = None
@@ -623,7 +643,6 @@ async def get_conversation(cid: str):
                 messages = data.get("messages", [])
                 agent_id = data.get("agent_id")
 
-            # Convert to frontend format
             formatted = []
             for i, msg in enumerate(messages):
                 formatted.append({
@@ -962,56 +981,15 @@ async def voice_message(
             audio_url=audio_url,
         )
         
-        # Save voice message to conversation file (legacy)
-        try:
-            conv = Conversation(cid)
-            conv.add("user", transcription, audio_url=audio_url, is_voice=True)
-            logger.info(f"[VoiceMsg] Saved voice to conversation {cid}: {transcription[:30]}... audio={audio_url}")
-        except Exception as e:
-            logger.error(f"[VoiceMsg] Could not save voice to conversation file: {e}")
+        # Conv file save is handled by brain.handle() inside _handle_voice_message
+        # (with audio_url and is_voice metadata passed through).
 
-        # Get or create chat room and send voice message
-        try:
-            chat_room = await chat_manager.get_or_create_room(cid, agent_id or "neuro")
-            
-            # Ensure agent is started before sending
-            if not chat_room._agent_started:
-                logger.info(f"[VoiceMsg] Starting agent for voice message room: {cid}")
-                await chat_room.start_agent()
-                # Wait for agent to connect
-                import asyncio
-                await asyncio.sleep(1)
-            
-            # Send voice message to chat room
-            from core.chat_handler import ChatMessage
-            voice_msg = ChatMessage(
-                msg_type="voice",
-                sender="user",
-                content=transcription,
-                message_id=message_id,
-                audio_url=audio_url,
-                origin=origin,
-            )
-            await chat_room.send_to_all(voice_msg, topic="chat_message")
-            logger.info(f"[VoiceMsg] Sent voice message via LiveKit DataChannel")
-        except Exception as e:
-            logger.warning(f"[VoiceMsg] Could not send via LiveKit: {e}")
-            # Fallback to old hub queue
-            await hub.queue(cid).put({
-                "topic": "user_voice", 
-                "data": {
-                    "text": transcription,
-                    "audio_url": audio_url,
-                    "message_id": message_id
-                }
-            })
-
-        # Trigger the Neuro agent to process the transcription
-        # Use chat_manager's brain for response via LiveKit
+        # Process voice through brain and send response via DataChannel.
+        # Run as background task so the HTTP response (with transcription) returns immediately.
         if bt:
-            bt.add_task(_handle_voice_message, cid, transcription, agent_id, origin)
+            bt.add_task(_handle_voice_message, cid, transcription, agent_id, origin, audio_url)
         else:
-            asyncio.create_task(_handle_voice_message(cid, transcription, agent_id, origin))
+            asyncio.create_task(_handle_voice_message(cid, transcription, agent_id, origin, audio_url))
         
         logger.info(f"[VoiceMsg] Complete: {transcription[:50]}...")
         
@@ -1026,52 +1004,67 @@ async def voice_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def _handle_voice_message(cid: str, transcription: str, agent_id: str = None, origin: str = None):
-    """Handle voice message by sending to ChatRoom handler which processes via LiveKit only.
-    
-    This avoids duplicate TTS by suppressing hub publish (WebSocket).
+async def _handle_voice_message(cid: str, transcription: str, agent_id: str = None, origin: str = None, audio_url: str = None):
+    """Process voice transcription through brain and send response via DataChannel.
+
+    The user message is already saved to DB by the /voice-message endpoint.
+    brain.handle() saves to conv JSON file (with voice metadata).
+    This function: brain response → save agent reply to DB → send via DataChannel.
     """
+    chat_room = None
     try:
-        # Get or create chat room and ensure agent is started
         chat_room = await chat_manager.get_or_create_room(cid, agent_id or "neuro")
-        
+
         if not chat_room._agent_started:
             logger.info(f"[VoiceMsg] Starting agent for voice message room: {cid}")
             await chat_room.start_agent()
-            # Wait for agent to connect
-            import asyncio
-            await asyncio.sleep(1)
-        
-        # Suppress hub publish for this brain instance to avoid duplicate TTS
-        if chat_room._brain:
-            chat_room._brain._suppress_hub = True
-        
-        # Create a ChatMessage and process through the chat handler
-        from core.chat_handler import ChatMessage
-        voice_msg = ChatMessage(
-            msg_type="voice",
-            sender="user",
-            content=transcription,
-            origin=origin,
-        )
-        
-        # Process through the chat room's handler (which calls brain.handle() but sends via LiveKit only)
-        await chat_room.handle_user_message(voice_msg)
-        logger.info(f"[VoiceMsg] Voice message processed via ChatRoom handler")
-        
-        # Re-enable hub publish
-        if chat_room._brain:
+
+        # Wait for agent/brain to be ready
+        await asyncio.wait_for(chat_room._agent_ready.wait(), timeout=10.0)
+
+        if not chat_room._brain:
+            logger.error(f"[VoiceMsg] Brain not available for cid={cid}")
+            return
+
+        # Suppress hub to avoid duplicate delivery via old WebSocket path
+        chat_room._brain._suppress_hub = True
+        try:
+            response_text = await chat_room._brain.handle(
+                cid=cid,
+                user_text=transcription,
+                agent_id=agent_id or "neuro",
+                audio_url=audio_url,
+                is_voice=True,
+            )
+        finally:
             chat_room._brain._suppress_hub = False
-        
+
+        # Send real responses (skip "task started" indicators)
+        if response_text and not response_text.startswith("\U0001f680"):
+            from core.chat_handler import ChatMessage
+            agent_msg = ChatMessage(
+                msg_type="text",
+                sender="agent",
+                content=response_text,
+                origin=origin,
+            )
+            # Use same ID for DB and DataChannel so TTS can update it later
+            await db.add_message_with_id(
+                message_id=agent_msg.id,
+                conversation_id=cid,
+                sender="agent",
+                msg_type="text",
+                content=response_text,
+            )
+            await chat_room.send_to_all(agent_msg, topic="agent_response")
+            logger.info(f"[VoiceMsg] Response sent via DataChannel: {response_text[:50]}")
+        elif not response_text:
+            logger.warning(f"[VoiceMsg] Brain returned empty response for cid={cid}")
+
     except Exception as e:
         logger.error(f"[VoiceMsg] Error handling voice message: {e}")
-        # Make sure to re-enable hub publish on error too
-        try:
-            chat_room = await chat_manager.get_room(cid)
-            if chat_room and chat_room._brain:
-                chat_room._brain._suppress_hub = False
-        except:
-            pass
+        if chat_room and chat_room._brain:
+            chat_room._brain._suppress_hub = False
 
 
 @app.post("/voice-type")

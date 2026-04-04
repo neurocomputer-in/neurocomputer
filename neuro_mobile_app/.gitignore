@@ -1,0 +1,18 @@
+# Local config with secrets — never commit
+local.properties
+
+# Build outputs
+build/
+app/build/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Android Studio / IDE
+.idea/
+*.iml
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/

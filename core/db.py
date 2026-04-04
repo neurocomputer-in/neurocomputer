@@ -87,6 +87,22 @@ class Database:
                     row = await cursor.fetchone()
                     return dict(row) if row else None
 
+    async def add_message_with_id(
+        self,
+        message_id: str,
+        conversation_id: str,
+        sender: str,
+        msg_type: str,
+        content: Optional[str] = None,
+        audio_url: Optional[str] = None,
+        duration_ms: Optional[int] = None,
+        metadata: Optional[Dict] = None,
+    ) -> str:
+        """Add a message with a specific ID (for matching DataChannel message IDs)."""
+        return await self._insert_message(
+            message_id, conversation_id, sender, msg_type, content, audio_url, duration_ms, metadata
+        )
+
     async def add_message(
         self,
         conversation_id: str,
@@ -98,13 +114,28 @@ class Database:
         metadata: Optional[Dict] = None,
     ) -> str:
         """Add a message to a conversation."""
+        message_id = f"msg_{uuid.uuid4().hex[:12]}"
+        return await self._insert_message(
+            message_id, conversation_id, sender, msg_type, content, audio_url, duration_ms, metadata
+        )
+
+    async def _insert_message(
+        self,
+        message_id: str,
+        conversation_id: str,
+        sender: str,
+        msg_type: str,
+        content: Optional[str] = None,
+        audio_url: Optional[str] = None,
+        duration_ms: Optional[int] = None,
+        metadata: Optional[Dict] = None,
+    ) -> str:
+        """Internal: insert a message into the database."""
         # Validate sender and type
         if sender not in ('user', 'agent'):
             raise ValueError(f"Invalid sender: {sender}")
         if msg_type not in ('text', 'voice', 'ocr'):
             raise ValueError(f"Invalid message type: {msg_type}")
-        
-        message_id = f"msg_{uuid.uuid4().hex[:12]}"
         metadata_json = json.dumps(metadata) if metadata else None
         
         async with self._lock:

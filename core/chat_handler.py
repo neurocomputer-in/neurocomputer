@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import os
+import uuid
 from datetime import datetime
 from typing import Dict, Optional, Callable, Any
 
@@ -37,7 +38,7 @@ class ChatMessage:
         metadata: Optional[Dict] = None,
         origin: Optional[str] = None,
     ):
-        self.id = message_id or f"msg_{asyncio.get_event_loop().time():.0f}"
+        self.id = message_id or f"msg_{uuid.uuid4().hex[:12]}"
         self.type = msg_type
         self.sender = sender
         self.content = content
@@ -97,6 +98,9 @@ class ChatRoom:
         self._message_handlers: list[Callable[[ChatMessage], None]] = []
         self._connected = asyncio.Event()
         self._agent_started = False
+        self._agent_lock = asyncio.Lock()
+        self._message_lock = asyncio.Lock()
+        self._agent_ready = asyncio.Event()
 
     async def connect(self):
         """Connect to the LiveKit room."""
@@ -183,8 +187,9 @@ class ChatRoom:
         
         await self.agent_room.connect(LIVEKIT_URL, agent_token)
         logger.info(f"Agent connected to chat room {self.room_name}")
-        
+
         self._brain = Brain()
+        self._agent_ready.set()
 
     async def _handle_data_packet(self, data_packet: rtc.DataPacket):
         """Handle incoming data packet asynchronously."""
@@ -215,58 +220,67 @@ class ChatRoom:
 
     async def handle_ocr_message(self, ocr_text: str):
         """Process OCR text and send response via LiveKit DataChannel only."""
-        logger.info(f"[Agent] Handling OCR message: {ocr_text[:100]}")
-        
-        # Save OCR to database for agent context
-        await db.add_message(
-            conversation_id=self.conversation_id,
-            sender="user",
-            msg_type="ocr",
-            content=ocr_text,
-        )
-        
-        # Wrap OCR with clear context that user is sharing their phone screen
-        formatted_ocr = (
-            f"[User is sharing text from their phone screen via OCR]\n"
-            f"Screenshot/ screen content:\n"
-            f"{ocr_text}\n"
-            f"[/end screen content]\n\n"
-            f"What would you like to help the user with this screen content?"
-        )
-        
-        # Process through brain - suppress hub publish, send response via DataChannel only
-        if self._brain:
-            self._brain._suppress_hub = True
-            response_text = await self._brain.handle(
-                cid=self.conversation_id,
-                user_text=formatted_ocr,
-                agent_id=self.agent_id,
+        async with self._message_lock:
+            logger.info(f"[Agent] Handling OCR message: {ocr_text[:100]}")
+
+            # Save OCR to database for agent context
+            await db.add_message(
+                conversation_id=self.conversation_id,
+                sender="user",
+                msg_type="ocr",
+                content=ocr_text,
             )
-            self._brain._suppress_hub = False
-            
-            if response_text:
-                # Save agent response to database
-                await db.add_message(
-                    conversation_id=self.conversation_id,
-                    sender="agent",
-                    msg_type="text",
-                    content=response_text,
-                )
-                # Send response via LiveKit DataChannel
-                agent_msg = ChatMessage(
-                    msg_type="text",
-                    sender="agent",
-                    content=response_text,
-                )
-                await self.send_to_all(agent_msg, topic="agent_response")
-                logger.info(f"[Agent] OCR response sent via DataChannel: {response_text[:50]}")
+
+            # Wrap OCR with clear context that user is sharing their phone screen
+            formatted_ocr = (
+                f"[User is sharing text from their phone screen via OCR]\n"
+                f"Screenshot/ screen content:\n"
+                f"{ocr_text}\n"
+                f"[/end screen content]\n\n"
+                f"What would you like to help the user with this screen content?"
+            )
+
+            # Wait for agent/brain to be ready
+            try:
+                await asyncio.wait_for(self._agent_ready.wait(), timeout=10.0)
+            except asyncio.TimeoutError:
+                logger.error(f"[Agent] Brain not ready for OCR processing")
+
+            # Process through brain - suppress hub publish, send response via DataChannel only
+            if self._brain:
+                self._brain._suppress_hub = True
+                try:
+                    response_text = await self._brain.handle(
+                        cid=self.conversation_id,
+                        user_text=formatted_ocr,
+                        agent_id=self.agent_id,
+                    )
+                finally:
+                    self._brain._suppress_hub = False
+
+                if response_text:
+                    # Save agent response to database
+                    await db.add_message(
+                        conversation_id=self.conversation_id,
+                        sender="agent",
+                        msg_type="text",
+                        content=response_text,
+                    )
+                    # Send response via LiveKit DataChannel
+                    agent_msg = ChatMessage(
+                        msg_type="text",
+                        sender="agent",
+                        content=response_text,
+                    )
+                    await self.send_to_all(agent_msg, topic="agent_response")
+                    logger.info(f"[Agent] OCR response sent via DataChannel: {response_text[:50]}")
 
     async def start_agent(self):
         """Start the agent for this chat room."""
-        if self._agent_started:
-            return
-        
-        self._agent_started = True
+        async with self._agent_lock:
+            if self._agent_started:
+                return
+            self._agent_started = True
         await self.connect_agent()
 
     def _generate_token(
@@ -291,50 +305,59 @@ class ChatRoom:
 
     async def handle_user_message(self, msg: ChatMessage):
         """Process user message through the brain and send response."""
-        logger.info(f"Processing user message: {msg.content[:50]}")
-        
-        await db.add_message(
-            conversation_id=self.conversation_id,
-            sender="user",
-            msg_type=msg.type,
-            content=msg.content,
-            audio_url=msg.audio_url,
-            duration_ms=msg.duration_ms,
-        )
-        
-        for handler in self._message_handlers:
-            try:
-                handler(msg)
-            except Exception as e:
-                logger.error(f"Message handler error: {e}")
-        
-        if self._brain and msg.type in ("text", "voice"):
-            logger.info(f"[ChatRoom] Calling brain.handle for cid={self.conversation_id}")
-            response_text = await self._brain.handle(
-                cid=self.conversation_id,
-                user_text=msg.content,
-                agent_id=self.agent_id,
+        async with self._message_lock:
+            logger.info(f"Processing user message: {msg.content[:50]}")
+
+            await db.add_message(
+                conversation_id=self.conversation_id,
+                sender="user",
+                msg_type=msg.type,
+                content=msg.content,
+                audio_url=msg.audio_url,
+                duration_ms=msg.duration_ms,
             )
-            logger.info(f"[ChatRoom] brain.handle returned: {response_text}")
-            
-            if response_text:
-                agent_msg = ChatMessage(
-                    msg_type="text",
-                    sender="agent",
-                    content=response_text,
-                    origin=msg.origin,
+
+            for handler in self._message_handlers:
+                try:
+                    handler(msg)
+                except Exception as e:
+                    logger.error(f"Message handler error: {e}")
+
+            # Wait for agent/brain to be ready (max 10s)
+            try:
+                await asyncio.wait_for(self._agent_ready.wait(), timeout=10.0)
+            except asyncio.TimeoutError:
+                logger.error(f"[ChatRoom] Agent not ready after 10s for cid={self.conversation_id}")
+
+            if self._brain and msg.type in ("text", "voice"):
+                logger.info(f"[ChatRoom] Calling brain.handle for cid={self.conversation_id}")
+                response_text = await self._brain.handle(
+                    cid=self.conversation_id,
+                    user_text=msg.content,
+                    agent_id=self.agent_id,
                 )
-                await db.add_message(
-                    conversation_id=self.conversation_id,
-                    sender="agent",
-                    msg_type="text",
-                    content=response_text,
-                )
-                logger.info(f"[ChatRoom] Sending agent response via DataChannel: {response_text[:50]}")
-                await self.send_to_all(agent_msg, topic="agent_response")
-                logger.info(f"[ChatRoom] Done sending agent response")
-            else:
-                logger.warning(f"[ChatRoom] brain.handle returned empty/None")
+                logger.info(f"[ChatRoom] brain.handle returned: {response_text}")
+
+                if response_text:
+                    agent_msg = ChatMessage(
+                        msg_type="text",
+                        sender="agent",
+                        content=response_text,
+                        origin=msg.origin,
+                    )
+                    # Use the same ID for DB and DataChannel so TTS can update it
+                    await db.add_message_with_id(
+                        message_id=agent_msg.id,
+                        conversation_id=self.conversation_id,
+                        sender="agent",
+                        msg_type="text",
+                        content=response_text,
+                    )
+                    logger.info(f"[ChatRoom] Sending agent response via DataChannel: {response_text[:50]}")
+                    await self.send_to_all(agent_msg, topic="agent_response")
+                    logger.info(f"[ChatRoom] Done sending agent response")
+                else:
+                    logger.warning(f"[ChatRoom] brain.handle returned empty/None")
 
     async def send_to_user(self, msg: ChatMessage):
         """Send message to user participant."""
@@ -425,10 +448,16 @@ class ChatManager:
     ) -> dict:
         """Generate a token for a chat room."""
         room = await self.get_or_create_room(conversation_id, agent_id)
-        
-        # Start agent if this is first user connecting
+
+        # Start agent in background — don't block token generation.
+        # handle_user_message() waits for _agent_ready before processing.
         if not room._agent_started:
-            asyncio.create_task(room.start_agent())
+            async def _safe_start():
+                try:
+                    await room.start_agent()
+                except Exception as e:
+                    logger.error(f"Failed to start agent for {conversation_id}: {e}")
+            asyncio.create_task(_safe_start())
         
         identity = f"agent_{participant_name}" if is_agent else f"user_{participant_name}"
         token = room._generate_token(

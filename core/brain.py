@@ -94,7 +94,7 @@ class Brain:
             self.profile_cfg[cid].get("neuros", ["*"])
         )
 
-    async def handle(self, cid: str, user_text: str, agent_id: str = None, publish_to_hub: bool = True) -> str:
+    async def handle(self, cid: str, user_text: str, agent_id: str = None, publish_to_hub: bool = True, audio_url: str = None, is_voice: bool = False) -> str:
         dev_ctx = self.dev_ctx.setdefault(cid, {})
         # ensure we have a profile
         cfg = self._profile_cfg(cid)
@@ -116,7 +116,7 @@ class Brain:
         else:
             conv = Conversation(cid, agent_id=agent_id)
             self.convs[cid] = conv
-        conv.add("user", user_text)
+        conv.add("user", user_text, audio_url=audio_url, is_voice=is_voice)
 
         # handle profile commands -----------------------------
         cmd = user_text.lower().strip()

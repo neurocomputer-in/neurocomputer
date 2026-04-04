@@ -121,7 +121,7 @@ class ChatDataChannelService @Inject constructor(
     private val _connectionState = MutableStateFlow(ChatConnectionState())
     val connectionState: StateFlow<ChatConnectionState> = _connectionState.asStateFlow()
 
-    private val _messages = MutableSharedFlow<ChatMessage>(replay = 0, extraBufferCapacity = 64)
+    private val _messages = MutableSharedFlow<ChatMessage>(replay = 5, extraBufferCapacity = 64)
     val messages: SharedFlow<ChatMessage> = _messages.asSharedFlow()
 
     private val _connectionError = MutableSharedFlow<String>(replay = 0)
