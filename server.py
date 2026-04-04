@@ -797,7 +797,21 @@ async def start_screen_share(body: dict):
         task = asyncio.create_task(_stream_task())
         task.set_name(screen_identity)
         _screen_tasks[user_id] = task
-        
+
+        # Move mouse to current display center so pointer is visible immediately
+        try:
+            import mss, subprocess
+            sct = mss.mss()
+            # Move mouse to center of display on start to ensure initial visibility
+            mon = sct.monitors[_current_display_index]
+            cx = mon['left'] + mon['width'] // 2
+            cy = mon['top'] + mon['height'] // 2
+            subprocess.run(["xdotool", "mousemove", str(cx), str(cy)], check=False)
+            sct.close()
+            logger.info(f"[Screen] Moved pointer to display {_current_display_index} center ({cx},{cy})")
+        except Exception as e:
+            logger.warning(f"[Screen] Could not move pointer on start: {e}")
+
         return {"status": "started", "room": room_name, "identity": screen_identity}
         
     except Exception as e:
@@ -876,15 +890,19 @@ async def switch_display():
         offset = (monitor.get('left', 0), monitor.get('top', 0))
         update_mouse_controller_for_monitor(monitor['width'], monitor['height'], offset)
 
-        # Move mouse to center of new monitor using absolute coordinates
+        # Move mouse to center of new monitor and click to focus a window there.
+        # This solves issues where clicks might not register on a newly focused display.
         center_x = monitor['left'] + monitor['width'] // 2
         center_y = monitor['top'] + monitor['height'] // 2
         try:
-            # Use absolute coordinates - --screen flag doesn't work reliably on this system
             subprocess.run(["xdotool", "mousemove", str(center_x), str(center_y)], check=False)
-            logger.info(f"[Display] Moved mouse to center of monitor {_current_display_index}")
+            # Small delay then click to focus whatever window is under the cursor
+            import time
+            time.sleep(0.15)
+            subprocess.run(["xdotool", "click", "1"], check=False)
+            logger.info(f"[Display] Moved mouse and clicked to focus on monitor {_current_display_index}")
         except Exception as e:
-            logger.warning(f"[Display] Failed to move mouse: {e}")
+            logger.warning(f"[Display] Failed to move/click mouse: {e}")
 
         logger.info(f"[Display] Switched to monitor {_current_display_index}: {monitor}")
         sct.close()

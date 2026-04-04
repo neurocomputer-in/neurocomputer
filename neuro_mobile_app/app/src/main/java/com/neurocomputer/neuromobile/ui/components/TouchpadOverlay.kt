@@ -9,15 +9,18 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlin.math.sqrt
+import kotlin.math.pow
 
 private const val MOVE_THRESHOLD = 3
-private const val DOUBLE_TAP_INTERVAL = 300L
-private const val MOVE_SENSITIVITY = 3.6f
+private const val TAP_INTERVAL = 300L
+private const val TRIPLE_TAP_COUNT = 3
+private const val TAP_CONFIRM_DELAY = 200L
+private const val BASE_SENSITIVITY = 1.0f
+private const val ACCEL_FACTOR = 0.18f
+private const val ACCEL_POWER = 0.65f
+private const val MAX_SENSITIVITY = 12.0f
 
-/**
- * Transparent gesture-only touchpad overlay.
- * No visual chrome — the parent composable handles border indication.
- */
 @Composable
 fun TouchpadOverlay(
     isScrollMode: Boolean,
@@ -26,13 +29,21 @@ fun TouchpadOverlay(
     onExit: () -> Unit,
     onMouseMove: (Float, Float) -> Unit = { _, _ -> },
     onMouseClick: (Float, Float, String) -> Unit = { _, _, _ -> },
-    onMouseScroll: (Float, Float) -> Unit = { _, _ -> }
+    onMouseScroll: (Float, Float) -> Unit = { _, _ -> },
+    onMouseDown: (() -> Unit)? = null,
+    onMouseUp: (() -> Unit)? = null
 ) {
     var lastTouchX by remember { mutableFloatStateOf(0f) }
     var lastTouchY by remember { mutableFloatStateOf(0f) }
     var totalMovement by remember { mutableFloatStateOf(0f) }
     var isDragging by remember { mutableStateOf(false) }
+    var isDragMode by remember { mutableStateOf(false) }
+
+    var tapCount by remember { mutableIntStateOf(0) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
+    var pendingClickX by remember { mutableFloatStateOf(0f) }
+    var pendingClickY by remember { mutableFloatStateOf(0f) }
+    var hasPendingClick by remember { mutableStateOf(false) }
 
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
@@ -47,25 +58,38 @@ fun TouchpadOverlay(
                     detectTapGestures(
                         onTap = { offset ->
                             val now = System.currentTimeMillis()
-                            if (now - lastTapTime < DOUBLE_TAP_INTERVAL) {
-                                onMouseClick(offset.x / widthPx, offset.y / heightPx, "left")
-                                lastTapTime = 0L
+                            if (now - lastTapTime < TAP_INTERVAL) {
+                                tapCount++
                             } else {
-                                lastTapTime = now
+                                tapCount = 1
                             }
+                            lastTapTime = now
+                            pendingClickX = offset.x
+                            pendingClickY = offset.y
+                            hasPendingClick = true
                         },
                         onLongPress = { offset ->
                             onMouseClick(offset.x / widthPx, offset.y / heightPx, "right")
                         }
                     )
                 }
-                .pointerInput(Unit) {
+                .pointerInput(isScrollMode) {
                     detectDragGestures(
                         onDragStart = { offset ->
                             lastTouchX = offset.x
                             lastTouchY = offset.y
                             totalMovement = 0f
                             isDragging = false
+
+                            val now = System.currentTimeMillis()
+                            val recentTap = (now - lastTapTime) < TAP_INTERVAL
+                            isDragMode = recentTap && tapCount >= TRIPLE_TAP_COUNT
+                            if (isDragMode) {
+                                onMouseDown?.invoke()
+                            }
+                            tapCount = 0
+                            lastTapTime = 0L
+                            hasPendingClick = false
                         },
                         onDrag = { change, _ ->
                             change.consume()
@@ -80,18 +104,37 @@ fun TouchpadOverlay(
                             }
 
                             if (isDragging) {
-                                if (isScrollMode) {
+                                hasPendingClick = false
+                                if (isScrollMode && !isDragMode) {
                                     onMouseScroll(dx, dy)
                                 } else {
-                                    onMouseMove(dx * MOVE_SENSITIVITY, dy * MOVE_SENSITIVITY)
+                                    val speed = sqrt(dx * dx + dy * dy)
+                                    val sensitivity = (BASE_SENSITIVITY +
+                                        ACCEL_FACTOR * speed.pow(ACCEL_POWER))
+                                        .coerceAtMost(MAX_SENSITIVITY)
+                                    onMouseMove(dx * sensitivity, dy * sensitivity)
                                 }
                             }
                         },
                         onDragEnd = {
+                            if (isDragMode) {
+                                onMouseUp?.invoke()
+                                isDragMode = false
+                            }
                             isDragging = false
                         }
                     )
                 }
         )
+
+        LaunchedEffect(hasPendingClick, tapCount) {
+            if (hasPendingClick && tapCount < TRIPLE_TAP_COUNT) {
+                delay(TAP_CONFIRM_DELAY)
+                if (hasPendingClick && tapCount < TRIPLE_TAP_COUNT) {
+                    onMouseClick(pendingClickX / widthPx, pendingClickY / heightPx, "left")
+                    hasPendingClick = false
+                }
+            }
+        }
     }
 }

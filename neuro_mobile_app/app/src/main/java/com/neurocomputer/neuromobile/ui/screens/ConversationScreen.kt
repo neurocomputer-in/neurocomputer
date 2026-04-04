@@ -160,6 +160,9 @@ class ConversationViewModel @Inject constructor(
     private val _isScreenConnecting = MutableStateFlow(false)
     val isScreenConnecting: StateFlow<Boolean> = _isScreenConnecting.asStateFlow()
 
+    private val _isDisplaySwitching = MutableStateFlow(false)
+    val isDisplaySwitching: StateFlow<Boolean> = _isDisplaySwitching.asStateFlow()
+
     // Voice typing state
     private val _isVoiceTyping = MutableStateFlow(false)
     val isVoiceTyping: StateFlow<Boolean> = _isVoiceTyping.asStateFlow()
@@ -1149,6 +1152,7 @@ class ConversationViewModel @Inject constructor(
     }
 
     fun switchDisplay() {
+        _isDisplaySwitching.value = true
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val baseUrl = backendUrlRepository.currentUrl.value
             val request = okhttp3.Request.Builder()
@@ -1159,8 +1163,12 @@ class ConversationViewModel @Inject constructor(
 
             try {
                 okhttp3.OkHttpClient().newCall(request).execute().close()
+                // Give the stream a moment to switch
+                kotlinx.coroutines.delay(1200)
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                _isDisplaySwitching.value = false
             }
         }
     }
@@ -1233,6 +1241,14 @@ class ConversationViewModel @Inject constructor(
         liveKitService.sendMouseClick(x, y, button)
     }
 
+    fun sendMouseDown() {
+        liveKitService.sendAction("mousedown")
+    }
+
+    fun sendMouseUp() {
+        liveKitService.sendAction("mouseup")
+    }
+
     fun sendMouseScroll(dx: Float, dy: Float) {
         liveKitService.sendMouseScroll(dx, dy)
     }
@@ -1276,6 +1292,7 @@ fun ConversationScreen(
     val isScreenMode by viewModel.isScreenMode.collectAsState()
     val isFullscreen by viewModel.isFullscreen.collectAsState()
     val isScreenConnecting by viewModel.isScreenConnecting.collectAsState()
+    val isDisplaySwitching by viewModel.isDisplaySwitching.collectAsState()
     val videoTrack by viewModel.videoTrack.collectAsState()
     val room by viewModel.currentRoom.collectAsState()
 
@@ -1331,7 +1348,6 @@ fun ConversationScreen(
 
     // Auto-scroll for tab messages (multi-tab chat)
     LaunchedEffect(tabMessages.size) {
-        android.util.Log.d("ScrollDebug", "tabMessages.size=${tabMessages.size}")
         if (tabMessages.isNotEmpty()) {
             listState.animateScrollToItem(tabMessages.size - 1)
         }
@@ -1393,8 +1409,30 @@ fun ConversationScreen(
                             onExit = { viewModel.toggleTouchpadMode() },
                             onMouseMove = { dx, dy -> viewModel.sendMouseMove(dx, dy) },
                             onMouseClick = { x, y, button -> viewModel.sendMouseClick(x, y, button) },
-                            onMouseScroll = { dx, dy -> viewModel.sendMouseScroll(dx, dy) }
+                            onMouseScroll = { dx, dy -> viewModel.sendMouseScroll(dx, dy) },
+                            onMouseDown = { viewModel.sendMouseDown() },
+                            onMouseUp = { viewModel.sendMouseUp() }
                         )
+                    }
+
+                    // Display switching overlay
+                    if (isDisplaySwitching) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.6f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator(
+                                    color = NeuroColors.Primary,
+                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text("Switching display...", color = NeuroColors.TextMuted, fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
             }
@@ -1456,6 +1494,16 @@ fun ConversationScreen(
                                 color = NeuroColors.TextPrimary,
                                 fontSize = 14.sp
                             )
+                        }
+                    }
+
+                    // Display switching overlay (non-fullscreen)
+                    if (isDisplaySwitching) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = NeuroColors.Primary, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
                         }
                     }
 
@@ -1758,8 +1806,19 @@ fun ConversationScreen(
                 }
 
                 // Switch Display
-                IconButton(onClick = { viewModel.switchDisplay() }) {
-                    Icon(Icons.Default.Monitor, contentDescription = "Switch Display", tint = Color.White)
+                IconButton(
+                    onClick = { if (!isDisplaySwitching) viewModel.switchDisplay() },
+                    enabled = !isDisplaySwitching
+                ) {
+                    if (isDisplaySwitching) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = NeuroColors.Primary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.Monitor, contentDescription = "Switch Display", tint = Color.White)
+                    }
                 }
 
                 // Fullscreen Exit

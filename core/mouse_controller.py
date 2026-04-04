@@ -281,7 +281,8 @@ class MouseController:
 
     def _accumulate_scroll(self, event: dict):
         """Accumulate scroll delta and schedule a batched flush."""
-        dy = float(event.get("dy", 0))
+        # Support both 'dy' (custom) and 'deltaY' (standard web/android) event keys
+        dy = float(event.get("dy", 0) or event.get("deltaY", 0))
         self._scroll_accum += dy * self.scroll_sensitivity
 
         # Schedule flush if not already pending
