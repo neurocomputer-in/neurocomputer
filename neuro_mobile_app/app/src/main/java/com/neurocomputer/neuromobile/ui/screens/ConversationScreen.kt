@@ -150,6 +150,10 @@ class ConversationViewModel @Inject constructor(
     // OpenClaw screen control
     val isOpenClawActive: StateFlow<Boolean> = openClawService.state.map { it.connected }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    // Window selector mode
+    private val _isWindowSelectorMode = MutableStateFlow(false)
+    val isWindowSelectorMode: StateFlow<Boolean> = _isWindowSelectorMode.asStateFlow()
+
     // Remote PC state
     private val _isScreenMode = MutableStateFlow(false)
     val isScreenMode: StateFlow<Boolean> = _isScreenMode.asStateFlow()
@@ -809,6 +813,10 @@ class ConversationViewModel @Inject constructor(
         _isTouchpadMode.value = !_isTouchpadMode.value
     }
 
+    fun toggleWindowSelectorMode() {
+        _isWindowSelectorMode.value = !_isWindowSelectorMode.value
+    }
+
     fun toggleScrollMode() {
         _isScrollMode.value = !_isScrollMode.value
     }
@@ -912,9 +920,15 @@ class ConversationViewModel @Inject constructor(
         }
     }
 
-    // MediaRecorder setup for voice typing
+    // MediaRecorder setup for voice typing — streams audio in ~10s chunks
     private var mediaRecorder: android.media.MediaRecorder? = null
     private var voiceFile: java.io.File? = null
+    private var chunkTimer: java.util.Timer? = null
+    private val voiceTypeClient = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
 
     fun toggleVoiceTyping() {
         if (_isVoiceTyping.value) {
@@ -926,7 +940,6 @@ class ConversationViewModel @Inject constructor(
 
     private fun startVoiceRecording() {
         try {
-            // Check runtime permission
             val permCheck = android.content.pm.PackageManager.PERMISSION_GRANTED ==
                 androidx.core.content.ContextCompat.checkSelfPermission(
                     context, android.Manifest.permission.RECORD_AUDIO
@@ -937,61 +950,112 @@ class ConversationViewModel @Inject constructor(
                 return
             }
 
-            voiceFile = java.io.File(context.cacheDir, "voice_type_${System.currentTimeMillis()}.m4a")
-            android.util.Log.d("VoiceType", "Starting recording to: ${voiceFile?.absolutePath}")
-            mediaRecorder = android.media.MediaRecorder().apply {
-                setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
-                setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
-                setOutputFile(voiceFile?.absolutePath)
-                prepare()
-                start()
-            }
+            startNewRecorderChunk()
             _isVoiceTyping.value = true
-            android.util.Log.d("VoiceType", "Recording started")
+
+            // Start chunk timer — every 10 seconds, flush current chunk and send it
+            chunkTimer = java.util.Timer()
+            chunkTimer?.schedule(object : java.util.TimerTask() {
+                override fun run() {
+                    flushAndSendChunk()
+                }
+            }, 10000L, 10000L)
+
+            android.util.Log.d("VoiceType", "Recording started with 10s chunking")
         } catch (e: Exception) {
             android.util.Log.e("VoiceType", "Failed to start recording: ${e.message}", e)
             _isVoiceTyping.value = false
         }
     }
 
+    private fun startNewRecorderChunk() {
+        voiceFile = java.io.File(context.cacheDir, "voice_type_${System.currentTimeMillis()}.m4a")
+        android.util.Log.d("VoiceType", "New chunk: ${voiceFile?.absolutePath}")
+        mediaRecorder = android.media.MediaRecorder().apply {
+            setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+            setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+            setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+            setOutputFile(voiceFile?.absolutePath)
+            prepare()
+            start()
+        }
+    }
+
+    @Synchronized
+    private fun flushAndSendChunk() {
+        try {
+            val finishedFile = voiceFile
+            val recorder = mediaRecorder
+
+            // Stop current recorder
+            recorder?.stop()
+            recorder?.release()
+            mediaRecorder = null
+
+            // Start a new recorder immediately to minimize gap
+            if (_isVoiceTyping.value) {
+                startNewRecorderChunk()
+            }
+
+            // Upload the finished chunk (no press_enter for intermediate chunks)
+            finishedFile?.let { uploadVoiceChunk(it, pressEnter = false) }
+        } catch (e: Exception) {
+            android.util.Log.e("VoiceType", "Chunk flush failed: ${e.message}", e)
+            // Try to restart recorder if still in voice typing mode
+            if (_isVoiceTyping.value) {
+                try { startNewRecorderChunk() } catch (_: Exception) {}
+            }
+        }
+    }
+
+    private fun uploadVoiceChunk(file: java.io.File, pressEnter: Boolean) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                if (!file.exists() || file.length() == 0L) return@launch
+                val baseUrl = backendUrlRepository.currentUrl.value
+                val endpoint = if (pressEnter) "$baseUrl/voice-type?press_enter=true" else "$baseUrl/voice-type"
+                android.util.Log.d("VoiceType", "Uploading chunk ${file.length()} bytes to $endpoint")
+
+                val requestBody = okhttp3.MultipartBody.Builder()
+                    .setType(okhttp3.MultipartBody.FORM)
+                    .addFormDataPart("file", file.name, file.readBytes().toRequestBody("audio/m4a".toMediaType()))
+                    .build()
+
+                val request = okhttp3.Request.Builder()
+                    .url(endpoint)
+                    .post(requestBody)
+                    .header("ngrok-skip-browser-warning", "true")
+                    .build()
+
+                voiceTypeClient.newCall(request).execute().use { response ->
+                    val body = response.body?.string()
+                    android.util.Log.d("VoiceType", "Chunk response ${response.code}: $body")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("VoiceType", "Chunk upload failed: ${e.message}", e)
+            } finally {
+                try { file.delete() } catch (_: Exception) {}
+            }
+        }
+    }
+
     fun submitVoiceType(pressEnter: Boolean = true) {
         if (!_isVoiceTyping.value) return
-        android.util.Log.d("VoiceType", "Submitting voice type (pressEnter=$pressEnter)")
+        android.util.Log.d("VoiceType", "Submitting final voice type chunk (pressEnter=$pressEnter)")
+
+        // Stop the chunk timer
+        chunkTimer?.cancel()
+        chunkTimer = null
+
         try {
+            val finalFile = voiceFile
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
             _isVoiceTyping.value = false
 
-            // Upload the file
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                voiceFile?.let { file ->
-                    val baseUrl = backendUrlRepository.currentUrl.value
-                    val endpoint = if (pressEnter) "$baseUrl/voice-type?press_enter=true" else "$baseUrl/voice-type"
-                    android.util.Log.d("VoiceType", "Uploading ${file.length()} bytes to $endpoint")
-                    
-                    val requestBody = okhttp3.MultipartBody.Builder()
-                        .setType(okhttp3.MultipartBody.FORM)
-                        .addFormDataPart("file", file.name, file.readBytes().toRequestBody("audio/m4a".toMediaType()))
-                        .build()
-
-                    val request = okhttp3.Request.Builder()
-                        .url(endpoint)
-                        .post(requestBody)
-                        .header("ngrok-skip-browser-warning", "true")
-                        .build()
-
-                    try {
-                        okhttp3.OkHttpClient().newCall(request).execute().use { response ->
-                            val body = response.body?.string()
-                            android.util.Log.d("VoiceType", "Response ${response.code}: $body")
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.e("VoiceType", "Upload failed: ${e.message}", e)
-                    }
-                }
-            }
+            // Upload the final chunk
+            finalFile?.let { uploadVoiceChunk(it, pressEnter = pressEnter) }
         } catch (e: Exception) {
             android.util.Log.e("VoiceType", "Submit failed: ${e.message}", e)
             _isVoiceTyping.value = false
@@ -999,6 +1063,8 @@ class ConversationViewModel @Inject constructor(
     }
 
     fun cancelVoiceRecording() {
+        chunkTimer?.cancel()
+        chunkTimer = null
         try {
             mediaRecorder?.stop()
             mediaRecorder?.release()
@@ -1293,6 +1359,7 @@ fun ConversationScreen(
     val isFullscreen by viewModel.isFullscreen.collectAsState()
     val isScreenConnecting by viewModel.isScreenConnecting.collectAsState()
     val isDisplaySwitching by viewModel.isDisplaySwitching.collectAsState()
+    val isWindowSelectorMode by viewModel.isWindowSelectorMode.collectAsState()
     val videoTrack by viewModel.videoTrack.collectAsState()
     val room by viewModel.currentRoom.collectAsState()
 
@@ -1412,6 +1479,17 @@ fun ConversationScreen(
                             onMouseScroll = { dx, dy -> viewModel.sendMouseScroll(dx, dy) },
                             onMouseDown = { viewModel.sendMouseDown() },
                             onMouseUp = { viewModel.sendMouseUp() }
+                        )
+                    }
+
+                    // Window selector overlay
+                    if (isWindowSelectorMode) {
+                        WindowSelectorOverlay(
+                            baseUrl = viewModel.backendUrl,
+                            onExit = { viewModel.toggleWindowSelectorMode() },
+                            onWindowSelected = { windowId ->
+                                // Window was selected and focused
+                            }
                         )
                     }
 
@@ -1803,6 +1881,17 @@ fun ConversationScreen(
                     )
                 ) {
                     Icon(Icons.Default.Mouse, contentDescription = "Mouse Control", tint = if (isTouchpadMode) Color(0xFF8BE9FD.toInt()) else Color.White)
+                }
+
+                // Window Selector Toggle
+                IconButton(
+                    onClick = { viewModel.toggleWindowSelectorMode() },
+                    modifier = Modifier.background(
+                        if (isWindowSelectorMode) Color(0xFF50FA7B.toInt()).copy(alpha = 0.2f) else Color.Transparent,
+                        shape = CircleShape
+                    )
+                ) {
+                    Icon(Icons.Default.Window, contentDescription = "Window Selector", tint = if (isWindowSelectorMode) Color(0xFF50FA7B.toInt()) else Color.White)
                 }
 
                 // Switch Display

@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import threading
 import time
 import uuid
 import websockets
@@ -1085,6 +1086,40 @@ async def _handle_voice_message(cid: str, transcription: str, agent_id: str = No
             chat_room._brain._suppress_hub = False
 
 
+_voice_type_lock = threading.Lock()
+
+def _type_text_sync(text: str):
+    """Type text via xdotool in a thread-safe way. Splits into small chunks
+    to avoid xdotool timeout/buffer issues with long text."""
+    import subprocess as sp
+
+    with _voice_type_lock:
+        # Clear any stuck modifier keys first (prevents --clearmodifiers restore bug)
+        sp.run(["xdotool", "keyup", "shift", "ctrl", "alt", "super"],
+               check=False, capture_output=True, timeout=5)
+
+        # Split text into chunks of ~200 chars at word boundaries
+        chunk_size = 200
+        pos = 0
+        chunk_num = 0
+        while pos < len(text):
+            end = min(pos + chunk_size, len(text))
+            if end < len(text):
+                space_idx = text.rfind(" ", pos, end)
+                if space_idx > pos:
+                    end = space_idx + 1
+            chunk = text[pos:end]
+            chunk_num += 1
+            logger.info(f"[VoiceType] xdotool chunk {chunk_num}: {len(chunk)} chars")
+            result = sp.run(
+                ["xdotool", "type", "--delay", "8", chunk],
+                check=False, capture_output=True, text=True, timeout=30
+            )
+            if result.returncode != 0:
+                logger.error(f"[VoiceType] xdotool failed (rc={result.returncode}): {result.stderr}")
+            pos = end
+
+
 @app.post("/voice-type")
 async def voice_type(
     file: UploadFile = File(...),
@@ -1093,7 +1128,7 @@ async def voice_type(
     """
     Voice-to-Type: Transcribe audio and type the text at the current cursor position.
     Uses xdotool to simulate keyboard input on the desktop.
-    If press_enter is True, presses Enter after typing.
+    If press_enter is True, presses Enter after all text is typed.
     """
     import subprocess
 
@@ -1108,24 +1143,23 @@ async def voice_type(
             content = await file.read()
             f.write(content)
 
-        # Transcribe using Whisper
+        # Transcribe full audio (Whisper handles up to 25MB / ~2hrs fine)
         logger.info("[VoiceType] Transcribing...")
         transcription = await transcribe_audio(str(audio_path))
 
         if not transcription.strip():
             return {"transcription": "", "typed": False}
 
-        # Type the text at the current cursor position using xdotool
-        logger.info(f"[VoiceType] Typing: {transcription[:80]}...")
-        subprocess.run(
-            ["xdotool", "type", "--clearmodifiers", "--delay", "12", transcription],
-            check=False, capture_output=True, timeout=10
-        )
+        # Type the text using xdotool in a background thread.
+        # Text is split into ~200-char chunks internally to prevent
+        # xdotool from timing out or dropping text on long passages.
+        logger.info(f"[VoiceType] Typing {len(transcription)} chars: {transcription[:80]}...")
+        await asyncio.to_thread(_type_text_sync, transcription)
 
-        # Optionally press Enter after typing
+        # Optionally press Enter after all text is typed
         if press_enter:
-            logger.info("[VoiceType] Pressing Enter")
-            subprocess.run(
+            await asyncio.to_thread(
+                subprocess.run,
                 ["xdotool", "key", "Return"],
                 check=False, capture_output=True, timeout=5
             )
@@ -1865,6 +1899,193 @@ async def home():
     </body>
     </html>
     """
+
+# ----------------------------------------------------------------------------------
+# Window Management API (for mobile remote control)
+# ----------------------------------------------------------------------------------
+
+import subprocess
+import io
+import struct
+
+@app.get("/windows")
+async def list_windows():
+    """List all open windows grouped by application class."""
+    try:
+        # Get all visible windows with their IDs
+        result = subprocess.run(
+            ['xdotool', 'search', '--onlyvisible', ''],
+            capture_output=True, text=True, timeout=5
+        )
+        window_ids = result.stdout.strip().split('\n')
+        
+        windows = []
+        apps = {}
+        
+        for wid in window_ids:
+            wid = wid.strip()
+            if not wid:
+                continue
+            
+            # Get window name
+            try:
+                name_result = subprocess.run(
+                    ['xdotool', 'getwindowname', wid],
+                    capture_output=True, text=True, timeout=2
+                )
+                name = name_result.stdout.strip()
+            except:
+                name = ""
+            
+            # Get window class
+            try:
+                class_result = subprocess.run(
+                    ['xprop', '-id', wid, 'WM_CLASS'],
+                    capture_output=True, text=True, timeout=2
+                )
+                class_line = class_result.stdout.strip()
+                if 'WM_CLASS' in class_line:
+                    classes = class_line.split('"')
+                    if len(classes) >= 4:
+                        app_class = classes[3].lower()
+                        display_class = classes[1]
+                    else:
+                        app_class = display_class = "unknown"
+                else:
+                    app_class = display_class = "unknown"
+            except:
+                app_class = display_class = "unknown"
+            
+            if not name:
+                continue
+                
+            window_info = {
+                "id": wid,
+                "title": name,
+                "class": app_class,
+                "windowClass": app_class,
+                "display_class": display_class,
+                "displayClass": display_class
+            }
+            windows.append(window_info)
+            
+            # Group by app class
+            if app_class not in apps:
+                apps[app_class] = {
+                    "class": app_class,
+                    "windowClass": app_class,
+                    "display_class": display_class,
+                    "displayClass": display_class,
+                    "windows": []
+                }
+            apps[app_class]["windows"].append(window_info)
+        
+        return {
+            "windows": windows,
+            "apps": list(apps.values())
+        }
+    except Exception as e:
+        logger.error(f"Error listing windows: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/windows/{window_id}/screenshot")
+async def window_screenshot(window_id: str):
+    """Get screenshot of a specific window as PNG."""
+    try:
+        # Use xwd to capture the window, then convert to PNG
+        xwd_path = f"/tmp/window_{window_id}.xwd"
+        png_path = f"/tmp/window_{window_id}.png"
+        
+        # Capture window with xwd
+        result = subprocess.run(
+            ['xwd', '-id', window_id, '-silent'],
+            capture_output=True, timeout=10
+        )
+        
+        if result.returncode != 0:
+            raise HTTPException(status_code=404, detail="Window not found or not accessible")
+        
+        # Write xwd data
+        with open(xwd_path, 'wb') as f:
+            f.write(result.stdout)
+        
+        # Convert to PNG using ImageMagick
+        convert_result = subprocess.run(
+            ['convert', xwd_path, png_path],
+            capture_output=True, timeout=10
+        )
+        
+        if convert_result.returncode != 0:
+            # If convert fails, try returning raw xwd
+            import base64
+            return JSONResponse({
+                "error": "convert failed",
+                "xwd_base64": base64.b64encode(result.stdout).decode()
+            })
+        
+        # Read PNG and return as base64
+        with open(png_path, 'rb') as f:
+            import base64
+            png_data = base64.b64encode(f.read()).decode()
+        
+        # Cleanup
+        try:
+            os.remove(xwd_path)
+            os.remove(png_path)
+        except:
+            pass
+        
+        return {"screenshot": png_data, "window_id": window_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error capturing window screenshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/windows/{window_id}/focus")
+async def focus_window(window_id: str):
+    """Focus/activate a specific window."""
+    try:
+        result = subprocess.run(
+            ['xdotool', 'windowactivate', '--sync', window_id],
+            capture_output=True, timeout=5
+        )
+        
+        if result.returncode != 0:
+            raise HTTPException(status_code=404, detail="Window not found")
+        
+        return {"success": True, "window_id": window_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error focusing window: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/windows/{window_id}/click")
+async def click_window(window_id: str, x: int = None, y: int = None):
+    """Click on a specific position in a window."""
+    try:
+        if x is not None and y is not None:
+            result = subprocess.run(
+                ['xdotool', 'windowfocus', window_id, 'mouseclick', '--window', window_id, '1'],
+                capture_output=True, timeout=5
+            )
+        else:
+            result = subprocess.run(
+                ['xdotool', 'windowactivate', '--sync', window_id, 'click', '1'],
+                capture_output=True, timeout=5
+            )
+        
+        if result.returncode != 0:
+            raise HTTPException(status_code=404, detail="Window not found or click failed")
+        
+        return {"success": True, "window_id": window_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error clicking window: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ----------------------------------------------------------------------------------
 # Main execution
