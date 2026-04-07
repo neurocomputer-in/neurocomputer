@@ -16,6 +16,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -59,9 +60,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.RenderEffect
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -396,9 +403,34 @@ class OverlayService : Service(), LifecycleOwner, ViewModelStoreOwner, androidx.
             setContent {
                 // Collect selected agent from repository for bi-directional sync
                 val repoSelectedAgent by backendUrlRepository.selectedAgent.collectAsState()
+                val isDragging = remember { mutableStateOf(false) }
+                val isDraggingFromRight = remember { mutableStateOf(false) }
+                var targetSnapX by remember { mutableStateOf<Int?>(null) }
+
+                LaunchedEffect(targetSnapX) {
+                    targetSnapX?.let { target ->
+                        val anim = Animatable(params.x.toFloat())
+                        anim.animateTo(target.toFloat(), spring(stiffness = Spring.StiffnessLow)) {
+                            params.x = value.toInt()
+                            windowX.value = params.x
+                            try {
+                                windowManager.updateViewLayout(composeView, params)
+                            } catch (e: Exception) { }
+                        }
+                        targetSnapX = null
+                    }
+                }
                 
                 OverlayContent(
                     selectedAgent = repoSelectedAgent,
+                    isDragging = isDragging.value,
+                    isDraggingFromRight = isDraggingFromRight.value,
+                    onDragStart = {
+                        isDragging.value = true
+                        val density = resources.displayMetrics.density
+                        val windowWidthPx = (260 * density).toInt()
+                        isDraggingFromRight.value = (params.x + windowWidthPx / 2 > screenWidth / 2)
+                    },
                     onSelectedAgentChange = { agent ->
                         selectedAgentType.value = agent
                         // Sync to repository
@@ -413,6 +445,12 @@ class OverlayService : Service(), LifecycleOwner, ViewModelStoreOwner, androidx.
                         windowX.value = params.x
                         windowY.value = params.y
                         windowManager.updateViewLayout(this, params)
+                    },
+                    onDragEnd = {
+                        isDragging.value = false
+                        val density = resources.displayMetrics.density
+                        val windowWidthPx = (260 * density).toInt()
+                        targetSnapX = if (params.x + windowWidthPx / 2 < screenWidth / 2) 0 else screenWidth - windowWidthPx
                     },
                     onMicClick = { toggleRecording() },
                     isRecording = isRecording.value,
@@ -1499,7 +1537,11 @@ class OverlayService : Service(), LifecycleOwner, ViewModelStoreOwner, androidx.
 fun OverlayContent(
     selectedAgent: String,
     onSelectedAgentChange: (String) -> Unit,
+    onDragStart: () -> Unit = {},
     onDrag: (Float, Float) -> Unit,
+    onDragEnd: () -> Unit,
+    isDragging: Boolean = false,
+    isDraggingFromRight: Boolean = false,
     onMicClick: () -> Unit,
     isRecording: Boolean,
     @Suppress("UNUSED_PARAMETER") isMuted: Boolean,
@@ -1539,64 +1581,33 @@ fun OverlayContent(
     windowX: Int = 0,
     windowY: Int = 0
 ) {
+    val coroutineScope = rememberCoroutineScope()
     // showDropdown = true when long-pressing N bubble
     var showDropdown by remember { mutableStateOf(false) }
-    // isToolsExpanded = true when tools row is shown
     var isToolsExpanded by remember { mutableStateOf(true) }
     var wheelRotation by remember { mutableFloatStateOf(0f) }
     // Track tools state before showing dropdown
     var toolsExpandedBeforeDropdown by remember { mutableStateOf(true) }
 
-    // Container that sizes based on whether chat is open or not
+    // Container for the dialer
     Box(
         modifier = Modifier
-            .size(if (showChatPanel) androidx.compose.ui.unit.Dp.Unspecified else 220.dp)
+            .size(if (showChatPanel) androidx.compose.ui.unit.Dp.Unspecified else 260.dp)
     ) {
-        // Wheel and dropdown are positioned at bottom-end
-        // Chat panel is centered when shown
-
-        // Use different layouts based on expanded state
-        // Hide tools when dropdown is showing or when chat panel is open
         if (isToolsExpanded && !showDropdown && !showChatPanel) {
-            // Expanded: Full 200dp background circle with rotation gesture
-            Box(
-                modifier = Modifier
-                    .size(200.dp, 200.dp)
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .background(Color(0x50000000), CircleShape)
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            val center = Offset(this.size.width / 2f, this.size.height / 2f)
-                            val touchPos = change.position
-                            val prevTouchPos = change.previousPosition
-                            
-                            val currentAngle = Math.toDegrees(
-                                kotlin.math.atan2(
-                                    (touchPos.y - center.y).toDouble(),
-                                    (touchPos.x - center.x).toDouble()
-                                )
-                            ).toFloat()
-                            val prevAngle = Math.toDegrees(
-                                kotlin.math.atan2(
-                                    (prevTouchPos.y - center.y).toDouble(),
-                                    (prevTouchPos.x - center.x).toDouble()
-                                )
-                            ).toFloat()
-                            
-                            wheelRotation += (currentAngle - prevAngle)
-                            change.consume()
-                        }
-                    }
-            ) {
-            // Calculate tool buttons based on agent
+            val windowCenterPx = windowX + (130 * LocalDensity.current.density)
+            val currentSnappedRight = windowCenterPx > screenWidth / 2
+            val isSnappedRight = if (isDragging) isDraggingFromRight else currentSnappedRight
+
+            // Tools distributed in a FULL circle
             val tools: List<Pair<ImageVector, () -> Unit >> = when (selectedAgent) {
                 "neuro" -> listOf(
                     Icons.Default.Call to { Log.d("Overlay", "Neuro voice clicked") },
                     (if (isRecording) Icons.Default.Stop else Icons.Default.Mic) to onMicClick,
                     Icons.Default.Screenshot to onOcrClick,
                     Icons.Default.Chat to onChatToggle,
-                    Icons.Default.Close to onClose
+                    Icons.Default.Close to onClose,
+                    Icons.Default.Settings to { Log.d("Overlay", "Settings clicked") }
                 )
                 "openclaw" -> listOf(
                     Icons.Default.Call to { Log.d("Overlay", "OpenClaw voice clicked") },
@@ -1627,57 +1638,118 @@ fun OverlayContent(
                 )
             }
 
-            // Position tools in a circle around the center with rotation
-            val radius = 70.dp
+            val radius = 65.dp
             val totalTools = tools.size
             val rotationRad = Math.toRadians(wheelRotation.toDouble())
             
-            tools.forEachIndexed { index, (icon, onClick) ->
-                val baseAngle = Math.toRadians((270.0 / (totalTools - 1)) * index - 135)
-                val rotatedAngle = baseAngle + rotationRad
-                val x = (radius.value * kotlin.math.cos(rotatedAngle)).dp
-                val y = (radius.value * kotlin.math.sin(rotatedAngle)).dp
-                
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .offset(x = x, y = y)
-                ) {
-                    CircleToolButton(icon = icon, onClick = onClick)
-                }
-            }
+            // Animation for tool expansion - high stiffness for responsive collapse during drag
+            val toolsScale by animateFloatAsState(if (isToolsExpanded && !isDragging) 1f else 0f, 
+                animationSpec = spring(stiffness = Spring.StiffnessMedium, dampingRatio = Spring.DampingRatioLowBouncy), label = "wheelPop")
 
-            // Main agent button in center
-            Box(modifier = Modifier.align(Alignment.Center)) {
-                AgentCircleButton(
-                    selectedAgent = selectedAgent,
-                    isRecording = isRecording,
-                    onDrag = onDrag,
-                    onToggleExpand = { isToolsExpanded = false },
-                    onShowDropdown = { toolsExpandedBeforeDropdown = isToolsExpanded; showDropdown = true },
-                    isToolsExpanded = isToolsExpanded
-                )
-            }
-        }
-    } else if (!showDropdown && !showChatPanel) {
-        // Collapsed: Smaller visible circle (80dp) but window stays 200dp to prevent shift
-        Box(
-            modifier = Modifier
-                .size(200.dp, 200.dp)
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Small background circle only around the button
+            // Layout Container for the sharp tools & buttons
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .background(Color(0x60000000), CircleShape)
-            )
+                    .fillMaxSize()
+                    .pointerInput(isSnappedRight) {
+                        detectDragGestures(
+                            onDragStart = { },
+                            onDrag = { change, _ ->
+                                val center = Offset(if (isSnappedRight) this.size.width.toFloat() else 0f, this.size.height / 2f)
+                                val touchPos = change.position
+                                val prevTouchPos = change.previousPosition
+                                
+                                val currentAngle = Math.toDegrees(
+                                    kotlin.math.atan2(
+                                        (touchPos.y - center.y).toDouble(),
+                                        (touchPos.x - center.x).toDouble()
+                                    )
+                                ).toFloat()
+                                val prevAngle = Math.toDegrees(
+                                    kotlin.math.atan2(
+                                        (prevTouchPos.y - center.y).toDouble(),
+                                        (prevTouchPos.x - center.x).toDouble()
+                                    )
+                                ).toFloat()
+                                
+                                var delta = currentAngle - prevAngle
+                                if (delta > 180f) delta -= 360f
+                                if (delta < -180f) delta += 360f
+                                
+                                wheelRotation += delta
+                                change.consume()
+                            },
+                            onDragEnd = onDragEnd,
+                            onDragCancel = onDragEnd
+                        )
+                    }
+            ) {
+                if (isToolsExpanded) {
+                    tools.forEachIndexed { index, (icon, onClick) ->
+                        val baseAngle = Math.toRadians((360.0 / totalTools) * index)
+                        val rotatedAngle = baseAngle + rotationRad
+                        val x = (radius.value * toolsScale * kotlin.math.cos(rotatedAngle).toFloat()).dp
+                        val y = (radius.value * toolsScale * kotlin.math.sin(rotatedAngle).toFloat()).dp
+                        
+                        // Individual tap animation
+                        var isPressed by remember { mutableStateOf(false) }
+                        val scale by animateFloatAsState(if (isPressed) 1.5f else 1f, label = "toolScale")
+
+                        Box(
+                            modifier = Modifier
+                                .align(if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart)
+                                .offset(x = x, y = y)
+                                .graphicsLayer {
+                                    scaleX = scale * toolsScale
+                                    scaleY = scale * toolsScale
+                                    alpha = toolsScale
+                                }
+                        ) {
+                            CircleToolButton(
+                                icon = icon, 
+                                onClick = { 
+                                    isPressed = true
+                                    onClick()
+                                    coroutineScope.launch {
+                                        delay(200)
+                                        isPressed = false
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Main agent button
+                Box(modifier = Modifier.align(if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart)) {
+                    AgentCircleButton(
+                        selectedAgent = selectedAgent,
+                        isRecording = isRecording,
+                        onDragStart = onDragStart,
+                        onDrag = onDrag,
+                        onDragEnd = onDragEnd,
+                        onToggleExpand = { isToolsExpanded = false },
+                        onShowDropdown = { toolsExpandedBeforeDropdown = isToolsExpanded; showDropdown = true },
+                        isToolsExpanded = isToolsExpanded
+                    )
+                }
+            }
+        } else if (!showDropdown && !showChatPanel) {
+        val windowCenterPx = windowX + (130 * LocalDensity.current.density)
+        val currentSnappedRight = windowCenterPx > screenWidth / 2
+        val isSnappedRight = if (isDragging) isDraggingFromRight else currentSnappedRight
+
+        // Collapsed state
+        Box(
+            modifier = Modifier
+                .size(100.dp, 100.dp)
+                .align(if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart),
+            contentAlignment = if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart
+        ) {
             AgentCircleButton(
                 selectedAgent = selectedAgent,
                 isRecording = isRecording,
                 onDrag = onDrag,
+                onDragEnd = onDragEnd,
                 onToggleExpand = { isToolsExpanded = true },
                 onShowDropdown = { toolsExpandedBeforeDropdown = isToolsExpanded; showDropdown = true },
                 isToolsExpanded = isToolsExpanded
@@ -1685,18 +1757,19 @@ fun OverlayContent(
         }
     }
 
-    // ============ AGENT SELECTOR (inside wheel, not separate overlay) ============
+    // ============ AGENT SELECTOR (unified with dialer look) ============
     if (showDropdown) {
-        // Same 200dp area as tools, integrated into wheel
+        val windowCenterPx = windowX + (130 * LocalDensity.current.density)
+        val currentSnappedRight = windowCenterPx > screenWidth / 2
+        val isSnappedRight = if (isDragging) isDraggingFromRight else currentSnappedRight
+
         Box(
             modifier = Modifier
-                .size(200.dp, 200.dp)
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .background(Color(0x60FFFFFF), CircleShape)
-                .pointerInput(Unit) {
+                .size(260.dp)
+                .align(if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart)
+                .pointerInput(isSnappedRight) {
                     detectDragGestures { change, _ ->
-                        val center = Offset(this.size.width / 2f, this.size.height / 2f)
+                        val center = Offset(if (isSnappedRight) this.size.width.toFloat() else 0f, this.size.height / 2f)
                         val touchPos = change.position
                         val prevTouchPos = change.previousPosition
                         
@@ -1713,19 +1786,24 @@ fun OverlayContent(
                             )
                         ).toFloat()
                         
-                        wheelRotation += (currentAngle - prevAngle)
+                        var delta = currentAngle - prevAngle
+                        if (delta > 180f) delta -= 360f
+                        if (delta < -180f) delta += 360f
+                        
+                        wheelRotation += delta
                         change.consume()
                     }
                 }
         ) {
-            // Agents arranged in circle with rotation - using drawable resources
-            val agents = listOf(
+            // Agents arranged in circle - ONLY show non-selected agents in the circle
+            val allAgents = listOf(
                 "neuro" to R.drawable.logo,
                 "openclaw" to R.drawable.openclaw_logo,
                 "opencode" to R.drawable.opencode_logo,
                 "neuroupwork" to R.drawable.upwork_logo
             )
-            val radius = 70.dp
+            val agents = allAgents.filter { it.first != selectedAgent }
+            val radius = 65.dp
             val totalAgents = agents.size
             val rotationRad = Math.toRadians(wheelRotation.toDouble())
             
@@ -1737,16 +1815,16 @@ fun OverlayContent(
                 
                 Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
+                        .align(if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart)
                         .offset(x = x, y = y)
                         .size(56.dp)
                         .background(
-                            if (selectedAgent == agentId) Color(0xFF8B5CF6) else Color(0xDD1A1A1A),
+                            if (selectedAgent == agentId) Color(0xFF4C1D95).copy(alpha = 0.5f) else Color(0xDD1A1A1A),
                             CircleShape
                         )
                         .border(
-                            if (selectedAgent == agentId) 3.dp else 1.dp,
-                            if (selectedAgent == agentId) Color.White else Color(0xFF8B5CF6),
+                            if (selectedAgent == agentId) 2.dp else 0.dp,
+                            if (selectedAgent == agentId) Color.White else Color.Transparent,
                             CircleShape
                         )
                         .clickable { 
@@ -1765,20 +1843,17 @@ fun OverlayContent(
                 }
             }
             
-            // Center - close/toggle back to tools
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(44.dp)
-                    .background(Color(0xFFEF4444), CircleShape)
-                    .clickable { showDropdown = false },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+            // Center - standard agent button (click to close dropdown)
+            Box(modifier = Modifier.align(if (isSnappedRight) Alignment.CenterEnd else Alignment.CenterStart)) {
+                AgentCircleButton(
+                    selectedAgent = selectedAgent,
+                    isRecording = isRecording,
+                    onDragStart = onDragStart,
+                    onDrag = onDrag,
+                    onDragEnd = onDragEnd,
+                    onToggleExpand = { showDropdown = false }, // Clicking center closes agent selection
+                    onShowDropdown = { }, 
+                    isToolsExpanded = true // Visual consistency
                 )
             }
         }
@@ -2066,29 +2141,27 @@ fun OverlayContent(
 private fun AgentCircleButton(
     selectedAgent: String,
     isRecording: Boolean,
+    onDragStart: () -> Unit = {},
     onDrag: (Float, Float) -> Unit,
+    onDragEnd: () -> Unit,
     onToggleExpand: () -> Unit,
     onShowDropdown: () -> Unit,
     isToolsExpanded: Boolean
 ) {
     Surface(
-        color = if (isRecording) Color(0xFFEF4444) else Color(0xFF8B5CF6),
+        color = if (isRecording) Color(0xFFEF4444) else Color(0xDD1A1A1A),
         shape = CircleShape,
-        border = androidx.compose.foundation.BorderStroke(
-            2.dp,
-            Color.White
-        ),
         modifier = Modifier
             .size(56.dp)
             .pointerInput(Unit) {
                 detectDragGestures(
-                    onDragStart = { },
+                    onDragStart = { onDragStart() },
                     onDrag = { change, dragAmount ->
                         change.consume()
                         onDrag(dragAmount.x, dragAmount.y)
                     },
-                    onDragEnd = { },
-                    onDragCancel = { }
+                    onDragEnd = onDragEnd,
+                    onDragCancel = onDragEnd
                 )
             }
             .combinedClickable(
@@ -2219,9 +2292,7 @@ fun CircleToolButton(
     Surface(
         color = if (isActive) Color(0xFFEF4444) else Color(0xDD1A1A1A),
         shape = CircleShape,
-        border = androidx.compose.foundation.BorderStroke(2.dp, if (isActive) Color(0xFFEF4444) else Color(0xFF8B5CF6)),
-        modifier = Modifier.size(44.dp),
-        shadowElevation = 8.dp
+        modifier = Modifier.size(44.dp)
     ) {
         Box(
             modifier = Modifier
