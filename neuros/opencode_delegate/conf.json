@@ -1,0 +1,15 @@
+{
+  "name": "opencode_delegate",
+  "description": "Delegate a task to the OpenCode coding agent. Use when the user wants code generation, debugging, refactoring, or any software engineering task. Parameters: task (clear instruction), session_id (conversation ID).",
+  "inputs": [
+    "task"
+  ],
+  "outputs": [
+    "response",
+    "status"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.3,
+  "kind": "skill.leaf",
+  "category": "delegate.opencode"
+}

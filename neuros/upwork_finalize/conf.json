@@ -1,0 +1,8 @@
+{
+    "name": "upwork_finalize",
+    "description": "Deduplicates frames and extracts structured job data into meta.json",
+    "inputs": ["job_slug"],
+    "outputs": ["ok", "job_data", "frame_count", "unique_lines"],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+}

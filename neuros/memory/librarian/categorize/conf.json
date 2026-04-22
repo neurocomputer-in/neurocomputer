@@ -1,0 +1,22 @@
+{
+  "name": "memory_categorize",
+  "description": "Routes a fact to an existing category or creates a new one, linking via a part_of edge. LLM-driven; taxonomy stays emergent.",
+  "kind": "memory.categorize",
+  "uses": ["memory_graph", "inference"],
+  "scope": "session",
+  "inputs": [
+    {"name": "fact_content", "type": "str",  "description": "the fact text to categorize"},
+    {"name": "fact_id",      "type": "str",  "optional": true, "description": "if set, add part_of edge from fact to category"},
+    {"name": "facts",        "type": "list", "optional": true, "description": "batch mode — list of {content, id}"},
+    {"name": "max_categories","type":"int",  "optional": true, "default": 50}
+  ],
+  "outputs": [
+    {"name": "category_id",   "type": "str", "optional": true},
+    {"name": "category_name", "type": "str", "optional": true},
+    {"name": "new",           "type": "bool", "description": "true if a new category was created"},
+    {"name": "results",       "type": "list", "optional": true, "description": "batch-mode per-fact outcome"},
+    {"name": "error",         "type": "str", "optional": true}
+  ],
+  "category": "memory.librarian",
+  "summary_md": "LLM-maintained taxonomy router. Single-fact and batch modes. Spec: MEMORY_ARCHITECTURE.md §4."
+}

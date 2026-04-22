@@ -1,0 +1,8 @@
+{
+    "name": "neuro_list",
+    "description": "List all installed neuros with a friendly LLM-generated summary",
+    "inputs": [],
+    "outputs": ["neuros"],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+}

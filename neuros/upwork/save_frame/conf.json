@@ -1,0 +1,17 @@
+{
+  "name": "upwork_save_frame",
+  "description": "Saves a raw OCR frame to a job's frames.json for later processing",
+  "inputs": [
+    "job_slug",
+    "frame_text",
+    "url"
+  ],
+  "outputs": [
+    "saved",
+    "frame_count"
+  ],
+  "model": "none",
+  "temperature": 0,
+  "kind": "skill.leaf",
+  "category": "upwork"
+}

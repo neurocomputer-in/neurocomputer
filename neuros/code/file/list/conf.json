@@ -1,0 +1,15 @@
+{
+  "name": "code_file_list",
+  "description": "List files in the active project directory using a glob pattern. Use when the user asks to see what files exist or browse the project structure. Parameters: pattern (glob like '**/*.py', defaults to '*'). Returns a list of matching file paths.",
+  "inputs": [
+    "glob"
+  ],
+  "outputs": [
+    "reply",
+    "files"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.0,
+  "kind": "code.scan",
+  "category": "code.file_ops"
+}

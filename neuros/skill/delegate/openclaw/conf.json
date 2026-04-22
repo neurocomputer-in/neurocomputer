@@ -1,0 +1,15 @@
+{
+  "name": "openclaw_delegate",
+  "description": "Delegate a task to the OpenClaw web automation agent. Use when the user wants browser automation, web scraping, or web-based actions. You MUST refine the user's request into a precise instruction for a web agent. Parameters: task (clear instruction), session_id (conversation ID).",
+  "inputs": [
+    "task"
+  ],
+  "outputs": [
+    "response",
+    "status"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.3,
+  "kind": "skill.leaf",
+  "category": "delegate.openclaw"
+}

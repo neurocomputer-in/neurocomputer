@@ -1,0 +1,64 @@
+{
+  "name": "coder_with_tools",
+  "description": "Coder workflow — same shape as 'coder' but the LLM can actually read files + search memory mid-reply via tool_loop.",
+  "kind": "skill.flow.dag",
+  "uses": ["memory", "coder_system_prompt", "tool_loop_coder", "memory_ingest"],
+  "scope": "session",
+  "dag": {
+    "start": "n0",
+    "nodes": {
+      "n0": {
+        "neuro":  "memory",
+        "params": {"op": "read", "key": "coder_with_tools.last_topic", "caller": "coder_with_tools"},
+        "next":   "n1",
+        "on_error": "skip"
+      },
+      "n1": {
+        "neuro":  "coder_system_prompt",
+        "params": {
+          "last_topic": "{{state.value}}",
+          "query":      "{{state.user_question}}"
+        },
+        "next":   "n2"
+      },
+      "n2": {
+        "neuro":  "tool_loop_coder",
+        "params": {"user_question": "{{state.user_question}}"},
+        "next":   "n3"
+      },
+      "n3": {
+        "neuro":  "memory",
+        "params": {
+          "op":     "write",
+          "key":    "coder_with_tools.last_topic",
+          "value":  "{{state.user_question}}",
+          "caller": "coder_with_tools"
+        },
+        "next":   "n4",
+        "on_error": "skip"
+      },
+      "n4": {
+        "neuro":  "memory_ingest",
+        "params": {
+          "exchange":  "user: {{state.user_question}}\nassistant: {{state.reply}}",
+          "max_facts": 3
+        },
+        "next":   null,
+        "on_error": "skip"
+      }
+    }
+  },
+  "inputs": [
+    {"name": "user_question", "type": "str"}
+  ],
+  "outputs": [
+    {"name": "reply",           "type": "str"},
+    {"name": "rounds",          "type": "int",  "optional": true},
+    {"name": "tool_calls_made", "type": "list", "optional": true},
+    {"name": "error",           "type": "str",  "optional": true}
+  ],
+  "category": "coder",
+  "icon":  "code",
+  "color": "#14b8a6",
+  "summary_md": "Upgraded coder: 'LLM with code + memory tools' instead of 'LLM from training only'. Same DAG shape as `coder`, but n2 routes through tool_loop so the model can actually look at the repo or the knowledge graph before responding."
+}

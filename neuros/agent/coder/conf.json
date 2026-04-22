@@ -1,0 +1,26 @@
+{
+  "name": "agent_coder",
+  "description": "Coding-focused agent. Routes through the coder workflow. Memory scoped to 'coder' so code facts don't mix with general chat.",
+  "kind": "agent",
+  "profile": ["*"],
+  "default_workflow": "coder",
+  "memory_scope": "coder",
+  "scope": "session",
+  "uses": ["coder"],
+  "inputs": [
+    {"name": "user_text",     "type": "str", "optional": true},
+    {"name": "user_question", "type": "str", "optional": true},
+    {"name": "workflow",      "type": "str", "optional": true}
+  ],
+  "outputs": [
+    {"name": "reply",        "type": "str"},
+    {"name": "agent",        "type": "str"},
+    {"name": "workflow",     "type": "str"},
+    {"name": "memory_scope", "type": "str"},
+    {"name": "error",        "type": "str", "optional": true}
+  ],
+  "category": "agent",
+  "icon":  "code",
+  "color": "#10b981",
+  "summary_md": "Coding-mode agent. Identical mechanics to agent_default but different default workflow + distinct memory scope."
+}

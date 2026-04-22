@@ -1,0 +1,16 @@
+{
+  "name": "code_planner",
+  "description": "Plan file and folder scaffolding for code generation tasks. Use for complex code requests that need multiple files or steps. Creates a DAG execution plan using available code neuros. Parameters: goal (what to build), catalogue (available neuros).",
+  "inputs": [
+    "goal",
+    "catalogue",
+    "intent"
+  ],
+  "outputs": [
+    "plan"
+  ],
+  "model": "gpt-4o",
+  "temperature": 0.3,
+  "kind": "code.plan",
+  "category": "code.planning"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "coder_turn",
+  "description": "One coder turn: read system prompt + user request from state, call inference, return reply.",
+  "kind": "skill.leaf",
+  "uses": ["inference"],
+  "scope": "session",
+  "inputs": [
+    {"name": "user_question", "type": "str", "description": "the coding question / request"}
+  ],
+  "outputs": [
+    {"name": "reply",         "type": "str"},
+    {"name": "provider_used", "type": "str", "optional": true},
+    {"name": "model_used",    "type": "str", "optional": true},
+    {"name": "error",         "type": "str", "optional": true}
+  ],
+  "category": "coder"
+}

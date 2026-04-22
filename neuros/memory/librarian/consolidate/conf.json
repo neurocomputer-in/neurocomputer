@@ -1,0 +1,19 @@
+{
+  "name": "memory_consolidate",
+  "description": "Periodic taxonomy maintenance: LLM finds near-duplicate categories, recommends merges. Applies them when dry_run=false.",
+  "kind": "memory.consolidate",
+  "uses": ["memory_graph", "inference"],
+  "scope": "singleton",
+  "inputs": [
+    {"name": "dry_run",     "type": "bool", "optional": true, "default": true, "description": "when true, return suggestions without applying"},
+    {"name": "max_merges",  "type": "int",  "optional": true, "default": 5, "description": "cap on merges per run"}
+  ],
+  "outputs": [
+    {"name": "merges",    "type": "list", "description": "each: {from_id, from_name, to_id, to_name, reason}"},
+    {"name": "applied",   "type": "int"},
+    {"name": "dry_run",   "type": "bool"},
+    {"name": "error",     "type": "str",  "optional": true}
+  ],
+  "category": "memory.librarian",
+  "summary_md": "Weekly maintenance cron candidate. Reparents facts then invalidates the losing category (preserves history via temporal validity). dry_run=true by default."
+}

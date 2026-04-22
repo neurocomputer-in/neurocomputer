@@ -1,0 +1,24 @@
+{
+  "name": "model_llm_ollama",
+  "description": "Local Ollama LLM (Gemma4 E4B default). Privacy-preserving, no API cost.",
+  "kind": "model.llm",
+  "provider": "ollama",
+  "default_model": "gemma4:e4b",
+  "temperature": 0.7,
+  "scope": "singleton",
+  "inputs": [
+    {"name": "messages",     "type": "list", "optional": true},
+    {"name": "user_msg",     "type": "str",  "optional": true},
+    {"name": "system_prompt","type": "str",  "optional": true},
+    {"name": "tools",        "type": "list", "optional": true},
+    {"name": "temperature",  "type": "float","optional": true},
+    {"name": "model",        "type": "str",  "optional": true}
+  ],
+  "outputs": [
+    {"name": "content",  "type": "str", "optional": true},
+    {"name": "thinking", "type": "str", "optional": true},
+    {"name": "error",    "type": "str", "optional": true}
+  ],
+  "category": "model.llm",
+  "summary_md": "Local LLM via Ollama on port 11434. Default: gemma4:e4b. Good for memory/extract/categorize tasks."
+}

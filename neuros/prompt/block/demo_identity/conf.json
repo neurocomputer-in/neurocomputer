@@ -1,0 +1,16 @@
+{
+  "name": "demo_block_identity",
+  "description": "Demo prompt block — introduces the assistant.",
+  "kind": "prompt.block",
+  "template": "I am {{agent_name}}, a local-first AI assistant built on the neuro substrate.",
+  "vars": [
+    {"name": "agent_name", "type": "str", "description": "assistant name"}
+  ],
+  "inputs": [
+    {"name": "agent_name", "type": "str", "optional": true, "default": "Neuro"}
+  ],
+  "outputs": [
+    {"name": "text", "type": "str"}
+  ],
+  "category": "demo.prompt"
+}

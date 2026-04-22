@@ -1,0 +1,78 @@
+# Environment
+.env
+
+# Config files with secrets
+turnserver.conf*
+livekit.yaml
+livekit.yml
+
+# Backups
+.git_backup
+_project_meta
+
+# Python
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Android / Mobile App
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+
+# macOS
+.DS_Store
+
+# IDE / Editors
+.vscode/
+
+# Assets & Data
+uploads/
+capture/
+brain/
+tools/
+.agent/
+.agents/
+_agent/
+_agents/
+
+# Logs
+*.log
+/data/
+logs/
+logs/prompts/
+agent_graph.db
+
+# Conversation history (user data)
+conversations/
+
+# Mobile app build artifacts
+neuro_mobile_app/local.properties
+neuro_mobile_app/.gradle/
+neuro_mobile_app/app/build/
+neuro_mobile_app/build/
+*.apk
+*.aab
+neuro_web_backup/
+neuro_web/node_modules/
+neuro_web/.next/
+neuro_web/test-results/
+neuro_web/tsconfig.tsbuildinfo
+node_modules/
+.next/
+dist/
+build/
+
+# git worktrees
+.worktrees/
+demo/
+.neuros_history/
+neuro_web/.env.local
+.env.local

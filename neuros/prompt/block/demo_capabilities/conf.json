@@ -1,0 +1,11 @@
+{
+  "name": "demo_block_capabilities",
+  "description": "Demo prompt block — lists what the assistant can do.",
+  "kind": "prompt.block",
+  "template": "I can compose workflows, read and edit code, remember context across sessions, and evolve my own neuros.",
+  "inputs": [],
+  "outputs": [
+    {"name": "text", "type": "str"}
+  ],
+  "category": "demo.prompt"
+}

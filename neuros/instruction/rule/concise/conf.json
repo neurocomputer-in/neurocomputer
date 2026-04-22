@@ -1,0 +1,16 @@
+{
+  "name": "instruction_rule_concise",
+  "description": "Rule: be direct and concise, skip filler phrases.",
+  "kind": "instruction.rule",
+  "template": "Be direct. Skip filler like 'Sure!', 'Great question!'. Lead with the answer. 1-3 sentences unless deep explanation is needed.",
+  "category": "style",
+  "priority": 70,
+  "inputs": [],
+  "outputs": [
+    {"name": "text",     "type": "str"},
+    {"name": "category", "type": "str"},
+    {"name": "priority", "type": "int"}
+  ],
+  "category_meta": "instruction.style",
+  "summary_md": "Forces concise, filler-free responses."
+}

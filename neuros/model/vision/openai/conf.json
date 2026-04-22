@@ -1,0 +1,24 @@
+{
+  "name": "model_vision_openai",
+  "description": "OpenAI vision-capable LLM (gpt-4o) for image modality. Accepts messages with image content parts.",
+  "kind": "model.llm",
+  "provider": "openai",
+  "default_model": "gpt-4o",
+  "temperature": 0.3,
+  "scope": "singleton",
+  "inputs": [
+    {"name": "messages",     "type": "list", "description": "OpenAI-format messages; content may include {type:'image_url', image_url:{url:...}} parts"},
+    {"name": "image",        "type": "list", "optional": true, "description": "convenience: list of {url} or {base64} dicts to attach to last user message"},
+    {"name": "temperature",  "type": "float","optional": true},
+    {"name": "model",        "type": "str",  "optional": true}
+  ],
+  "outputs": [
+    {"name": "content",  "type": "str"},
+    {"name": "thinking", "type": "str", "optional": true},
+    {"name": "error",    "type": "str", "optional": true}
+  ],
+  "category": "model.vision",
+  "icon":  "image",
+  "color": "#f59e0b",
+  "summary_md": "Vision-capable LLM wrapper (gpt-4o). Routed by inference.modality_providers.image. Other providers (anthropic, opencode-zen-claude-sonnet) can be added as parallel vision neuros."
+}

@@ -1,0 +1,15 @@
+{
+  "name": "code_file_read",
+  "description": "Read and display the contents of a text file from the active project. Use when the user asks to see, read, or inspect a file. Parameters: filepath (relative path within project). Returns the file content as text.",
+  "inputs": [
+    "filepath"
+  ],
+  "outputs": [
+    "reply",
+    "file_path"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.0,
+  "kind": "code.read",
+  "category": "code.file_ops"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "context_profile_router",
+  "description": "Router context profile: compact history + skills list. Pure-conf assembler. ~2K token target.",
+  "kind": "context.profile",
+  "scope": "session",
+  "uses": ["context_slice_history_compact", "context_slice_skills_compact"],
+  "slices_spec": [
+    {"label": "history", "source": "context_slice_history_compact", "params": {"limit": 5}},
+    {"label": "skills",  "source": "context_slice_skills_compact"}
+  ],
+  "token_budget": 2000,
+  "inputs": [
+    {"name": "neuros",   "type": "list", "optional": true},
+    {"name": "messages", "type": "list", "optional": true}
+  ],
+  "outputs": [
+    {"name": "history",       "type": "str"},
+    {"name": "skills",        "type": "str"},
+    {"name": "tokens",        "type": "int"},
+    {"name": "within_budget", "type": "bool"}
+  ],
+  "category": "context.profile",
+  "summary_md": "Purpose-specific context bundle used by smart_router. Pure-conf — no code.py."
+}

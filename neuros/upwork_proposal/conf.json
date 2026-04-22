@@ -1,0 +1,8 @@
+{
+    "name": "upwork_proposal",
+    "description": "Generate a proposal draft for a saved job",
+    "inputs": ["job_slug", "custom_intro"],
+    "outputs": ["proposal", "word_count"],
+    "model": "gpt-4o-mini",
+    "temperature": 0.7
+}

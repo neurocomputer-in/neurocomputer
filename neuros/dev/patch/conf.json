@@ -1,0 +1,10 @@
+{
+  "name": "dev_patch",
+  "description": "Applies the unified diff stored in __dev['pending_patch'] to the draft buffer.",
+  "inputs": [],
+  "outputs": [
+    "reply"
+  ],
+  "kind": "code.patch",
+  "category": "dev.patch"
+}

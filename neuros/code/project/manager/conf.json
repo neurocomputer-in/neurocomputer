@@ -1,0 +1,15 @@
+{
+  "name": "code_project_manager",
+  "description": "Create or switch the active project under /home/ubuntu/emptyWorkspace. Use when the user wants to start a new project or work in an existing one. Parameters: project_name (the folder name). Creates the directory if it doesn't exist.",
+  "inputs": [
+    "project_name"
+  ],
+  "outputs": [
+    "reply",
+    "project_path"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.0,
+  "kind": "skill.leaf",
+  "category": "code.project"
+}

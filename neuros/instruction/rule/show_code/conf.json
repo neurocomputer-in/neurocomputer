@@ -1,0 +1,15 @@
+{
+  "name": "instruction_rule_show_code",
+  "description": "Rule: always show code in a fenced block with language tag.",
+  "kind": "instruction.rule",
+  "template": "Always put code in a fenced block with the language tag (```python, ```go, ```ts, etc.). No prose inside the code block.",
+  "category": "formatting",
+  "priority": 80,
+  "inputs": [],
+  "outputs": [
+    {"name": "text",     "type": "str"},
+    {"name": "category", "type": "str"},
+    {"name": "priority", "type": "int"}
+  ],
+  "summary_md": "Enforces fenced + tagged code blocks for copy-pasteability."
+}

@@ -1,0 +1,25 @@
+{
+  "name": "tool_loop",
+  "description": "Multi-round tool-calling orchestrator. LLM → tool_calls → execute via factory.run → append results → loop until done or max_rounds.",
+  "kind": "skill.tool_loop",
+  "uses": ["inference"],
+  "max_rounds": 5,
+  "scope": "session",
+  "inputs": [
+    {"name": "messages",       "type": "list", "description": "OpenAI-format chat messages"},
+    {"name": "tools",          "type": "list", "description": "OpenAI-format tool schemas"},
+    {"name": "tool_handlers",  "type": "dict", "optional": true, "description": "map tool_name → neuro_name (default: same name)"}
+  ],
+  "outputs": [
+    {"name": "content",         "type": "str"},
+    {"name": "rounds",          "type": "int"},
+    {"name": "tool_calls_made", "type": "list"},
+    {"name": "provider_used",   "type": "str", "optional": true},
+    {"name": "model_used",      "type": "str", "optional": true},
+    {"name": "error",           "type": "str", "optional": true}
+  ],
+  "category": "skill.agentic",
+  "icon":  "zap",
+  "color": "#ef4444",
+  "summary_md": "Agentic tool-use primitive. Any neuro that declares tools can use this loop instead of raw inference. Capped by max_rounds to prevent runaways."
+}

@@ -1,0 +1,9 @@
+{
+  "name": "prompt_block_advisor_role",
+  "description": "Role block — how the advisor approaches problems.",
+  "kind": "prompt.block",
+  "template": "Your role: help the user reason through problems. Lead with the answer, then the 'why'. Ask at most one clarifying question if genuinely needed; otherwise give concrete advice. Reference prior context when relevant.",
+  "inputs": [],
+  "outputs": [{"name": "text", "type": "str"}],
+  "category": "advisor.prompt"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "agent_default",
+  "description": "Default conversational agent — routes user messages through the advisor workflow. Memory scoped to 'default'.",
+  "kind": "agent",
+  "profile": ["*"],
+  "default_workflow": "advisor",
+  "memory_scope": "default",
+  "scope": "session",
+  "uses": ["advisor"],
+  "inputs": [
+    {"name": "user_text",     "type": "str", "optional": true},
+    {"name": "user_question", "type": "str", "optional": true},
+    {"name": "workflow",      "type": "str", "optional": true, "description": "override default workflow per-call"}
+  ],
+  "outputs": [
+    {"name": "reply",        "type": "str"},
+    {"name": "agent",        "type": "str"},
+    {"name": "workflow",     "type": "str"},
+    {"name": "memory_scope", "type": "str"},
+    {"name": "error",        "type": "str", "optional": true}
+  ],
+  "category": "agent",
+  "icon":  "user",
+  "color": "#8b5cf6",
+  "summary_md": "Default conversational agent bundle. Demonstrates kind=agent: named config (profile + workflow + memory_scope) + session dispatcher."
+}

@@ -1,0 +1,31 @@
+{
+  "name": "memory_graph",
+  "description": "Low-level graph ops over MemoryGraph. Nodes + n-ary edges + temporal validity.",
+  "kind": "memory.store",
+  "scope": "singleton",
+  "inputs": [
+    {"name": "op",         "type": "str",  "description": "add_node|add_edge|get_node|list_nodes|neighbors|search|invalidate_node|invalidate_edge|stats"},
+    {"name": "node_id",    "type": "str",  "optional": true},
+    {"name": "edge_id",    "type": "str",  "optional": true},
+    {"name": "kind",       "type": "str",  "optional": true, "description": "node kind (fact/entity/category/turn/neuro/index)"},
+    {"name": "content",    "type": "str",  "optional": true},
+    {"name": "props",      "type": "dict", "optional": true},
+    {"name": "nodes",      "type": "list", "optional": true, "description": "for add_edge — list of node ids"},
+    {"name": "roles",      "type": "list", "optional": true},
+    {"name": "edge_type",  "type": "str",  "optional": true},
+    {"name": "weight",     "type": "float","optional": true, "default": 1.0},
+    {"name": "query",      "type": "str",  "optional": true},
+    {"name": "content_like","type": "str", "optional": true},
+    {"name": "top_k",      "type": "int",  "optional": true, "default": 10},
+    {"name": "limit",      "type": "int",  "optional": true, "default": 50}
+  ],
+  "outputs": [
+    {"name": "id",    "type": "str",  "optional": true},
+    {"name": "node",  "type": "dict", "optional": true},
+    {"name": "items", "type": "list", "optional": true},
+    {"name": "stats", "type": "dict", "optional": true},
+    {"name": "ok",    "type": "bool"}
+  ],
+  "category": "memory.graph",
+  "summary_md": "Graph substrate per MEMORY_ARCHITECTURE.md. Hypergraph-ready (n-ary edges) with temporal validity; v1 uses binary edges + keyword retrieval."
+}

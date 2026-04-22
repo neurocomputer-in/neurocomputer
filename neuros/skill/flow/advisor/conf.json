@@ -1,0 +1,62 @@
+{
+  "name": "advisor",
+  "description": "End-to-end advisor workflow. Everything-as-neuro prototype: memory + prompt + instruction + model + skill.flow, all pure-conf.",
+  "kind": "skill.flow.dag",
+  "uses": ["memory", "advisor_system_prompt", "advisor_turn", "memory_ingest"],
+  "scope": "session",
+  "dag": {
+    "start": "n0",
+    "nodes": {
+      "n0": {
+        "neuro": "memory",
+        "params": {"op": "read", "key": "advisor.last_topic", "caller": "advisor"},
+        "next": "n1",
+        "on_error": "skip"
+      },
+      "n1": {
+        "neuro": "advisor_system_prompt",
+        "params": {
+          "last_topic": "{{state.value}}",
+          "query":      "{{state.user_question}}"
+        },
+        "next": "n2"
+      },
+      "n2": {
+        "neuro": "advisor_turn",
+        "params": {"user_question": "{{state.user_question}}"},
+        "next": "n3"
+      },
+      "n3": {
+        "neuro": "memory",
+        "params": {
+          "op":    "write",
+          "key":   "advisor.last_topic",
+          "value": "{{state.user_question}}",
+          "caller": "advisor"
+        },
+        "next": "n4",
+        "on_error": "skip"
+      },
+      "n4": {
+        "neuro": "memory_ingest",
+        "params": {
+          "exchange": "user: {{state.user_question}}\nassistant: {{state.reply}}",
+          "max_facts": 3
+        },
+        "next": null,
+        "on_error": "skip"
+      }
+    }
+  },
+  "inputs": [
+    {"name": "user_question", "type": "str", "description": "question to put to the advisor"}
+  ],
+  "outputs": [
+    {"name": "reply", "type": "str", "description": "advisor's answer"},
+    {"name": "error", "type": "str", "optional": true}
+  ],
+  "category": "advisor",
+  "icon": "sparkles",
+  "color": "#7c3aed",
+  "summary_md": "Full-stack neuro workflow: user_question → memory.read → prompt.compose (L0 + blocks + policy + recall) → model.llm → memory.write → memory_ingest (LLM librarian auto-extracts facts to the graph). Pure-conf DAG, 8 kinds composed."
+}

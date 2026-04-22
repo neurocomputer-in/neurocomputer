@@ -1,0 +1,16 @@
+{
+  "name": "upwork_analyze",
+  "description": "Analyze a saved job and provide recommendations",
+  "inputs": [
+    "job_slug"
+  ],
+  "outputs": [
+    "analysis",
+    "recommendation",
+    "pitch_points"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.7,
+  "kind": "skill.leaf",
+  "category": "upwork"
+}

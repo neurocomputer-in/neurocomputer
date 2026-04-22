@@ -1,0 +1,16 @@
+{
+  "name": "demo_block_greet",
+  "description": "Demo prompt block — greets the user by name (falls back to state for user_name).",
+  "kind": "prompt.block",
+  "template": "Hello, {{user_name}}! How can I help today?",
+  "vars": [
+    {"name": "user_name", "type": "str", "description": "resolved from kwargs or state"}
+  ],
+  "inputs": [
+    {"name": "user_name", "type": "str", "optional": true, "default": "friend"}
+  ],
+  "outputs": [
+    {"name": "text", "type": "str"}
+  ],
+  "category": "demo.prompt"
+}

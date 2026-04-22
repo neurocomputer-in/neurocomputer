@@ -1,0 +1,4 @@
+{
+  "name": "daily_standup_summarizer",
+  "description": "Accepts a list of raw standup messages from team members and produces a clean, structured summary grouped by: what was done yesterday, what is planned today, and any blockers. Useful for async teams or Slack-bot integrations."
+}

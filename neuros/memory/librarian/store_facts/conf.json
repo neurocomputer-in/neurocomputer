@@ -1,0 +1,16 @@
+{
+  "name": "memory_store_facts",
+  "description": "Writes a list of facts to the memory graph as fact nodes. Thin writer — one node per fact, confidence carried in props.",
+  "kind": "memory.store",
+  "uses": ["memory_graph"],
+  "scope": "session",
+  "inputs": [
+    {"name": "facts", "type": "list", "description": "[{content, confidence}]"}
+  ],
+  "outputs": [
+    {"name": "ids",   "type": "list"},
+    {"name": "count", "type": "int"}
+  ],
+  "category": "memory.librarian",
+  "summary_md": "Writer for the librarian pipeline. Deduplicates by content hash (v1: simple substring check against last 50 facts)."
+}

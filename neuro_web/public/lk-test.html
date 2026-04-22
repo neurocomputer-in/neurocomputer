@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head><title>LiveKit Test</title></head>
+<body>
+<h3>LiveKit Connection Test</h3>
+<div id="log" style="font-family:monospace;white-space:pre-wrap;"></div>
+<script>
+function log(msg) {
+  document.getElementById('log').textContent += msg + '\n';
+  console.log(msg);
+}
+
+async function test() {
+  log('1. Fetching token...');
+  try {
+    const res = await fetch('http://localhost:7001/chat/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversation_id: 'fd004c9a2b6f45bdb0abfe7ad1631535' })
+    });
+    const data = await res.json();
+    log('2. Token received. URL: ' + data.url + ', Room: ' + data.room_name);
+    log('   Token (first 50): ' + data.token.substring(0, 50) + '...');
+
+    // Try raw WebSocket
+    const wsUrl = data.url + '/rtc?access_token=' + encodeURIComponent(data.token) + '&protocol=13&auto_subscribe=1&sdk=js&version=2.5.7';
+    log('3. Connecting WebSocket: ' + wsUrl.substring(0, 100) + '...');
+
+    const ws = new WebSocket(wsUrl);
+    ws.onopen = () => log('4. WebSocket OPEN!');
+    ws.onerror = (e) => log('4. WebSocket ERROR: ' + JSON.stringify(e));
+    ws.onclose = (e) => log('4. WebSocket CLOSE: code=' + e.code + ' reason=' + e.reason);
+    ws.onmessage = (e) => log('5. WebSocket MESSAGE: ' + (typeof e.data === 'string' ? e.data.substring(0,100) : 'binary'));
+  } catch (e) {
+    log('ERROR: ' + e.message);
+  }
+}
+
+test();
+</script>
+</body>
+</html>

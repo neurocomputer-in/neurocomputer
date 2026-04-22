@@ -1,0 +1,10 @@
+{
+  "name": "screenshot_windows",
+  "description": "Takes a screenshot on Windows.",
+  "parameters": {},
+  "outputs": {
+    "screenshot_path": "The file path where the screenshot is saved."
+  },
+  "kind": "skill.leaf",
+  "category": "system.screenshot"
+}

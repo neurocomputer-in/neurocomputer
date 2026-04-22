@@ -1,0 +1,16 @@
+# LiveKit Server Configuration Template
+# Copy this to livekit.yaml and fill in your values
+port: 7880
+rtc:
+  port_udp: 50000-60000
+  use_external_ip:
+    - "YOUR_EXTERNAL_IP"
+  turn:
+    enabled: true
+    host: "YOUR_TURN_DOMAIN"
+    port: 3478
+    username: "YOUR_TURN_USERNAME"
+    password: "YOUR_TURN_PASSWORD"
+# Add your LiveKit keys after generating them at https://cloud.livekit.io
+keys:
+  YOUR_LIVEKIT_API_KEY: "YOUR_LIVEKIT_API_SECRET"

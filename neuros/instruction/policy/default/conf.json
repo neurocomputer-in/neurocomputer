@@ -1,0 +1,24 @@
+{
+  "name": "instruction_policy_default",
+  "description": "Default behavior policy: markdown + concise + warm tone. Sorted by priority descending.",
+  "kind": "instruction.policy",
+  "children": [
+    "instruction_rule_markdown",
+    "instruction_rule_concise",
+    "instruction_tone_helpful"
+  ],
+  "uses": [
+    "instruction_rule_markdown",
+    "instruction_rule_concise",
+    "instruction_tone_helpful"
+  ],
+  "min_priority": 0,
+  "inputs": [],
+  "outputs": [
+    {"name": "rules", "type": "list"},
+    {"name": "text",  "type": "str"},
+    {"name": "count", "type": "int"}
+  ],
+  "category_meta": "instruction.policy",
+  "summary_md": "Default assistant policy: markdown + concise + warm tone."
+}

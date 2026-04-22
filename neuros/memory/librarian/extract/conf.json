@@ -1,0 +1,18 @@
+{
+  "name": "memory_extract",
+  "description": "Extract durable facts from a batch of messages via an LLM. Skips chitchat. Per MEMORY_ARCHITECTURE.md §4.",
+  "kind": "memory.extract",
+  "uses": ["inference"],
+  "scope": "session",
+  "inputs": [
+    {"name": "messages",  "type": "list", "description": "list of {sender, text} dicts"},
+    {"name": "exchange",  "type": "str",  "optional": true, "description": "alt: pre-formatted 'user: ...\\nagent: ...'"},
+    {"name": "max_facts", "type": "int",  "optional": true, "default": 5}
+  ],
+  "outputs": [
+    {"name": "facts", "type": "list", "description": "[{content, confidence}] durable facts only"},
+    {"name": "count", "type": "int"}
+  ],
+  "category": "memory.librarian",
+  "summary_md": "LLM-powered fact extractor. Returns [] when the exchange has nothing worth remembering (small talk, pure questions, etc)."
+}

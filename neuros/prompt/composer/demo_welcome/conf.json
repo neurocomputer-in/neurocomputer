@@ -1,0 +1,18 @@
+{
+  "name": "demo_welcome_prompt",
+  "description": "Demo prompt composer — joins identity + capabilities + greeting blocks into a welcome prompt.",
+  "kind": "prompt.composer",
+  "children": ["demo_block_identity", "demo_block_capabilities", "demo_block_greet"],
+  "uses":     ["demo_block_identity", "demo_block_capabilities", "demo_block_greet"],
+  "separator": "\n\n",
+  "scope": "session",
+  "inputs": [
+    {"name": "agent_name", "type": "str", "optional": true, "default": "Neuro"},
+    {"name": "user_name",  "type": "str", "optional": true, "default": "friend"}
+  ],
+  "outputs": [
+    {"name": "text", "type": "str"}
+  ],
+  "category": "demo.prompt",
+  "summary_md": "Pure-conf prompt composer. Combines 3 reusable prompt blocks into a welcome message."
+}

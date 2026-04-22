@@ -1,0 +1,15 @@
+{
+  "name": "context_slice_skills_compact",
+  "description": "Compact skills list slice. Reads kwargs.neuros or state.__neuros.",
+  "kind": "context.slice",
+  "scope": "session",
+  "inputs": [
+    {"name": "neuros", "type": "list", "optional": true, "description": "List of {name, desc} dicts; falls back to state.__neuros"}
+  ],
+  "outputs": [
+    {"name": "text",   "type": "str"},
+    {"name": "tokens", "type": "int"}
+  ],
+  "category": "context.slice",
+  "summary_md": "One line per skill: `- name: desc`. For router/planner use."
+}

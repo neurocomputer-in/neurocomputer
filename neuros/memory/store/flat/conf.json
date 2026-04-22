@@ -1,0 +1,74 @@
+{
+  "name": "memory",
+  "description": "Persistent memory API (read/write/list/delete/search).",
+  "inputs": [
+    {
+      "name": "op",
+      "type": "str",
+      "description": "read|write|delete|list|search"
+    },
+    {
+      "name": "key",
+      "type": "str",
+      "description": "key path",
+      "optional": true
+    },
+    {
+      "name": "value",
+      "type": "json",
+      "description": "value to write",
+      "optional": true
+    },
+    {
+      "name": "prefix",
+      "type": "str",
+      "description": "list prefix",
+      "optional": true
+    },
+    {
+      "name": "query",
+      "type": "str",
+      "description": "search query",
+      "optional": true
+    },
+    {
+      "name": "top_k",
+      "type": "int",
+      "description": "search top-k",
+      "optional": true,
+      "default": 5
+    },
+    {
+      "name": "scope",
+      "type": "str",
+      "description": "agent|shared",
+      "optional": true,
+      "default": "agent"
+    },
+    {
+      "name": "ttl",
+      "type": "int",
+      "description": "seconds",
+      "optional": true
+    }
+  ],
+  "outputs": [
+    {
+      "name": "value",
+      "type": "json",
+      "optional": true
+    },
+    {
+      "name": "items",
+      "type": "list",
+      "optional": true
+    },
+    {
+      "name": "ok",
+      "type": "bool"
+    }
+  ],
+  "category": "system.memory",
+  "summary_md": "Read / write / list / delete / search persistent agent memory.",
+  "kind": "memory.store"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "instruction_rule_markdown",
+  "description": "Rule: always use markdown formatting in responses.",
+  "kind": "instruction.rule",
+  "template": "Respond in well-formatted markdown. Use code blocks, headers, and bullet lists where appropriate.",
+  "category": "formatting",
+  "priority": 60,
+  "inputs": [],
+  "outputs": [
+    {"name": "text",     "type": "str"},
+    {"name": "category", "type": "str"},
+    {"name": "priority", "type": "int"}
+  ],
+  "category_meta": "instruction.formatting",
+  "summary_md": "Enforces markdown formatting on replies."
+}

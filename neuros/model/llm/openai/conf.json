@@ -1,0 +1,26 @@
+{
+  "name": "model_llm_openai",
+  "description": "OpenAI LLM wrapper. Direct provider, no gateway.",
+  "kind": "model.llm",
+  "provider": "openai",
+  "default_model": "gpt-4o-mini",
+  "temperature": 0.7,
+  "scope": "singleton",
+  "inputs": [
+    {"name": "messages",     "type": "list", "optional": true},
+    {"name": "user_msg",     "type": "str",  "optional": true},
+    {"name": "system_prompt","type": "str",  "optional": true},
+    {"name": "tools",        "type": "list", "optional": true},
+    {"name": "temperature",  "type": "float","optional": true},
+    {"name": "model",        "type": "str",  "optional": true},
+    {"name": "json_mode",    "type": "bool", "optional": true, "default": false}
+  ],
+  "outputs": [
+    {"name": "content",    "type": "str", "optional": true},
+    {"name": "tool_calls", "type": "list","optional": true},
+    {"name": "thinking",   "type": "str", "optional": true},
+    {"name": "error",      "type": "str", "optional": true}
+  ],
+  "category": "model.llm",
+  "summary_md": "Chat completions via OpenAI (GPT-4o, GPT-4.1 family)."
+}

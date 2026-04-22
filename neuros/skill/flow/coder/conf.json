@@ -1,0 +1,62 @@
+{
+  "name": "coder",
+  "description": "Coder workflow — parallel to advisor but code-focused. Same substrate, different persona + policy. Demonstrates the substrate is truly generic: new domain = new JSON.",
+  "kind": "skill.flow.dag",
+  "uses": ["memory", "coder_system_prompt", "coder_turn", "memory_ingest"],
+  "scope": "session",
+  "dag": {
+    "start": "n0",
+    "nodes": {
+      "n0": {
+        "neuro": "memory",
+        "params": {"op": "read", "key": "coder.last_topic", "caller": "coder"},
+        "next": "n1",
+        "on_error": "skip"
+      },
+      "n1": {
+        "neuro": "coder_system_prompt",
+        "params": {
+          "last_topic": "{{state.value}}",
+          "query":      "{{state.user_question}}"
+        },
+        "next": "n2"
+      },
+      "n2": {
+        "neuro": "coder_turn",
+        "params": {"user_question": "{{state.user_question}}"},
+        "next": "n3"
+      },
+      "n3": {
+        "neuro": "memory",
+        "params": {
+          "op":     "write",
+          "key":    "coder.last_topic",
+          "value":  "{{state.user_question}}",
+          "caller": "coder"
+        },
+        "next": "n4",
+        "on_error": "skip"
+      },
+      "n4": {
+        "neuro": "memory_ingest",
+        "params": {
+          "exchange":  "user: {{state.user_question}}\nassistant: {{state.reply}}",
+          "max_facts": 3
+        },
+        "next": null,
+        "on_error": "skip"
+      }
+    }
+  },
+  "inputs": [
+    {"name": "user_question", "type": "str", "description": "the user's coding question / request"}
+  ],
+  "outputs": [
+    {"name": "reply", "type": "str"},
+    {"name": "error", "type": "str", "optional": true}
+  ],
+  "category": "coder",
+  "icon": "code",
+  "color": "#10b981",
+  "summary_md": "Code-focused workflow: coder identity + coder policy (show-code rule at priority 80) + same memory + same inference chain as advisor. Different domain, same bones."
+}

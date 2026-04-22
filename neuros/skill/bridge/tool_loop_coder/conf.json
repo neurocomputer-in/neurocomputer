@@ -1,0 +1,20 @@
+{
+  "name": "tool_loop_coder",
+  "description": "Coder-turn bridge that routes through tool_loop with code.* + memory.* tools. LLM can read files + query memory while answering.",
+  "kind": "skill.leaf",
+  "uses": ["tool_loop"],
+  "scope": "session",
+  "inputs": [
+    {"name": "user_question", "type": "str"}
+  ],
+  "outputs": [
+    {"name": "reply",           "type": "str"},
+    {"name": "rounds",          "type": "int"},
+    {"name": "tool_calls_made", "type": "list"},
+    {"name": "provider_used",   "type": "str",  "optional": true},
+    {"name": "model_used",      "type": "str",  "optional": true},
+    {"name": "error",           "type": "str",  "optional": true}
+  ],
+  "category": "coder",
+  "summary_md": "Upgrades the coder from 'reply from training knowledge only' to 'LLM can actually read the codebase + search memory mid-reply'."
+}

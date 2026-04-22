@@ -1,0 +1,25 @@
+{
+  "name": "ide_assistant",
+  "description": "Natural-language neuro editor. Takes a user request + optional target neuro, uses inference + dev_pipeline to validate and safely apply the change.",
+  "kind": "skill.leaf",
+  "uses": ["inference", "dev_pipeline"],
+  "scope": "session",
+  "inputs": [
+    {"name": "user_request",   "type": "str",  "description": "plain-English edit request"},
+    {"name": "target_neuro",  "type": "str",  "optional": true, "description": "specific neuro to edit; omit for new-creation"},
+    {"name": "max_retries",    "type": "int",  "optional": true, "default": 2}
+  ],
+  "outputs": [
+    {"name": "ok",            "type": "bool"},
+    {"name": "reply",         "type": "str",  "description": "assistant's summary of what it did"},
+    {"name": "action",        "type": "str",  "description": "created|modified|rolled_back|no_op|failed"},
+    {"name": "neuro_name",   "type": "str",  "optional": true},
+    {"name": "snapshot",      "type": "str",  "optional": true},
+    {"name": "errors",        "type": "list", "optional": true},
+    {"name": "attempts",      "type": "int"}
+  ],
+  "category": "ide",
+  "icon":  "pen",
+  "color": "#a855f7",
+  "summary_md": "The self-modification entry point. User types 'change advisor tone to terse' → assistant fetches current state → proposes new conf+code → validates → retries on error (up to max_retries) → atomically saves via dev_pipeline. Snapshot available for rollback if bad."
+}

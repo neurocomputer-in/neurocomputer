@@ -1,0 +1,44 @@
+{
+  "name": "demo_greet_workflow",
+  "description": "Demo cross-kind workflow: records user info to memory, recalls, composes welcome prompt. Pure-conf, no code.py.",
+  "kind": "skill.flow.dag",
+  "uses": ["memory", "demo_welcome_prompt"],
+  "scope": "session",
+  "dag": {
+    "start": "n0",
+    "nodes": {
+      "n0": {
+        "neuro": "memory",
+        "params": {
+          "op":    "write",
+          "key":   "demo.last_user_name",
+          "value": "Gopal"
+        },
+        "next": "n1"
+      },
+      "n1": {
+        "neuro": "memory",
+        "params": {
+          "op":  "read",
+          "key": "demo.last_user_name"
+        },
+        "next": "n2"
+      },
+      "n2": {
+        "neuro": "demo_welcome_prompt",
+        "params": {
+          "agent_name": "Neuro",
+          "user_name":  "Gopal"
+        },
+        "next": null
+      }
+    }
+  },
+  "inputs": [],
+  "outputs": [
+    {"name": "text",  "type": "str", "description": "composed welcome prompt"},
+    {"name": "value", "type": "str", "description": "recalled user name"}
+  ],
+  "category": "demo.workflow",
+  "summary_md": "End-to-end cross-kind workflow: memory.store + prompt.composer + skill.flow.dag — all pure-conf JSON, zero python."
+}

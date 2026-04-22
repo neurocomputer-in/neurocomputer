@@ -1,0 +1,20 @@
+{
+  "name": "memory_ingest",
+  "description": "Librarian pipeline: extract durable facts from a conversation batch, write them to the graph.",
+  "kind": "skill.flow.sequential",
+  "children": ["memory_extract", "memory_store_facts"],
+  "uses":     ["memory_extract", "memory_store_facts"],
+  "scope": "session",
+  "inputs": [
+    {"name": "messages",  "type": "list", "optional": true},
+    {"name": "exchange",  "type": "str",  "optional": true},
+    {"name": "max_facts", "type": "int",  "optional": true, "default": 5}
+  ],
+  "outputs": [
+    {"name": "facts", "type": "list"},
+    {"name": "ids",   "type": "list"},
+    {"name": "count", "type": "int"}
+  ],
+  "category": "memory.librarian",
+  "summary_md": "Composable librarian. Run at turn end (every N turns) or on PreCompact hook to build memory from conversation."
+}

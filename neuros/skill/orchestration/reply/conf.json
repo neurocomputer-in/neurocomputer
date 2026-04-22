@@ -1,0 +1,14 @@
+{
+  "name": "reply",
+  "description": "Generate a conversational text response using the LLM. Use for general chat, knowledge questions, and any response that doesn't require executing a specific skill. Parameters: text (the user's message to respond to).",
+  "inputs": [
+    "text"
+  ],
+  "outputs": [
+    "reply"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.7,
+  "kind": "skill.leaf",
+  "category": "orchestration.reply"
+}

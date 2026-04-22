@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html><head><title>LiveKit Test 2</title>
+<script src="https://unpkg.com/livekit-client@2.18.1/dist/livekit-client.umd.js"></script>
+</head>
+<body>
+<h3>LiveKit Client Library Test</h3>
+<div id="log" style="font-family:monospace;white-space:pre-wrap;"></div>
+<script>
+function log(msg) {
+  document.getElementById('log').textContent += msg + '\n';
+  console.log(msg);
+}
+
+async function test() {
+  log('1. Fetching token...');
+  const res = await fetch('http://localhost:7001/chat/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conversation_id: 'fd004c9a2b6f45bdb0abfe7ad1631535' })
+  });
+  const data = await res.json();
+  log('2. Token OK. URL: ' + data.url);
+
+  log('3. Creating Room...');
+  const room = new LivekitClient.Room({
+    adaptiveStream: false,
+    dynacast: false,
+  });
+
+  room.on(LivekitClient.RoomEvent.ConnectionStateChanged, (state) => {
+    log('   State: ' + state);
+  });
+  room.on(LivekitClient.RoomEvent.Disconnected, (reason) => {
+    log('   Disconnected: ' + reason);
+  });
+
+  log('4. Connecting with livekit-client...');
+  try {
+    await room.connect(data.url, data.token);
+    log('5. CONNECTED! State: ' + room.state);
+  } catch (e) {
+    log('5. FAILED: ' + JSON.stringify({name: e.name, message: e.message, code: e.code}));
+    log('   Full error: ' + JSON.stringify(e));
+  }
+}
+
+test();
+</script>
+</body>
+</html>

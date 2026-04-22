@@ -1,0 +1,13 @@
+{
+  "name": "screen_lock_ubuntu",
+  "description": "Lock the screen on the Ubuntu system. Use when the user asks to lock their computer, screen, or workstation. Takes no parameters.",
+  "parameters": {},
+  "outputs": {
+    "success": "boolean"
+  },
+  "icon": "\ud83d\udd12",
+  "author": "assistant",
+  "version": "1.0.0",
+  "kind": "skill.leaf",
+  "category": "system.control"
+}

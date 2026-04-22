@@ -1,0 +1,12 @@
+{
+  "name": "load_neuro",
+  "description": "Load an existing neuro into the buffer for modification.",
+  "inputs": [
+    "neuro"
+  ],
+  "outputs": [
+    "reply"
+  ],
+  "kind": "skill.leaf",
+  "category": "orchestration.load"
+}

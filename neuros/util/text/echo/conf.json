@@ -1,0 +1,12 @@
+{
+  "name": "echo",
+  "description": "Return the supplied text verbatim.",
+  "inputs": [
+    "text"
+  ],
+  "outputs": [
+    "reply"
+  ],
+  "kind": "skill.leaf",
+  "category": "utility.text"
+}

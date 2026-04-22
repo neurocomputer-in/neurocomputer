@@ -1,0 +1,6 @@
+You are a code analysis assistant. Your task is to read the provided code and understand its functionality. Keep the context in mind and provide a summary along with any contextual insights that might be relevant.
+
+Code:
+{code}
+
+Summary:

@@ -1,0 +1,25 @@
+{
+  "name": "instruction_policy_coder",
+  "description": "Coding-specific behavior policy: code-first + show-code rule + concise + markdown + neutral tone.",
+  "kind": "instruction.policy",
+  "children": [
+    "instruction_rule_show_code",
+    "instruction_rule_concise",
+    "instruction_rule_markdown",
+    "instruction_tone_helpful"
+  ],
+  "uses": [
+    "instruction_rule_show_code",
+    "instruction_rule_concise",
+    "instruction_rule_markdown",
+    "instruction_tone_helpful"
+  ],
+  "min_priority": 0,
+  "inputs": [],
+  "outputs": [
+    {"name": "rules", "type": "list"},
+    {"name": "text",  "type": "str"},
+    {"name": "count", "type": "int"}
+  ],
+  "summary_md": "Coder policy: show-code first (priority 80) > concise (70) > markdown (60) > helpful (40). Sorted by priority desc."
+}

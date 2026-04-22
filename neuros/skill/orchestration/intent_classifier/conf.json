@@ -1,0 +1,15 @@
+{
+  "name": "intent_classifier",
+  "description": "Intent classifier that labels the user turn with a single natural-language intent (e.g. \"greeting\", \"question\", \"code request\", etc.). It **does not** choose neuros.",
+  "inputs": [
+    "history",
+    "text"
+  ],
+  "outputs": [
+    "intent"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.3,
+  "kind": "skill.leaf",
+  "category": "orchestration.routing"
+}

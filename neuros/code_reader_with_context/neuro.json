@@ -1,0 +1,12 @@
+{
+  "description": "A neuro that reads and understands code from any project, keeping context in mind.",
+  "model": "gpt-3.5-turbo",
+  "temperature": 0.2,
+  "inputs": {
+    "code": "string"
+  },
+  "outputs": {
+    "summary": "string",
+    "contextual_insights": "string"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "name": "inference",
+  "description": "Generic model dispatch. All other neuros call this for any model call (text today; image/audio/video routing ready).",
+  "kind": "model.inference",
+  "scope": "session",
+  "default_provider": "model_llm_opencode_zen",
+  "default_fallback": [
+    "model_llm_openrouter",
+    "model_llm_ollama",
+    "model_llm_openai"
+  ],
+  "modality_providers": {
+    "image": "model_vision_openai"
+  },
+  "uses": [
+    "model_llm_opencode_zen",
+    "model_llm_openrouter",
+    "model_llm_ollama",
+    "model_llm_openai",
+    "model_vision_openai"
+  ],
+  "inputs": [
+    {"name": "messages",      "type": "list", "optional": true},
+    {"name": "user_msg",      "type": "str",  "optional": true},
+    {"name": "system_prompt", "type": "str",  "optional": true},
+    {"name": "modality",      "type": "str",  "optional": true, "default": "text", "description": "text|image|audio|video|mixed"},
+    {"name": "provider",      "type": "str",  "optional": true, "description": "override default_provider"},
+    {"name": "model",         "type": "str",  "optional": true},
+    {"name": "temperature",   "type": "float","optional": true},
+    {"name": "tools",         "type": "list", "optional": true},
+    {"name": "image",         "type": "list", "optional": true, "description": "reserved for image modality"},
+    {"name": "audio",         "type": "file_path", "optional": true, "description": "reserved for audio modality"},
+    {"name": "video",         "type": "file_path", "optional": true, "description": "reserved for video modality"}
+  ],
+  "outputs": [
+    {"name": "content",       "type": "str"},
+    {"name": "tool_calls",    "type": "list", "optional": true},
+    {"name": "thinking",      "type": "str",  "optional": true},
+    {"name": "provider_used", "type": "str"},
+    {"name": "model_used",    "type": "str"},
+    {"name": "fallback_from", "type": "str",  "optional": true},
+    {"name": "error",         "type": "str",  "optional": true}
+  ],
+  "category": "model.inference",
+  "icon":  "cpu",
+  "color": "#0ea5e9",
+  "summary_md": "Single entry point for any model call. Default text provider: OpenCode Zen (claude-sonnet-4-6). Fallback chain: openrouter → ollama → openai. Multimodal routing via `modality` kwarg — reserved slots for image/audio/video once concrete provider neuros ship."
+}

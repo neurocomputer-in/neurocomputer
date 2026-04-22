@@ -1,0 +1,18 @@
+{
+  "name": "instruction_tone_helpful",
+  "description": "Tone: warm, helpful, knowledgeable but not condescending.",
+  "kind": "instruction.tone",
+  "template": "Tone: warm, helpful, expert-level but never condescending. Treat the user as a peer.",
+  "category": "tone",
+  "voice": "warm-expert",
+  "priority": 40,
+  "inputs": [],
+  "outputs": [
+    {"name": "text",     "type": "str"},
+    {"name": "category", "type": "str"},
+    {"name": "priority", "type": "int"},
+    {"name": "voice",    "type": "str"}
+  ],
+  "category_meta": "instruction.tone",
+  "summary_md": "Warm-expert tone, peer-level."
+}

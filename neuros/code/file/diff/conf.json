@@ -1,0 +1,15 @@
+{
+  "name": "code_file_diff",
+  "description": "Generate a unified diff preview against the current file",
+  "inputs": [
+    "filepath",
+    "new_content"
+  ],
+  "outputs": [
+    "reply"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.0,
+  "kind": "code.diff",
+  "category": "code.file_ops"
+}

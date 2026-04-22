@@ -1,0 +1,29 @@
+{
+  "name": "dev_pipeline",
+  "description": "Dev-agent robustness pipeline: validate + atomic save + snapshot + rollback. Any writer (dev_new, dev_edit, neuro_crafter, or an AI tool-call) should funnel writes through this for safety.",
+  "kind": "skill.leaf",
+  "category": "dev.robustness",
+  "scope": "singleton",
+  "inputs": [
+    {"name": "op",          "type": "str",  "description": "validate|save|rollback|list_snapshots"},
+    {"name": "neuro_name", "type": "str",  "optional": true, "description": "target neuro folder name (renamed from 'name' to avoid kwarg clash w/ factory.run)"},
+    {"name": "conf",        "type": "json", "optional": true, "description": "conf.json as dict or JSON string"},
+    {"name": "code",        "type": "str",  "optional": true, "description": "code.py contents"},
+    {"name": "prompt",      "type": "str",  "optional": true, "description": "prompt.txt contents"},
+    {"name": "author",      "type": "str",  "optional": true, "default": "ai", "description": "ai|human — gates forbidden-call scan"},
+    {"name": "snapshot_ts", "type": "str",  "optional": true, "description": "specific snapshot timestamp for rollback"}
+  ],
+  "outputs": [
+    {"name": "ok",             "type": "bool"},
+    {"name": "stage",          "type": "str",  "optional": true, "description": "schema|syntax|write|saved"},
+    {"name": "errors",         "type": "list", "optional": true},
+    {"name": "snapshot",       "type": "str",  "optional": true},
+    {"name": "paths",          "type": "dict", "optional": true},
+    {"name": "restored_from",  "type": "str",  "optional": true},
+    {"name": "restored_files", "type": "list", "optional": true},
+    {"name": "snapshots",      "type": "list", "optional": true}
+  ],
+  "icon":  "shield-check",
+  "color": "#0ea5e9",
+  "summary_md": "Safe-write layer for neuro authoring. 4 ops: validate / save / rollback / list_snapshots. Snapshots rotate (keep 10). Emits structured error envelopes on failure."
+}

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation — Neurocomputer</title>
+    <meta name="description" content="Complete documentation for the Neurocomputer ecosystem: mobile app setup, Neuro framework architecture, API reference, and agent profiles.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container-wide">
+        <!-- Navigation -->
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="docs.html" class="active">Docs</a>
+                <a href="blog.html">Blog</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <!-- Docs Layout -->
+        <div class="docs-layout">
+            <!-- Sidebar -->
+            <aside class="docs-sidebar">
+                <h4>Getting Started</h4>
+                <a href="#getting-started" class="active">Overview</a>
+                <a href="#installation">Installation</a>
+                <a href="#configuration">Configuration</a>
+                <a href="#running">Running the Server</a>
+
+                <h4>Mobile Application</h4>
+                <a href="#mobile-overview">Overview</a>
+                <a href="#mobile-ui">UI Elements</a>
+                <a href="#remote-desktop">Remote Desktop Mode</a>
+                <a href="#touch-gestures">Touch Gestures</a>
+                <a href="#voice-pipeline">Voice Pipeline</a>
+
+                <h4>Neuro Framework</h4>
+                <a href="#brain">The Brain</a>
+                <a href="#smart-router">Smart Router</a>
+                <a href="#planner">Planner & DAG</a>
+                <a href="#skills">Skills System</a>
+                <a href="#profiles">Profiles</a>
+
+                <h4>API Reference</h4>
+                <a href="#api-chat">Chat</a>
+                <a href="#api-agents">Agents</a>
+                <a href="#api-streaming">Streaming</a>
+                <a href="#api-input">Input Control</a>
+            </aside>
+
+            <!-- Content -->
+            <main class="docs-content">
+
+                <!-- ═══════════════════════════════════════════ -->
+                <!-- GETTING STARTED -->
+                <!-- ═══════════════════════════════════════════ -->
+                <h2 id="getting-started">Getting Started</h2>
+                <p>Neurocomputer is an open-source ecosystem that turns a dedicated machine into an AI-powered workstation you can control from your phone. This guide will get you up and running in under 10 minutes.</p>
+
+                <h3 id="installation">Installation</h3>
+                <p>Clone the repository and install the Python dependencies:</p>
+                <pre><code>git clone https://github.com/neurocomputer-in/neurocomputer.git
+cd neurocomputer
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt</code></pre>
+
+                <p>You will also need a local <strong>LiveKit server</strong> for WebRTC signaling and streaming:</p>
+                <pre><code># Install LiveKit (Linux)
+curl -sSL https://get.livekit.io | bash
+
+# Copy the example config
+cp livekit.yaml.example livekit.yaml</code></pre>
+
+                <h3 id="configuration">Configuration</h3>
+                <p>Create a <code>.env</code> file in the project root with your API keys:</p>
+                <pre><code>OPENAI_API_KEY=sk-...
+ELEVENLABS_API_KEY=...
+SARVAM_API_KEY=...
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=secret</code></pre>
+
+                <p>Edit <code>livekit.yaml</code> to set your machine's public IP address under the <code>rtc.use_external_ip</code> field. This is required for the mobile app to connect over the network.</p>
+
+                <h3 id="running">Running the Server</h3>
+                <pre><code># Start LiveKit in the background
+livekit-server --config livekit.yaml &
+
+# Start the Neurocomputer server
+python server.py
+# Server is now running at http://0.0.0.0:8000</code></pre>
+
+                <p>To build and install the Android app:</p>
+                <pre><code>cd neuro_mobile_app
+./gradlew assembleDebug
+# Install the APK on your device
+# Set server URL in Settings → http://&lt;your-machine-ip&gt;:8000</code></pre>
+
+                <!-- ═══════════════════════════════════════════ -->
+                <!-- MOBILE APPLICATION -->
+                <!-- ═══════════════════════════════════════════ -->
+                <h2 id="mobile-overview">Mobile Application</h2>
+                <p>The Android application is built with Jetpack Compose and serves as the unified interface for the entire Neurocomputer ecosystem. It handles chat, voice, agent switching, and full remote desktop control.</p>
+
+                <h3 id="mobile-ui">UI Elements</h3>
+                <ul>
+                    <li><strong>Agent Selector</strong> — Tap the agent pill in the header to switch between Neuro, OpenClaw, OpenCode, and NeuroUpwork. Each agent has its own conversation context.</li>
+                    <li><strong>Chat Interface</strong> — Full conversation history with text messages, voice waveform indicators, and per-message TTS playback buttons.</li>
+                    <li><strong>Voice Typing</strong> — Hold the microphone button to dictate. The transcription populates the input field in real time.</li>
+                    <li><strong>Tab Bar</strong> — Supports multiple conversations per agent, each tracked independently with its own chat history.</li>
+                    <li><strong>Side Drawer</strong> — Access remote desktop mode, settings, and overlay controls from the hamburger menu.</li>
+                </ul>
+
+                <h3 id="remote-desktop">Remote Desktop Mode</h3>
+                <p>Tap "Remote Desktop" in the side drawer to enter fullscreen landscape mode. The desktop screen is streamed in real time via WebRTC.</p>
+                <ul>
+                    <li><strong>Right Sidebar</strong> — Microphone toggle, mouse mode toggle, monitor switch (multi-display), and exit fullscreen button.</li>
+                    <li><strong>Left Toolbar</strong> — A draggable floating panel with voice typing, keyboard toggle, scroll/click/focus mode switches, and agent switcher.</li>
+                    <li><strong>Zoom & Pan</strong> — Pinch to zoom up to 10× on any area of the screen. Drag to pan when zoomed.</li>
+                </ul>
+
+                <h3 id="touch-gestures">Touch Gestures</h3>
+                <table>
+                    <tr><th>Gesture</th><th>Action</th></tr>
+                    <tr><td>Single-finger drag</td><td>Move mouse cursor (relative)</td></tr>
+                    <tr><td>Tap</td><td>Left click</td></tr>
+                    <tr><td>Double tap</td><td>Double click</td></tr>
+                    <tr><td>Two-finger drag</td><td>Scroll (vertical/horizontal)</td></tr>
+                    <tr><td>Two-finger tap</td><td>Right click</td></tr>
+                    <tr><td>Pinch</td><td>Zoom in/out on screen</td></tr>
+                </table>
+
+                <h3 id="voice-pipeline">Voice Pipeline</h3>
+                <p>The voice system is optimized for low latency across the full round trip:</p>
+                <pre><code>Microphone
+    ↓
+Silero VAD (Voice Activity Detection)
+    ↓
+Sarvam Streaming STT (Speech-to-Text)
+    ↓
+Brain (LLM reasoning + skill execution)
+    ↓
+ElevenLabs TTS (Text-to-Speech)
+    ↓
+Speaker</code></pre>
+                <p>All audio travels through LiveKit, the same transport used for the desktop video stream. This keeps latency low and avoids separate connection overhead.</p>
+
+                <!-- ═══════════════════════════════════════════ -->
+                <!-- NEURO FRAMEWORK -->
+                <!-- ═══════════════════════════════════════════ -->
+                <h2 id="brain">Neuro Framework — The Brain</h2>
+                <p>The Brain is the central intelligence layer. It implements a <strong>Reason + Act (ReAct)</strong> loop that processes every incoming message — whether text or voice — and decides how to respond.</p>
+
+                <h3 id="smart-router">Smart Router</h3>
+                <p>The first thing the Brain does is classify the request. In a single LLM call, the Smart Router decides:</p>
+                <ol>
+                    <li><strong>Direct reply</strong> — The request is conversational (e.g., "What time is it?"). Respond immediately without invoking any skills.</li>
+                    <li><strong>Skill execution</strong> — The request requires action (e.g., "Lock my screen"). Identify the correct skill and pass it to the Planner.</li>
+                </ol>
+                <p>This classification keeps simple conversations fast (no planning overhead) and complex tasks structured.</p>
+
+                <h3 id="planner">Planner & DAG Execution</h3>
+                <p>For multi-step requests, the Planner breaks the goal into a <strong>Directed Acyclic Graph (DAG)</strong> of skill calls. Each node in the graph represents one skill invocation. Outputs from earlier nodes feed into later ones.</p>
+                <pre><code>User: "Find my latest screenshot and describe what's on screen"
+
+DAG:
+  Node 1: list_files(dir="~/Screenshots", sort="newest")
+  Node 2: read_file(path=Node1.output[0])
+  Node 3: describe_image(image=Node2.output)
+  Node 4: reply(text=Node3.output)</code></pre>
+                <p>The Executor runs this graph node by node, handling errors and retries along the way.</p>
+
+                <h3 id="skills">Skills System</h3>
+                <p>Skills are the atomic units of capability in Neurocomputer. Each skill is a self-contained folder:</p>
+                <pre><code>skills/lock_screen/
+├── conf.json    # Name, description, parameter schema
+└── code.py      # execute() function</code></pre>
+
+                <p>The Brain discovers skills at runtime by scanning the skills directory. To add a new skill, simply drop a new folder in — no restart required.</p>
+
+                <p><strong>Built-in skill categories:</strong></p>
+                <table>
+                    <tr><th>Category</th><th>Examples</th></tr>
+                    <tr><td>Desktop</td><td>Lock screen, take screenshot, open file explorer, move mouse</td></tr>
+                    <tr><td>Code</td><td>Read/write/diff files, scan projects, generate patches</td></tr>
+                    <tr><td>Upwork</td><td>List jobs, analyze fit, draft proposals, capture screenshots</td></tr>
+                    <tr><td>Browser</td><td>Delegate tasks to OpenClaw for web interaction</td></tr>
+                    <tr><td>Meta</td><td>List skills, create new skills, edit existing skills at runtime</td></tr>
+                </table>
+
+                <h3 id="profiles">Profiles</h3>
+                <p>Profiles control which skills are visible to the Brain at any given time:</p>
+                <table>
+                    <tr><th>Profile</th><th>Use Case</th></tr>
+                    <tr><td><code>general</code></td><td>Default. All general-purpose skills available.</td></tr>
+                    <tr><td><code>code_dev</code></td><td>Code editing and project management focus.</td></tr>
+                    <tr><td><code>neuro_dev</code></td><td>Full meta-programming — build and edit skills themselves.</td></tr>
+                </table>
+                <p>Switch profiles in chat with <code>/profile code_dev</code> or <code>/dev on</code>.</p>
+
+                <!-- ═══════════════════════════════════════════ -->
+                <!-- API REFERENCE -->
+                <!-- ═══════════════════════════════════════════ -->
+                <h2 id="api-chat">API Reference</h2>
+
+                <h3>Chat</h3>
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><code>POST</code></td><td><code>/chat</code></td><td>Send a message to the active agent</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/conversation</code></td><td>Create a new conversation</td></tr>
+                    <tr><td><code>GET</code></td><td><code>/conversations?agent_id=</code></td><td>List conversations by agent</td></tr>
+                </table>
+
+                <h3 id="api-agents">Agents</h3>
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><code>GET</code></td><td><code>/agents</code></td><td>List all running agents</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/agents/{type}</code></td><td>Switch to a specific agent type</td></tr>
+                </table>
+
+                <h3 id="api-streaming">Streaming</h3>
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><code>POST</code></td><td><code>/stream/start</code></td><td>Begin desktop screen streaming</td></tr>
+                    <tr><td><code>GET</code></td><td><code>/voice/token</code></td><td>Get LiveKit token for voice sessions</td></tr>
+                </table>
+
+                <h3 id="api-input">Input Control</h3>
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+                    <tr><td><code>POST</code></td><td><code>/mouse/move</code></td><td>Move mouse cursor (relative)</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/mouse/click</code></td><td>Click at current position</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/mouse/scroll</code></td><td>Scroll vertically/horizontally</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/keyboard/send</code></td><td>Send keystrokes and key combos</td></tr>
+                </table>
+
+                <p style="margin-top: var(--sp-7); color: var(--text-3); font-size: var(--fs-sm);">Full endpoint details are available in <a href="https://github.com/neurocomputer-in/neurocomputer/blob/main/server.py" target="_blank" style="color: var(--accent);">server.py</a>.</p>
+
+            </main>
+        </div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>An open-source AI-native ecosystem. Built for a new generation of workflows.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Product</h5>
+                        <a href="index.html">Home</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2026 Neurocomputer. Open source under MIT License.
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+    </script>
+</body>
+</html>

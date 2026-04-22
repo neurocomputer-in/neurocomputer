@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurocomputer — The AI-Native Computing Ecosystem</title>
+    <meta name="description" content="Neurocomputer is an open-source AI-native ecosystem. See, control, and automate any desktop from your phone with specialized autonomous agents.">
+    <meta name="keywords" content="Neurocomputer, AI Agent, Autonomous Agents, Remote Desktop, AI OS, OpenClaw, OpenCode, AI Native, Neuro Framework, Secure Sandbox">
+    <meta name="author" content="Neurocomputer">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://neurocomputer.in/">
+    <meta property="og:title" content="Neurocomputer — The AI-Native Computing Ecosystem">
+    <meta property="og:description" content="See, control, and automate any desktop from your phone. Open-source ecosystem powered by specialized AI agents.">
+    <meta property="og:image" content="https://neurocomputer.in/assets/neuro.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Neurocomputer — The AI-Native Computing Ecosystem">
+    <meta name="twitter:description" content="See, control, and automate any desktop from your phone. Open-source ecosystem powered by specialized AI agents.">
+    <meta name="twitter:image" content="https://neurocomputer.in/assets/neuro.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <!-- Three.js + GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <!-- ═══ Navigation ═══ -->
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="active">Home</a>
+                <a href="docs.html">Docs</a>
+                <a href="blog.html">Blog</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <!-- ═══ Hero ═══ -->
+        <section class="hero">
+            <div class="hero-label" id="hero-label">
+                <span class="dot"></span>
+                Open Source · Autonomous Ecosystem
+            </div>
+            <h1 id="hero-h1">The Agentic<br><span class="highlight">Masterpiece</span><br>Framework.</h1>
+            <p class="hero-sub" id="hero-sub">A profoundly theoretical and intensely practical pathway to Artificial General Intelligence. We are moving beyond single models to mathematically proven, transparent, and resilient Multi-Agent Agencies.</p>
+            <div class="hero-actions" id="hero-actions">
+                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-accent" target="_blank">→ View on GitHub</a>
+                <a href="docs.html" class="btn btn-ghost">Read the Docs</a>
+            </div>
+        </section>
+
+        <!-- ═══ Stats ═══ -->
+        <div class="stats" id="stats">
+            <div class="stat">
+                <div class="stat-value">50+</div>
+                <div class="stat-label">Modular Skills</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">4</div>
+                <div class="stat-label">Specialized Agents</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">&lt;100ms</div>
+                <div class="stat-label">Stream Latency</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">∞</div>
+                <div class="stat-label">Extensible Skills</div>
+            </div>
+        </div>
+
+        <!-- ═══ The Evolutionary Leap ═══ -->
+        <section class="section" id="evolution">
+            <span class="section-tag">The Vision: Agency AI</span>
+            <h2 class="section-title">The pathway to AGI.</h2>
+            <p class="section-desc" style="max-width: 800px;">Computing is undergoing a fundamental shift. We are advancing through clearly defined epochs of reasoning and automation, moving beyond monolithic models into hierarchical intelligence.</p>
+            
+            <div class="detail-row" style="margin-top: var(--sp-6);">
+                <div class="detail-content" style="flex: 1 1 100%;">
+                    <div style="display: flex; flex-direction: column; gap: var(--sp-3);">
+                        <div style="padding: var(--sp-3); background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <strong>1. Software</strong> <span style="color: var(--text-muted);">→ Hardcoded logic and explicit, rigid rules.</span>
+                        </div>
+                        <div style="padding: var(--sp-3); background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <strong>2. Statistical ML</strong> <span style="color: var(--text-muted);">→ Probabilistic pattern recognition and classification.</span>
+                        </div>
+                        <div style="padding: var(--sp-3); background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <strong>3. Generative Models</strong> <span style="color: var(--text-muted);">→ Transformers predicting structured outputs and tokens (LLMs).</span>
+                        </div>
+                        <div style="padding: var(--sp-3); background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <strong>4. Reasoning Models</strong> <span style="color: var(--text-muted);">→ Systems that maintain state, plan, and execute Chain-of-Thought (ReAct).</span>
+                        </div>
+                        <div style="padding: var(--sp-3); background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px; border-left: 3px solid var(--primary-color);">
+                            <strong>5. Agentic Systems</strong> <span style="color: var(--text-muted);">→ Autonomous loops that observe, reason, and act across domains.</span>
+                        </div>
+                        <div style="padding: var(--sp-3); background: rgba(var(--primary-rgb), 0.1); border: 1px solid var(--primary-color); border-radius: 8px; color: var(--primary-color);">
+                            <strong>6. Agency AI (The Neuro Vision)</strong> <span style="color: rgba(255,255,255,0.7);">→ Hierarchical, modular agencies consisting of shared agents. Abstract, modifiable, and capable of infinite scaling.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Deep R&D ═══ -->
+        <section class="section" id="deep-rd">
+            <span class="section-tag">Fundamental Research</span>
+            <h2 class="section-title">Mathematics meets Intelligence.</h2>
+            <p class="section-desc">We don't just build wrappers. We are an organization tackling the hardest R&D problems in AI training and inference.</p>
+            
+            <div class="glass-card" style="margin-top: var(--sp-5); border-left: 4px solid var(--primary-color);">
+                <h3>Inspired by Higher-Dimensional Geometry</h3>
+                <p style="color: var(--text-muted); margin-top: var(--sp-2);">We are exploring entirely new mathematical frameworks—drawing inspiration from quantum physics and high-dimensional geometry—to make AI systems faster, radically more efficient, and mathematically transparent. We believe true AGI requires breaking away from brute-force scale and returning to profound, provable mathematical structures (via graphs) that fundamentally redesign how machines learn, reason, and self-modify.</p>
+            </div>
+        </section>
+
+        <!-- ═══ OS Ecosystem (Apps) ═══ -->
+        <section class="section" id="apps">
+            <span class="section-tag">Practical Applications (The OS Level)</span>
+            <h2 class="section-title">Well-tested OS ecosystem apps.</h2>
+            <p class="section-desc">At the practical layer, Neuro operates like an Operating System. Our agents function as highly specialized "apps" with their own runtimes, seamlessly available on demand.</p>
+            <div class="card-grid" style="margin-top: var(--sp-5);">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <img src="assets/neuro.png" alt="Neuro" class="card-icon">
+                        <span class="card-badge">Core Runtime</span>
+                    </div>
+                    <h3>Neuro</h3>
+                    <p>The general-purpose core network and runtime. It reasons about intent, plans tasks natively via graphs, and routes execution to specific applications within the agency.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="card-header">
+                        <img src="assets/openclaw.png" alt="OpenClaw" class="card-icon">
+                        <span class="card-badge">App</span>
+                    </div>
+                    <h3>OpenClaw</h3>
+                    <p>The browser operator app. Connects to a local gateway to physically browse the web, interacting directly with DOM elements and managing automated web workflows.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="card-header">
+                        <img src="assets/opencode.png" alt="OpenCode" class="card-icon">
+                        <span class="card-badge">App</span>
+                    </div>
+                    <h3>OpenCode</h3>
+                    <p>The developer's companion app. Reads entire repositories natively, generates complex code diffs, patches systems, and runs deep technical analysis as a background task.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="card-header">
+                        <img src="assets/upwork.png" alt="NeuroUpwork" class="card-icon">
+                        <span class="card-badge">App</span>
+                    </div>
+                    <h3>NeuroUpwork</h3>
+                    <p>The workflow application. It hunts for job listings, assigns numerical and entropy-based fit scores, and generates precise proposals and proof-of-concept plans.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Architecture ═══ -->
+        <section class="section" id="architecture">
+            <span class="section-tag">Under the Hood</span>
+            <h2 class="section-title">The Brain architecture.</h2>
+            <p class="section-desc">A Reason + Act loop that classifies, plans, and executes — keeping simple things fast and complex things structured.</p>
+
+            <div class="detail-row">
+                <div class="detail-content">
+                    <h3>Smart Router</h3>
+                    <p>Every message hits the router first. In a single LLM call, it classifies the request: direct reply, or skill execution? If a skill is needed, it identifies which one.</p>
+                    <p>Simple questions get answered instantly. Complex tasks get planned and executed step by step. No unnecessary overhead.</p>
+                </div>
+                <div class="detail-visual">
+User Input
+    │
+    ▼
+ Router ─── "just chat?" ─── Direct Reply
+    │
+    ▼ needs a skill
+ Planner ─── builds DAG
+    │
+    ▼
+ Executor ─── Skill A → B → C
+    │
+    ▼
+ Reply ─── Final Answer
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-content">
+                    <h3>Skills Are Modular</h3>
+                    <p>Each skill lives in its own folder: a <code>conf.json</code> for metadata and a <code>code.py</code> for logic. Drop a new folder in, and the Brain discovers it at runtime. No restart needed.</p>
+                    <p>You can even create and edit skills at runtime using meta-skills — the framework can modify itself.</p>
+                </div>
+                <div class="detail-visual">
+skills/
+├── lock_screen/
+│   ├── conf.json
+│   └── code.py
+├── read_file/
+│   ├── conf.json
+│   └── code.py
+├── take_screenshot/
+│   ├── conf.json
+│   └── code.py
+└── [your_skill]/
+    ├── conf.json
+    └── code.py
+                </div>
+            </div>
+
+            <div class="detail-row">
+                <div class="detail-content">
+                    <h3>Secure Sandbox</h3>
+                    <p>Neurocomputer is designed to run inside a private, isolated machine — a dedicated workstation, a VM, or a container that is separate from your personal host OS.</p>
+                    <p>Autonomous agents need access to your screen, files, and inputs. By isolating this to a dedicated environment, you control exactly what they can see and touch. This is the recommended deployment model.</p>
+                </div>
+                <div class="detail-visual">
+┌─────────────────────────┐
+│   Your Phone (Client)   │
+│  ┌───────────────────┐  │
+│  │  Neurocomputer    │  │
+│  │  Mobile App       │  │
+│  └────────┬──────────┘  │
+└───────────┼─────────────┘
+            │ WebRTC
+┌───────────┼─────────────┐
+│  Isolated │ Agent OS    │
+│  ┌────────▼──────────┐  │
+│  │  Brain + Agents   │  │
+│  │  Desktop Control  │  │
+│  └───────────────────┘  │
+│  Your files stay here   │
+└─────────────────────────┘
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ CTA ═══ -->
+        <section class="section" id="cta" style="text-align: center;">
+            <h2 class="section-title" style="max-width: none;">Ready to try it?</h2>
+            <p class="section-desc" style="margin: 0 auto var(--sp-5);">Neurocomputer is fully open source. Clone it, run it, build your own skills.</p>
+            <div style="display: flex; gap: var(--sp-3); justify-content: center; flex-wrap: wrap;">
+                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-accent" target="_blank">→ Clone from GitHub</a>
+                <a href="docs.html#getting-started" class="btn btn-ghost">Quick Start Guide</a>
+            </div>
+        </section>
+
+        <!-- ═══ Footer ═══ -->
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>An open-source AI-native ecosystem. Built for a new generation of workflows.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Product</h5>
+                        <a href="index.html">Home</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/pulls" target="_blank">Contribute</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Legal</h5>
+                        <a href="#">Privacy</a>
+                        <a href="#">Terms</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                © 2026 Neurocomputer. Open source under MIT License.
+            </div>
+        </footer>
+    </div>
+
+    <!-- 3D Scene -->
+    <script src="js/scene.js"></script>
+
+    <!-- Entrance Animations -->
+    <script>
+        // GSAP entrance animations
+        const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+        tl.to('#nav',          { opacity: 1, duration: 0.6, delay: 0.2 })
+          .to('#hero-label',   { opacity: 1, y: 0, duration: 0.5 }, '-=0.3')
+          .to('#hero-h1',      { opacity: 1, y: 0, duration: 0.7 }, '-=0.3')
+          .to('#hero-sub',     { opacity: 1, y: 0, duration: 0.6 }, '-=0.4')
+          .to('#hero-actions', { opacity: 1, y: 0, duration: 0.5 }, '-=0.3');
+
+        // Scroll-triggered sections
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.section, .stats, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

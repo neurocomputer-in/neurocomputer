@@ -1,0 +1,16 @@
+{
+  "name": "context_slice_history_compact",
+  "description": "Compact recent history slice. Reads state.__conv if present, else state.messages or kwargs.",
+  "kind": "context.slice",
+  "scope": "session",
+  "inputs": [
+    {"name": "limit",    "type": "int",  "optional": true, "default": 5},
+    {"name": "messages", "type": "list", "optional": true, "description": "Fallback when state.__conv not set"}
+  ],
+  "outputs": [
+    {"name": "text",   "type": "str"},
+    {"name": "tokens", "type": "int"}
+  ],
+  "category": "context.slice",
+  "summary_md": "Last N messages, each truncated to 200 chars. For router-style compact context."
+}

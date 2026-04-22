@@ -1,0 +1,12 @@
+{
+  "name": "prompt_block_advisor_memory",
+  "description": "Memory-context block — injects last topic if available.",
+  "kind": "prompt.block",
+  "template": "Prior context: the last topic we discussed was \"{{last_topic}}\". Use this to maintain continuity.",
+  "inputs": [
+    {"name": "last_topic", "type": "str", "optional": true, "description": "falls back to state.last_topic"}
+  ],
+  "outputs": [{"name": "text", "type": "str"}],
+  "category": "advisor.prompt",
+  "summary_md": "Pulls last_topic from state (written by memory.read earlier in the flow). Blank if no prior context."
+}

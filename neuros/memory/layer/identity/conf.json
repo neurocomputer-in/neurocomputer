@@ -1,0 +1,16 @@
+{
+  "name": "memory_layer_identity",
+  "description": "L0 identity layer — always-loaded agent+user identity from a flat file. Per MEMORY_ARCHITECTURE.md §1 L0.",
+  "kind": "memory.layer",
+  "scope": "singleton",
+  "inputs": [
+    {"name": "path", "type": "file_path", "optional": true, "default": "mem/l0.md"}
+  ],
+  "outputs": [
+    {"name": "text",   "type": "str"},
+    {"name": "tokens", "type": "int"},
+    {"name": "ok",     "type": "bool"}
+  ],
+  "category": "memory.layer",
+  "summary_md": "Serves identity text from mem/l0.md (fallback: empty). Always-loaded layer, ~50 tokens."
+}

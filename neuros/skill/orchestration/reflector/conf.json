@@ -1,0 +1,19 @@
+{
+  "name": "reflector",
+  "description": "Self-reflection neuro that evaluates action results and decides if replanning is needed",
+  "inputs": [
+    "action",
+    "result",
+    "goal",
+    "observations"
+  ],
+  "outputs": [
+    "should_replan",
+    "reason",
+    "suggestion"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.3,
+  "kind": "skill.leaf",
+  "category": "orchestration.reflection"
+}

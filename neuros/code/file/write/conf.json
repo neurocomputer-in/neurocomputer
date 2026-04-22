@@ -1,0 +1,16 @@
+{
+  "name": "code_file_write",
+  "description": "Write or append content to a file in the active project. Use when the user asks to create, write, or modify files. Parameters: filepath (relative path within project), content (the file text), mode ('write' to create/overwrite, 'append' to add to existing). For generated code files exceeding 150 lines, split across multiple calls.",
+  "inputs": [
+    "filepath",
+    "content"
+  ],
+  "outputs": [
+    "reply",
+    "file_path"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.0,
+  "kind": "code.write",
+  "category": "code.file_ops"
+}

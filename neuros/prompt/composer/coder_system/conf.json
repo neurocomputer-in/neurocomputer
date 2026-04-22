@@ -1,0 +1,30 @@
+{
+  "name": "coder_system_prompt",
+  "description": "System prompt composer for the coder workflow: L0 identity + coder persona + coding policy + memory recall.",
+  "kind": "prompt.composer",
+  "children": [
+    "memory_layer_identity",
+    "prompt_block_coder_identity",
+    "prompt_block_coder_role",
+    "instruction_policy_coder",
+    "prompt_block_advisor_memory",
+    "memory_recall_keyword"
+  ],
+  "uses": [
+    "memory_layer_identity",
+    "prompt_block_coder_identity",
+    "prompt_block_coder_role",
+    "instruction_policy_coder",
+    "prompt_block_advisor_memory",
+    "memory_recall_keyword"
+  ],
+  "separator": "\n\n",
+  "scope": "session",
+  "inputs": [
+    {"name": "last_topic", "type": "str", "optional": true},
+    {"name": "query",      "type": "str", "optional": true}
+  ],
+  "outputs": [{"name": "text", "type": "str"}],
+  "category": "coder.prompt",
+  "summary_md": "Reuses L0 identity + memory blocks from advisor; swaps advisor persona for coder persona and advisor policy for coder policy. Composition-over-duplication."
+}

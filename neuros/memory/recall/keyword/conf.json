@@ -1,0 +1,19 @@
+{
+  "name": "memory_recall_keyword",
+  "description": "Keyword retrieval over the memory graph. Returns top-K matching nodes as formatted text for context injection.",
+  "kind": "memory.recall",
+  "scope": "singleton",
+  "uses": ["memory_graph"],
+  "inputs": [
+    {"name": "query",  "type": "str",  "description": "substring / keyword to match"},
+    {"name": "kind",   "type": "str",  "optional": true, "description": "filter by node kind (fact/entity/...)"},
+    {"name": "top_k",  "type": "int",  "optional": true, "default": 5}
+  ],
+  "outputs": [
+    {"name": "items", "type": "list", "description": "ranked node dicts"},
+    {"name": "text",  "type": "str",  "description": "joined content of top hits, one per line"},
+    {"name": "tokens","type": "int"}
+  ],
+  "category": "memory.recall",
+  "summary_md": "High-level keyword retrieval. Used by context.slice or prompt.block neuros to inject relevant lessons / facts."
+}

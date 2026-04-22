@@ -1,0 +1,30 @@
+{
+  "name": "advisor_system_prompt",
+  "description": "System prompt composer — L0 identity + advisor identity + role + policy + prior-topic + lesson recall.",
+  "kind": "prompt.composer",
+  "children": [
+    "memory_layer_identity",
+    "prompt_block_advisor_identity",
+    "prompt_block_advisor_role",
+    "instruction_policy_default",
+    "prompt_block_advisor_memory",
+    "memory_recall_keyword"
+  ],
+  "uses": [
+    "memory_layer_identity",
+    "prompt_block_advisor_identity",
+    "prompt_block_advisor_role",
+    "instruction_policy_default",
+    "prompt_block_advisor_memory",
+    "memory_recall_keyword"
+  ],
+  "separator": "\n\n",
+  "scope": "session",
+  "inputs": [
+    {"name": "last_topic", "type": "str", "optional": true, "description": "flat-KV last topic for continuity"},
+    {"name": "query",      "type": "str", "optional": true, "description": "used by memory_recall_keyword to surface relevant lessons"}
+  ],
+  "outputs": [{"name": "text", "type": "str"}],
+  "category": "advisor.prompt",
+  "summary_md": "Full-stack cross-kind composer: memory.layer (L0) + 2 prompt.blocks + instruction.policy + prompt.block (KV memory) + memory.recall (graph lessons). 6 neuros across 4 kinds."
+}

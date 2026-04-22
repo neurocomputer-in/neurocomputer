@@ -1,0 +1,11 @@
+{
+  "name": "move_mouse_top_right",
+  "description": "Moves the mouse cursor to the top right corner of the screen.",
+  "parameters": {},
+  "outputs": {},
+  "icon": "\ud83d\uddb1\ufe0f",
+  "author": "assistant",
+  "version": "1.0.0",
+  "kind": "skill.leaf",
+  "category": "system.input"
+}

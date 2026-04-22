@@ -1,0 +1,14 @@
+[Unit]
+Description=LiveKit Server
+After=network.target
+
+[Service]
+Type=Simple
+WorkingDirectory=/home/ubuntu/infinity_prod
+ExecStart=/home/ubuntu/bin/livekit-server --config /home/ubuntu/infinity_prod/livekit.yaml --node-ip 127.0.0.1 --turn.enabled --turn.domain training-did.gl.at.ply.gg --turn.udp_port 3478 --turn.relay_range_start 50000 --turn.relay_range_end 60000
+Restart=always
+RestartSec=5
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target

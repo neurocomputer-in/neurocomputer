@@ -1,0 +1,14 @@
+{
+  "name": "code_reply",
+  "description": "Generate a code-aware response that summarizes operations performed during task execution. Use as the final step in code generation plans to tell the user what was created or modified. Parameters: text (the user's original request).",
+  "inputs": [
+    "text"
+  ],
+  "outputs": [
+    "reply"
+  ],
+  "model": "gpt-4o-mini",
+  "temperature": 0.7,
+  "kind": "skill.leaf",
+  "category": "code.reply"
+}

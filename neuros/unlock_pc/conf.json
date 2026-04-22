@@ -1,0 +1,13 @@
+{
+    "name": "unlock_pc",
+    "description": "Unlocks the Ubuntu PC using xdotool",
+    "params": {
+        "password": {
+            "type": "string",
+            "description": "Password to unlock (optional, defaults to hardcoded)"
+        }
+    },
+    "output": {
+        "reply": "string"
+    }
+}

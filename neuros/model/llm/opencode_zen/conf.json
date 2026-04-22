@@ -1,0 +1,24 @@
+{
+  "name": "model_llm_opencode_zen",
+  "description": "OpenCode Zen gateway — curated coding-agent-tuned models.",
+  "kind": "model.llm",
+  "provider": "opencode-zen",
+  "default_model": "opencode/claude-sonnet-4-6",
+  "temperature": 0.3,
+  "scope": "singleton",
+  "inputs": [
+    {"name": "messages",     "type": "list", "optional": true},
+    {"name": "user_msg",     "type": "str",  "optional": true},
+    {"name": "system_prompt","type": "str",  "optional": true},
+    {"name": "tools",        "type": "list", "optional": true},
+    {"name": "temperature",  "type": "float","optional": true},
+    {"name": "model",        "type": "str",  "optional": true}
+  ],
+  "outputs": [
+    {"name": "content",    "type": "str", "optional": true},
+    {"name": "tool_calls", "type": "list","optional": true},
+    {"name": "error",      "type": "str", "optional": true}
+  ],
+  "category": "model.llm",
+  "summary_md": "OpenCode Zen gateway — Claude, GPT-5 family, Gemini, etc., curated for coding agents."
+}

@@ -1,0 +1,26 @@
+{
+  "name": "model_llm_openrouter",
+  "description": "OpenRouter LLM wrapper (default provider). Works with any OR-hosted model.",
+  "kind": "model.llm",
+  "provider": "openrouter",
+  "default_model": "minimax/minimax-m2.5:free",
+  "temperature": 0.7,
+  "scope": "singleton",
+  "inputs": [
+    {"name": "messages",     "type": "list", "optional": true},
+    {"name": "user_msg",     "type": "str",  "optional": true},
+    {"name": "system_prompt","type": "str",  "optional": true},
+    {"name": "tools",        "type": "list", "optional": true},
+    {"name": "temperature",  "type": "float","optional": true},
+    {"name": "model",        "type": "str",  "optional": true},
+    {"name": "json_mode",    "type": "bool", "optional": true, "default": false}
+  ],
+  "outputs": [
+    {"name": "content",    "type": "str", "optional": true},
+    {"name": "tool_calls", "type": "list","optional": true},
+    {"name": "thinking",   "type": "str", "optional": true},
+    {"name": "error",      "type": "str", "optional": true}
+  ],
+  "category": "model.llm",
+  "summary_md": "Chat completions via OpenRouter — catalog includes minimax/gpt/claude/gemini."
+}
