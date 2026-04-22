@@ -54,10 +54,10 @@ agent_graph.db
 conversations/
 
 # Mobile app build artifacts
-neuro_mobile_app/local.properties
-neuro_mobile_app/.gradle/
-neuro_mobile_app/app/build/
-neuro_mobile_app/build/
+neuro_mobile/local.properties
+neuro_mobile/.gradle/
+neuro_mobile/app/build/
+neuro_mobile/build/
 *.apk
 *.aab
 neuro_web_backup/

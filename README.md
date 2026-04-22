@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/neuro.png" width="80" height="80" alt="Neurocomputer Logo">
+  <img src="neurocomputer/assets/neuro.png" width="80" height="80" alt="Neurocomputer Logo">
 </p>
 
 <h1 align="center">Neurocomputer</h1>
@@ -75,7 +75,7 @@ Neurocomputer isolates these OS Apps into a secure sandbox, preventing AI models
 git clone https://github.com/neurocomputer-in/neurocomputer.git
 cd neurocomputer
 python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+pip install -r neurocomputer/requirements.txt
 ```
 
 ### 2. Configure Your Environment
@@ -93,14 +93,14 @@ LIVEKIT_API_SECRET=...
 
 Run your local LiveKit server (highly recommended for real-time WebRTC connections):
 ```bash
-cp livekit.yaml.example livekit.yaml
+cp neurocomputer/livekit.yaml.example livekit.yaml
 livekit-server --config livekit.yaml &
 ```
 
 ### 3. Start the Neuro OS Runtime
 
 ```bash
-python server.py
+python neurocomputer/server.py
 # Server starts at http://0.0.0.0:8000
 ```
 

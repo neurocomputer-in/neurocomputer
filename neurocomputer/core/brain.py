@@ -1,4 +1,5 @@
 import asyncio, json, os
+from pathlib import Path
 from core.neuro_factory import NeuroFactory
 # core.executor retired in Phase F; execution routes through
 # factory.run("dag_flow", state, dag=flow) — see docs spec 01-core.
@@ -10,6 +11,8 @@ from core import model_library
 import json
 
 import os, json
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 class Brain:
     def __init__(self, factory=None):
@@ -125,10 +128,10 @@ class Brain:
         name = self.active_profile[cid]
         # cache load
         if cid not in self.profile_cfg:
-            path = os.path.join("profiles", f"{name}.json")
-            if not os.path.exists(path):
+            path = REPO_ROOT / "profiles" / f"{name}.json"
+            if not path.exists():
                 raise FileNotFoundError(f"Profile '{name}' not found")
-            with open(path, "r", encoding="utf-8") as f:
+            with path.open("r", encoding="utf-8") as f:
                 self.profile_cfg[cid] = json.load(f)
 
         # ↳ restrict visible neuros for this conversation
@@ -140,10 +143,10 @@ class Brain:
 
     def _apply_profile(self, cid, name):
         # validate & reload
-        path = os.path.join("profiles", f"{name}.json")
-        if not os.path.exists(path):
+        path = REPO_ROOT / "profiles" / f"{name}.json"
+        if not path.exists():
             raise FileNotFoundError(f"Profile '{name}' not found")
-        with open(path, "r", encoding="utf-8") as f:
+        with path.open("r", encoding="utf-8") as f:
             self.profile_cfg[cid]    = json.load(f)
         self.active_profile[cid] = name
         # turn on “dev” neuros if we’re in neuro_dev (or code_dev) profile
