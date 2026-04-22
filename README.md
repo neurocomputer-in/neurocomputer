@@ -1,89 +1,129 @@
-<p align="center">
-  <img src="neurocomputer/assets/neuro.png" width="80" height="80" alt="Neurocomputer Logo">
-</p>
+# Neurocomputer
 
-<h1 align="center">Neurocomputer</h1>
-<p align="center"><strong>The Agentic Masterpiece Framework.</strong></p>
-<p align="center">A profoundly theoretical and practical pathway to Agency AI, combining deep mathematical R&D with a highly optimized OS-level automation ecosystem.</p>
+Neurocomputer is an agentic software ecosystem built around a modular unit called a **neuro**.
+A neuro can represent model logic, memory logic, context shaping, prompt composition, skills, workflows, tools, and agents.
 
-<p align="center">
-  <a href="https://neurocomputer.in">Website</a> · <a href="#agency-ai---the-evolutionary-leap">Agency AI</a> · <a href="#deep-rd--mathematical-foundations">Deep R&D</a> · <a href="#the-neuro-framework">Framework</a> · <a href="#os-applications--the-practical-layer">OS Apps</a> · <a href="#quick-start">Quick Start</a>
-</p>
+The goal is to treat AI system design like composable engineering, not one giant prompt.
 
----
+## Ecosystem
 
-## 🌌 The Vision: Agency AI
+This repository is organized as a multi-interface ecosystem:
 
-Computing is undergoing a fundamental paradigm shift. We have moved beyond monolithic models into a new era of hierarchical intelligence. The evolutionary timeline is clear:
+- **`neurocomputer/`**: core runtime, neuro framework, backend API, tests, scripts
+- **`neuro_web/`**: desktop web interface (Next.js)
+- **`neuro_mobile/`**: Android remote interface (Kotlin/Compose)
+- **`experimental/`**: experimental interfaces and prototypes
+- **`docs/`**: architecture and product docs (includes `docs/website/`)
 
-1. **Software** ➔ Hardcoded logic and rigid rules.
-2. **Statistical ML** ➔ Probabilistic pattern recognition.
-3. **Generative Models** ➔ Token prediction and transformers (LLMs).
-4. **Reasoning Models** ➔ Chain-of-Thought execution and state maintenance.
-5. **Agentic Systems** ➔ Autonomous loops that observe, reason, and act across domains.
-6. **Agency AI (Our Vision)** ➔ Hierarchical, modular *agencies* that contain specialized, shared *agents*. An abstract, infinitely modifiable, and scalable network of intelligence.
+## Interfaces
 
-Neurocomputer aims to build the mathematical and software framework to make **Agency AI** a reality.
+The same neuro runtime can be operated from multiple surfaces:
 
----
+- **Backend API runtime**: `python neurocomputer/server.py` (default port `7000`)
+- **Web app**: `neuro_web/` desktop client for conversations, projects, and agent orchestration
+- **Mobile app**: `neuro_mobile/` Android remote client
+- **Neurogramming IDE**: a graph-first coding interface where neuros are inspected, composed, and edited as reusable blocks
 
-## 🔬 Deep R&D & Mathematical Foundations
+## Neurogramming IDE (LEGO for coding)
 
-We are an organization committed to solving the hardest research problems in AI training and inference. We do not believe brute-force scaling is the final answer to AGI.
+Neurogramming is the coding model in this repo: build software from composable neuros, connect them into workflows, then iterate safely.
 
-Instead, we are leveraging **deeper mathematical tools**—inspired by quantum physics and higher-dimensional geometry—to build models and agency structures that are:
-- **Transparent**: Moving away from "black box" inference to mathematically provable pathways using graphs.
-- **Efficient**: Drastically faster and more resource-sensitive for general-purpose use.
-- **Entropy-Aware**: Using entropy-based evaluation principles to actively measure and reduce inefficiencies, complexity, and computational waste during system self-modification.
+The IDE direction is:
 
----
+- **3D/graph-native neuro visualization** (node-and-edge mental model)
+- **Source-aware editing** for each neuro (`conf.json`, `code.py`, `prompt.txt`)
+- **Kind-based modularity** (skill, memory, model, context, prompt, agent, code, etc.)
+- **Safe save pipeline** through validation + snapshots
 
-## 🧠 The Neuro Framework
-
-The practical core of Neurocomputer is a modular platform for creating AI systems that learn, adapt, and improve. 
-
-- **Neuro**: The basic building block. A lightweight module capable of storing information, executing logic, making decisions, and handling data I/O.
-- **Neuro-Net**: The flexible network connecting neuros, forming strict, structured pathways for complex tasks.
-- **Neuro-Lang & Neuro-Compiler**: A simple orchestration language that compiles down into error-free, optimized executables, allowing humans and AI to co-develop workflows.
-- **Neuro-Dream**: A background process that aggregates incremental changes and experiences, fine-tuning and optimizing the AI agencies automatically without interrupting operation.
-
----
-
-## 🖥️ OS Applications (The Practical Layer)
-
-While we research the profound theoretical foundations of Agency AI, we are simultaneously building the **Application Layer**—treating the Neuro framework like a futuristic Operating System where agents are isolated, highly specialized "Apps" with their own runtimes.
-
-These apps are fully open-source, well-tested, and ready to use today:
-
-| App / Agent | What It Does |
-|---|---|
-| **Neuro** | The general-purpose core. Routes intents, plans tasks, and orchestrates skills. |
-| **OpenClaw** | Browser automation. Connects to a local gateway to physically browse the web, click elements, and extract data autonomously. |
-| **OpenCode** | The developer's companion. Reads, writes, diffs, and patches code across entire repositories. |
-| **NeuroUpwork** | The freelance engine. Scrapes job listings, scores them, and drafts tailored proposals and Proof-of-Concepts. |
-| **Mobile Remote** | A React/Kotlin smart remote interface that streams your desktop and runs these OS Apps in real-time over LiveKit. |
-
----
-
-## 🚀 Quick Start (Running the OS)
-
-Neurocomputer isolates these OS Apps into a secure sandbox, preventing AI models from blindly modifying your personal host OS. 
-
-### 1. Clone & Install
+Quick IDE backend:
 
 ```bash
-git clone https://github.com/neurocomputer-in/neurocomputer.git
+python3 neurocomputer/scripts/ide_server.py
+```
+
+Then in web UI:
+
+```bash
+cd neuro_web
+NEXT_PUBLIC_IDE_URL=http://127.0.0.1:8000 npm run dev
+```
+
+Open `http://localhost:3000/graph`.
+
+## The Neuro Framework
+
+### What is a neuro?
+
+A neuro is a modular runtime unit. At minimum, a neuro is declared by config and executable logic:
+
+- `conf.json`: contract, description, metadata
+- `code.py`: implementation
+- `prompt.txt`: optional prompt layer for LLM-driven neuros
+
+Most neuros live in `neurocomputer/neuros/` using a taxonomy.
+
+### Core primitives
+
+The framework is intentionally split into orthogonal primitives:
+
+- **Model neuro**: provider/model abstraction and model invocation
+  - `neurocomputer/core/model_neuro.py`
+- **Memory neuro**: memory storage, retrieval, and consolidation flows
+  - `neurocomputer/core/memory.py`
+  - `neurocomputer/core/memory_graph.py`
+- **Context neuro**: context packaging and I/O contracts
+  - `neurocomputer/core/context_neuro.py`
+- **Prompt neuro**: prompt blocks and composition patterns
+  - `neurocomputer/core/prompt_neuro.py`
+- **Skill neuro**: discrete actionable capabilities under `neurocomputer/neuros/skill/`
+- **Workflow neuro**: DAG/sequential/parallel orchestration
+  - `neurocomputer/core/flows/dag_flow.py`
+  - `neurocomputer/core/flows/sequential_flow.py`
+  - `neurocomputer/core/flows/parallel_flow.py`
+- **Tool-loop neuro**: in-reply tool calling and continuation
+  - `neurocomputer/core/tool_loop_neuro.py`
+- **Agent neuro**: role-specialized orchestration as composable agents
+  - `neurocomputer/core/agent_neuro.py`
+
+### Runtime orchestration
+
+The orchestration path is centered around:
+
+- `neurocomputer/core/brain.py`: routing, profile application, session orchestration
+- `neurocomputer/core/neuro_factory.py`: neuro discovery, registry, execution
+- `neurocomputer/server.py`: API surface + runtime glue
+
+## Repository layout
+
+Top-level layout (intentionally kept to 5 main folders):
+
+```text
+.
+├── neurocomputer/   # core runtime + framework
+├── neuro_web/       # web interface
+├── neuro_mobile/    # android interface
+├── experimental/    # experiments
+└── docs/            # architecture + product docs
+```
+
+## Quick start
+
+### 1) Setup Python runtime
+
+```bash
+git clone git@github.com:neurocomputer-in/neurocomputer.git
 cd neurocomputer
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r neurocomputer/requirements.txt
 ```
 
-### 2. Configure Your Environment
+### 2) Configure environment
 
-Create a `.env` file securely holding your API keys:
+Create `.env` in repo root:
 
 ```dotenv
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=...
 ELEVENLABS_API_KEY=...
 SARVAM_API_KEY=...
 LIVEKIT_URL=ws://localhost:7880
@@ -91,21 +131,54 @@ LIVEKIT_API_KEY=...
 LIVEKIT_API_SECRET=...
 ```
 
-Run your local LiveKit server (highly recommended for real-time WebRTC connections):
+Optional local LiveKit:
+
 ```bash
 cp neurocomputer/livekit.yaml.example livekit.yaml
-livekit-server --config livekit.yaml &
+livekit-server --config livekit.yaml
 ```
 
-### 3. Start the Neuro OS Runtime
+### 3) Run backend
 
 ```bash
 python neurocomputer/server.py
-# Server starts at http://0.0.0.0:8000
 ```
 
-Wait for the engine to initialize, and connect your Android app or web client to issue commands directly to the Agent Apps in the ecosystem.
+Backend default: `http://127.0.0.1:7000`
 
----
+### 4) Run web interface
 
-<p align="center"><sub>Driven by Mathematics. Built for the Future.</sub></p>
+```bash
+cd neuro_web
+npm install
+npm run dev
+```
+
+### 5) Build mobile interface
+
+```bash
+cd neuro_mobile
+./gradlew assembleDebug
+```
+
+## Neuro authoring workflow
+
+Create a new neuro by adding a folder under `neurocomputer/neuros/` and defining:
+
+1. `conf.json`
+2. `code.py`
+3. optional `prompt.txt`
+
+Then validate and test through:
+
+- IDE API endpoints in `neurocomputer/scripts/ide_server.py`
+- runtime execution through `neurocomputer/core/neuro_factory.py`
+- test suite in `neurocomputer/tests/`
+
+## Key docs
+
+- `docs/MULTI_AGENCY_ARCHITECTURE.md`
+- `docs/MEMORY_ARCHITECTURE.md`
+- `docs/AGENT_MEETING_ROOMS.md`
+- `neurocomputer/scripts/README_ide.md`
+
