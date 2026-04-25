@@ -215,15 +215,21 @@ export default function Home() {
   // Helper: add tab to active window or spawn new window
   const _openOrAddTab = useCallback((newTab: WindowTab, ww: number, wh: number) => {
     const targetWindow = windows.find(w => w.id === activeWindowId);
-    if (targetWindow) {
+    if (targetWindow && !isMobile) {
+      dispatch(addTabToWindow({ windowId: targetWindow.id, tab: newTab, makeActive: true }));
+    } else if (targetWindow && isMobile) {
+      // On mobile always add to active window (never spawn another)
       dispatch(addTabToWindow({ windowId: targetWindow.id, tab: newTab, makeActive: true }));
     } else {
+      // No window at all — spawn new (use real viewport on mobile)
+      const realW = isMobile ? (typeof window !== 'undefined' ? window.innerWidth : ww) : ww;
+      const realH = isMobile ? (typeof window !== 'undefined' ? window.innerHeight : wh) : wh;
       dispatch(openWindow({
         id: 'w-' + newTab.cid,
         x: isMobile ? 0 : 80 + Math.random() * 100,
         y: isMobile ? 0 : 50 + Math.random() * 60,
-        width: isMobile ? ww : Math.min(ww * 0.55, 800),
-        height: isMobile ? wh : Math.min(wh * 0.65, 600),
+        width: isMobile ? realW : Math.min(ww * 0.55, 800),
+        height: isMobile ? realH : Math.min(wh * 0.65, 600),
         zIndex: nextZIndex,
         minimized: false,
         maximized: isMobile,
@@ -277,7 +283,10 @@ export default function Home() {
         }}>
           <MobileTabStrip
             activeWindowId={activeWindowId}
-            onMenuOpen={() => {}}
+            onMenuOpen={() => {
+              if (windows.length > 0) setSwitcherOpen(true);
+              else setMobilePickerWindowId('__new__');
+            }}
             onNewTab={(windowId) => setMobilePickerWindowId(windowId)}
             onSwitcherOpen={() => setSwitcherOpen(true)}
           />
@@ -287,12 +296,42 @@ export default function Home() {
             style={{ flex: 1, position: 'relative', overflow: 'hidden', touchAction: 'pan-x pan-y' }}
           >
             <WindowManager onNewTab={handleNewTabInWindow} />
+
+            {/* Empty state — no windows yet */}
+            {windows.length === 0 && (
+              <div style={{
+                position: 'absolute', inset: 0,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 16,
+              }}>
+                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', margin: 0 }}>No apps open</p>
+                <button
+                  onClick={() => setMobilePickerWindowId('__new__')}
+                  style={{
+                    padding: '10px 28px', borderRadius: 20,
+                    background: '#8B5CF6', border: 'none', cursor: 'pointer',
+                    fontSize: 14, fontWeight: 600, color: '#fff',
+                  }}
+                >
+                  + Open App
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {mobilePickerWindowId && (
           <AppPicker
-            onPick={(appId, tabKind) => { handleNewTabInWindow(mobilePickerWindowId, appId, tabKind); setMobilePickerWindowId(null); }}
+            onPick={(appId, tabKind) => {
+              const winId = mobilePickerWindowId;
+              setMobilePickerWindowId(null);
+              if (winId === '__new__') {
+                const app = APP_MAP[appId as keyof typeof APP_MAP];
+                if (app) handleLaunchApp(app);
+              } else {
+                handleNewTabInWindow(winId, appId, tabKind);
+              }
+            }}
             onClose={() => setMobilePickerWindowId(null)}
           />
         )}
