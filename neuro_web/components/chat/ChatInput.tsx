@@ -1,7 +1,7 @@
 'use client';
 import { KeyboardEvent, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Paperclip, ArrowUp, Mic, Square, CircleStop, Phone, PhoneOff } from 'lucide-react';
+import { Paperclip, ArrowUp, Mic, Square, CircleStop, Phone, PhoneOff, Settings2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setInputText, setLoading } from '@/store/chatSlice';
 import { AgentType } from '@/types';
@@ -9,10 +9,12 @@ import { apiCancelChat } from '@/services/api';
 import { useChat } from '@/hooks/useChat';
 import { useVoice } from '@/hooks/useVoice';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import LlmSelector from './LlmSelector';
 
 export default function ChatInput() {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const { sendMessage, inputText, isLoading } = useChat();
   const { recording, startRecording, stopAndSend } = useVoice();
   const { startCall, endCall, isActive: voiceCallActive, connecting: voiceConnecting } = useVoiceCall();
@@ -29,8 +31,6 @@ export default function ChatInput() {
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // When no conversation exists, sendMessage will auto-create one
-      // inside useChat — no separate "New Session" click required.
       if (!isLoading && inputText.trim()) {
         sendMessage(inputText);
         setTimeout(() => textareaRef.current?.focus(), 0);
@@ -70,36 +70,61 @@ export default function ChatInput() {
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
-  // With auto-create on first send, the input is usable even when there's
-  // no active conversation. Only gate send on loading and non-empty text.
   const canSend = !isLoading && inputText.trim().length > 0 && !recording;
 
+  const btnSize = isMobile ? '32px' : '30px';
+  const iconSize = isMobile ? 14 : 14;
+  const gap = isMobile ? '6px' : '10px';
+  const innerGap = isMobile ? '6px' : '6px';
+  const containerPad = isMobile ? '8px 10px' : '10px 14px';
+  const outerPad = isMobile ? '8px 10px 10px' : '12px 24px 16px';
+
   return (
-    <div style={{ padding: '12px 24px 16px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+    <div style={{
+      paddingTop: outerPad.split(' ')[0],
+      paddingLeft: outerPad.split(' ')[1],
+      paddingRight: outerPad.split(' ')[1] || outerPad.split(' ')[1],
+      paddingBottom: isMobile ? 'calc(10px + var(--safe-bottom))' : outerPad.split(' ')[2] || outerPad.split(' ')[0],
+      flexShrink: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: isMobile ? '6px' : '0px',
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      {/* Mobile: LLM selector row above input */}
+      {isMobile && (
+        <div style={{ width: '100%', maxWidth: '1024px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <LlmSelector />
+        </div>
+      )}
+
       <motion.div
-        layout
         className="glass-bubble"
         style={{
           width: '100%',
           maxWidth: '1024px',
           border: `1px solid ${recording ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
           borderRadius: '8px',
-          padding: '10px 14px',
+          padding: containerPad,
           display: 'flex',
           alignItems: 'flex-end',
-          gap: '10px',
+          gap,
           transition: 'border-color 0.2s',
+          flexWrap: isMobile ? 'nowrap' : 'nowrap',
         }}
       >
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: '28px', height: '28px', borderRadius: '6px',
-            cursor: 'not-allowed', opacity: 0.3, flexShrink: 0, marginBottom: '1px',
-          }}
-        >
-          <Paperclip size={15} color="#8a8f98" />
-        </div>
+        {!isMobile && (
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '28px', height: '28px', borderRadius: '6px',
+              cursor: 'not-allowed', opacity: 0.3, flexShrink: 0, marginBottom: '1px',
+            }}
+          >
+            <Paperclip size={15} color="#8a8f98" />
+          </div>
+        )}
 
         {recording ? (
           <div style={{
@@ -124,11 +149,12 @@ export default function ChatInput() {
             rows={1}
             style={{
               flex: 1,
+              minWidth: 0,
               background: 'transparent',
               border: 'none',
               outline: 'none',
               color: '#f7f8f8',
-              fontSize: '14px',
+              fontSize: isMobile ? '16px' : '14px', // 16px prevents iOS zoom
               resize: 'none',
               fontFamily: 'inherit',
               lineHeight: 1.6,
@@ -145,11 +171,14 @@ export default function ChatInput() {
           />
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingBottom: '1px', flexShrink: 0 }}>
-          {/* Provider + model selector (inline, Gemini-style) */}
-          <LlmSelector />
-
-          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)', marginRight: '2px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: innerGap, paddingBottom: '1px', flexShrink: 0 }}>
+          {/* Desktop: LLM selector inline */}
+          {!isMobile && (
+            <>
+              <LlmSelector />
+              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)', marginRight: '2px' }} />
+            </>
+          )}
 
           {/* Voice call button */}
           <motion.button
@@ -158,20 +187,20 @@ export default function ChatInput() {
             onClick={voiceCallActive ? endCall : startCall}
             disabled={voiceConnecting}
             style={{
-              width: '30px', height: '30px', borderRadius: '6px',
+              width: btnSize, height: btnSize, borderRadius: '6px',
               background: voiceCallActive ? 'rgba(39, 166, 68, 0.12)' : 'rgba(255,255,255,0.03)',
               border: voiceCallActive ? '1px solid rgba(39, 166, 68, 0.2)' : '1px solid transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
+              cursor: 'pointer', flexShrink: 0,
             }}
             title={voiceCallActive ? 'End voice call' : 'Start voice call'}
           >
             {voiceCallActive ? (
-              <PhoneOff size={14} color="#27a644" />
+              <PhoneOff size={iconSize} color="#27a644" />
             ) : voiceConnecting ? (
-              <Phone size={14} color="#8a8f98" style={{ animation: 'pulse 1s infinite' }} />
+              <Phone size={iconSize} color="#8a8f98" style={{ animation: 'pulse 1s infinite' }} />
             ) : (
-              <Phone size={14} color="#8a8f98" />
+              <Phone size={iconSize} color="#8a8f98" />
             )}
           </motion.button>
 
@@ -182,19 +211,20 @@ export default function ChatInput() {
             onClick={handleMicClick}
             disabled={(isLoading && !recording) || voiceCallActive}
             style={{
-              width: '30px', height: '30px', borderRadius: '6px',
+              width: btnSize, height: btnSize, borderRadius: '6px',
               background: recording ? '#ef4444' : 'rgba(255,255,255,0.03)',
               border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: voiceCallActive ? 'not-allowed' : 'pointer',
               opacity: voiceCallActive ? 0.3 : 1,
+              flexShrink: 0,
             }}
             title={recording ? 'Stop & send voice' : 'Record voice message'}
           >
-            {recording ? <Square size={13} color="#fff" /> : <Mic size={15} color="#8a8f98" />}
+            {recording ? <Square size={iconSize - 1} color="#fff" /> : <Mic size={iconSize + 1} color="#8a8f98" />}
           </motion.button>
 
-          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)' }} />
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
 
           {/* Send or Stop button */}
           {isLoading ? (
@@ -204,15 +234,15 @@ export default function ChatInput() {
               data-testid="stop-button"
               onClick={handleStop}
               style={{
-                width: '30px', height: '30px', borderRadius: '6px',
+                width: btnSize, height: btnSize, borderRadius: '6px',
                 background: 'rgba(239,68,68,0.1)',
                 border: '1px solid rgba(239,68,68,0.2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
+                cursor: 'pointer', flexShrink: 0,
               }}
               title="Stop generating"
             >
-              <CircleStop size={15} color="#ef4444" strokeWidth={1.8} />
+              <CircleStop size={iconSize} color="#ef4444" strokeWidth={1.8} />
             </motion.button>
           ) : (
             <motion.button
@@ -222,15 +252,16 @@ export default function ChatInput() {
               onClick={handleSend}
               disabled={!canSend}
               style={{
-                width: '30px', height: '30px', borderRadius: '6px',
+                width: btnSize, height: btnSize, borderRadius: '6px',
                 background: canSend ? 'var(--accent)' : 'rgba(255,255,255,0.03)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: canSend ? 'pointer' : 'default',
                 transition: 'background 0.2s',
+                flexShrink: 0,
               }}
             >
-              <ArrowUp size={15} color={canSend ? '#fff' : '#62666d'} strokeWidth={2.5} />
+              <ArrowUp size={iconSize} color={canSend ? '#fff' : '#62666d'} strokeWidth={2.5} />
             </motion.button>
           )}
         </div>

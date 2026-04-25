@@ -310,5 +310,9 @@ export async function apiTerminalSessions(params: {
 }
 
 export function terminalWsUrl(cid: string): string {
-  return BASE_URL.replace(/^http/, 'ws') + `/terminal/ws/${cid}`;
+  let base = BASE_URL;
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    base = base.replace(/^http:\/\/|^https:\/\//, 'https://');
+  }
+  return base.replace(/^http/, 'ws') + `/terminal/ws/${cid}`;
 }

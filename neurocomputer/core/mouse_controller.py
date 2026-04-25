@@ -310,11 +310,16 @@ class MouseController:
 
     async def _handle_touch_tap(self, event: dict):
         ax, ay = self._denorm(float(event.get("nx", 0.0)), float(event.get("ny", 0.0)))
+        count = max(1, int(event.get("count", 1)))
         if self.dry_run:
-            logger.info(f"[Mouse][DRY] touch_tap({ax},{ay})")
+            logger.info(f"[Mouse][DRY] touch_tap({ax},{ay}, count={count})")
             return
         await asyncio.to_thread(_xdotool, "mousemove", str(ax), str(ay))
-        await asyncio.to_thread(_xdotool, "click", "1")
+        args = ["click"]
+        if count > 1:
+            args += ["--repeat", str(count)]
+        args.append("1")
+        await asyncio.to_thread(_xdotool, *args)
 
     async def _handle_touch_long_press(self, event: dict):
         ax, ay = self._denorm(float(event.get("nx", 0.0)), float(event.get("ny", 0.0)))

@@ -8,6 +8,7 @@ import { AudioAnalyser } from '@/services/audioAnalyser';
 import dynamic from 'next/dynamic';
 import FrequencyBars from './FrequencyBars';
 import { LiveSession } from './LiveSession';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const VoiceOrb = dynamic(() => import('@/components/three/VoiceOrb'), { ssr: false });
 
@@ -44,6 +45,7 @@ export default function VoiceCallPanel() {
   const analyserRef = useRef<AudioAnalyser | null>(null);
   const [analyser, setAnalyser] = useState<AudioAnalyser | null>(null);
   const [advancedMode, setAdvancedMode] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!isActive || !startedAt) return;
@@ -98,7 +100,7 @@ export default function VoiceCallPanel() {
   return (
     <div
       style={{
-        padding: '6px 24px 0',
+        padding: isMobile ? '6px 10px 0' : '6px 24px 0',
         flexShrink: 0,
         display: 'flex',
         justifyContent: 'center',
@@ -109,32 +111,35 @@ export default function VoiceCallPanel() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          padding: '8px 14px',
+          gap: isMobile ? '6px' : '10px',
+          padding: isMobile ? '6px 10px' : '8px 14px',
           width: '100%',
           maxWidth: '1024px',
           boxSizing: 'border-box',
-          height: '48px',
+          height: isMobile ? '40px' : '48px',
           background: 'rgba(255,255,255,0.02)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '8px',
+          overflow: 'hidden',
         }}
       >
-        <VoiceOrb activity={activity} analyser={analyser} size={28} />
+        <VoiceOrb activity={activity} analyser={analyser} size={isMobile ? 22 : 28} />
 
         <span style={{
-          fontSize: '12px', fontWeight: 510, color,
+          fontSize: isMobile ? '11px' : '12px', fontWeight: 510, color,
           transition: 'color 0.3s', flexShrink: 0,
         }}>
           {label}
         </span>
-        <span style={{
-          fontSize: '11px', color: '#62666d',
-          fontFamily: "'Berkeley Mono', ui-monospace, monospace",
-          flexShrink: 0,
-        }}>
-          {duration}
-        </span>
+        {!isMobile && (
+          <span style={{
+            fontSize: '11px', color: '#62666d',
+            fontFamily: "'Berkeley Mono', ui-monospace, monospace",
+            flexShrink: 0,
+          }}>
+            {duration}
+          </span>
+        )}
 
         <div style={{ flex: 1, minWidth: 0, height: '14px', display: 'flex', alignItems: 'center' }}>
           <FrequencyBars activity={activity} analyser={analyser} height={14} />
@@ -144,7 +149,7 @@ export default function VoiceCallPanel() {
           <span style={{
             fontSize: '11px', color: '#8a8f98', fontStyle: 'italic',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            maxWidth: '200px', flexShrink: 1,
+            maxWidth: isMobile ? '100px' : '200px', flexShrink: 1,
           }}>
             {interimTranscript}
           </span>

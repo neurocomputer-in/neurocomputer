@@ -5,6 +5,7 @@ import { terminalWsUrl } from '@/services/api';
 
 export interface TerminalWsHandle {
   send: (data: ArrayBuffer | Uint8Array | string) => void;
+  sendControl: (payload: Record<string, unknown>) => void;
   resize: (cols: number, rows: number) => void;
   close: () => void;
 }
@@ -103,10 +104,18 @@ export function useTerminalWs(
     ws.send(JSON.stringify({ type: 'resize', cols, rows }));
   }, []);
 
+  const sendControl = useCallback((payload: Record<string, unknown>) => {
+    const ws = wsRef.current;
+    const state = ws?.readyState;
+    console.log('[terminal-ws] sendControl', payload, 'wsState=', state);
+    if (!ws || state !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify(payload));
+  }, []);
+
   const close = useCallback(() => {
     shouldReconnectRef.current = false;
     try { wsRef.current?.close(); } catch { /* no-op */ }
   }, []);
 
-  return { send, resize, close };
+  return { send, sendControl, resize, close };
 }

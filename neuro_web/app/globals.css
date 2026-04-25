@@ -35,6 +35,19 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root {
+  --app-height: 100vh;
+  --safe-bottom: 0px;
+}
+
+@supports (height: 100dvh) {
+  :root { --app-height: 100dvh; }
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  :root { --safe-bottom: env(safe-area-inset-bottom); }
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 6px; }
@@ -80,4 +93,19 @@ textarea, input { font-family: inherit; font-feature-settings: "cv01", "ss03"; }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767px) {
+  .glass-panel { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+  /* Touch-scroll is handled by an overlay div above xterm (see
+     TerminalPanel.tsx). Hint the browser to allow vertical panning and
+     prevent iOS from hijacking touches for zoom/double-tap. */
+  .neuro-term-mount, .neuro-term-mount .xterm,
+  .neuro-term-mount .xterm-viewport,
+  .neuro-term-mount .xterm-screen,
+  .neuro-term-mount canvas {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
 }

@@ -6,6 +6,7 @@ import agentReducer from './agentSlice';
 import chatReducer from './chatSlice';
 import uiReducer from './uiSlice';
 import terminalReducer from './terminalSlice';
+import osReducer from './osSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     chat: chatReducer,
     ui: uiReducer,
     terminal: terminalReducer,
+    os: osReducer,
   },
 });
 

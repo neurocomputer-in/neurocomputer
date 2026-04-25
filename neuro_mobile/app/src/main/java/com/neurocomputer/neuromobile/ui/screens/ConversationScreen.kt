@@ -92,6 +92,8 @@ import java.util.*
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
+enum class TouchMode { NONE, TOUCHPAD, TABLET }
+
 @HiltViewModel
 class ConversationViewModel @Inject constructor(
     private val webSocketService: WebSocketService,
@@ -149,14 +151,30 @@ class ConversationViewModel @Inject constructor(
         AgentInfo.AGENTS.find { it.type.name.equals(agentId, ignoreCase = true) } ?: AgentInfo.AGENTS.first()
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AgentInfo.AGENTS.first())
 
-    // Touchpad mode
-    private val _isTouchpadMode = MutableStateFlow(false)
-    val isTouchpadMode: StateFlow<Boolean> = _isTouchpadMode.asStateFlow()
+    // Three-way touch mode: NONE (view only) → TOUCHPAD (relative) → TABLET (absolute) → NONE …
+    private val _touchMode = MutableStateFlow(TouchMode.TABLET)
+    val touchMode: StateFlow<TouchMode> = _touchMode.asStateFlow()
+    val isTouchpadMode: StateFlow<Boolean> = _touchMode
+        .map { it == TouchMode.TOUCHPAD }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isTabletMode: StateFlow<Boolean> = _touchMode
+        .map { it == TouchMode.TABLET }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    // Tablet mode: absolute-touch overlay. Default ON; disabled when touchpad explicitly chosen.
-    private val _isTabletMode = MutableStateFlow(true)
-    val isTabletMode: StateFlow<Boolean> = _isTabletMode.asStateFlow()
-    fun toggleTabletMode() { _isTabletMode.value = !_isTabletMode.value }
+    fun cycleTouchMode() {
+        _touchMode.value = when (_touchMode.value) {
+            TouchMode.NONE -> TouchMode.TOUCHPAD
+            TouchMode.TOUCHPAD -> TouchMode.TABLET
+            TouchMode.TABLET -> TouchMode.NONE
+        }
+        _localCursor.value = Offset(0.5f, 0.5f)
+    }
+
+    // Locally-owned cursor position (normalized, 0..1). Rendered instantly on
+    // phone so the arrow is latency-free; PC follows via direct_move events.
+    private val _localCursor = MutableStateFlow(Offset(0.5f, 0.5f))
+    val localCursor: StateFlow<Offset> = _localCursor.asStateFlow()
+    fun setLocalCursor(pos: Offset) { _localCursor.value = pos }
 
     private val _isScrollMode = MutableStateFlow(false)
     val isScrollMode: StateFlow<Boolean> = _isScrollMode.asStateFlow()
@@ -832,8 +850,10 @@ class ConversationViewModel @Inject constructor(
         }
     }
 
-    fun toggleTouchpadMode() {
-        _isTouchpadMode.value = !_isTouchpadMode.value
+    fun exitTouchMode() {
+        if (_touchMode.value != TouchMode.NONE) {
+            _touchMode.value = TouchMode.NONE
+        }
     }
 
     fun toggleWindowSelectorMode() {
@@ -1374,6 +1394,14 @@ class ConversationViewModel @Inject constructor(
         liveKitService.sendMouseScroll(dx, dy)
     }
 
+    fun sendDirectMove(x: Float, y: Float) {
+        liveKitService.sendDirectMove(x, y)
+    }
+
+    fun sendDirectClick(x: Float, y: Float, button: String = "left", count: Int = 1) {
+        liveKitService.sendDirectClick(x, y, button, count)
+    }
+
     override fun onCleared() {
         super.onCleared()
         webSocketService.disconnect()
@@ -1383,18 +1411,55 @@ class ConversationViewModel @Inject constructor(
 }
 
 /**
- * Draws a classic OS cursor arrow at the normalized position [cursorPos] (0..1
- * in both axes) over the full-screen overlay. Only visible when a valid position
- * is available (i.e. during an active screen-share session).
+ * Returns the rendered video rectangle (offset + size) inside a [containerW]×[containerH]
+ * box when the source has aspect ratio [pcW]/[pcH] and is scaled with FitInside.
+ * Returns Triple(offsetX, offsetY, renderW, renderH) — all in the same pixel units.
+ */
+private fun videoRenderRect(
+    containerW: Float, containerH: Float,
+    pcW: Int, pcH: Int
+): FloatArray {
+    val pcAspect = if (pcH > 0) pcW.toFloat() / pcH.toFloat() else 16f / 9f
+    val phoneAspect = if (containerH > 0) containerW / containerH else 9f / 16f
+    val renderW: Float
+    val renderH: Float
+    if (phoneAspect > pcAspect) {
+        // Phone wider → pillarbox (black left/right)
+        renderH = containerH
+        renderW = containerH * pcAspect
+    } else {
+        // Phone taller (or equal) → letterbox (black top/bottom)
+        renderW = containerW
+        renderH = containerW / pcAspect
+    }
+    return floatArrayOf(
+        (containerW - renderW) / 2f,  // offsetX
+        (containerH - renderH) / 2f,  // offsetY
+        renderW,
+        renderH
+    )
+}
+
+/**
+ * Draws a classic OS cursor arrow at PC-normalized [cursorPos] (0..1) mapped
+ * precisely into the FitInside video render area within the phone screen.
  */
 @Composable
-fun CursorArrowOverlay(cursorPos: androidx.compose.ui.geometry.Offset?, modifier: Modifier = Modifier) {
+fun CursorArrowOverlay(
+    cursorPos: androidx.compose.ui.geometry.Offset?,
+    pcScreenWidth: Int = 1920,
+    pcScreenHeight: Int = 1080,
+    modifier: Modifier = Modifier
+) {
     if (cursorPos == null) return
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val arrowPx = with(density) { 36.dp.toPx() }
+    val arrowPx = with(density) { 20.dp.toPx() }
     androidx.compose.foundation.Canvas(modifier = modifier.fillMaxSize()) {
-        val px = cursorPos.x * size.width
-        val py = cursorPos.y * size.height
+        val vr = videoRenderRect(size.width, size.height, pcScreenWidth, pcScreenHeight)
+        val ox = vr[0]; val oy = vr[1]; val rw = vr[2]; val rh = vr[3]
+        // Map PC-normalized cursor into the actual video render area
+        val px = ox + cursorPos.x * rw
+        val py = oy + cursorPos.y * rh
         val s = arrowPx
         // Classic arrow pointer shape (top-left hot-spot)
         val path = androidx.compose.ui.graphics.Path().apply {
@@ -1570,25 +1635,44 @@ fun ConversationScreen(
                     }
                     // Transparent gesture layer — tablet mode wins when both flags set.
                     val isTabletMode by viewModel.isTabletMode.collectAsState()
+                    val localCursor by viewModel.localCursor.collectAsState()
+                    val pcDims by viewModel.remoteScreenDims.collectAsState()
                     if (isTabletMode && !isTouchpadMode) {
-                        TabletTouchOverlay(liveKitService = viewModel.liveKitServicePublic)
+                        TabletTouchOverlay(
+                            liveKitService = viewModel.liveKitServicePublic,
+                            pcScreenWidth = pcDims.first,
+                            pcScreenHeight = pcDims.second,
+                            onLocalCursorChange = { viewModel.setLocalCursor(it) },
+                        )
                     } else if (isTouchpadMode) {
                         TouchpadOverlay(
                             isScrollMode = isScrollMode,
                             isClickMode = isClickMode,
                             isFocusMode = isFocusMode,
-                            onExit = { viewModel.toggleTouchpadMode() },
-                            onMouseMove = { dx, dy -> viewModel.sendMouseMove(dx, dy) },
-                            onMouseClick = { x, y, button -> viewModel.sendMouseClick(x, y, button) },
+                            localCursor = localCursor,
+                            pcScreenWidth = pcDims.first,
+                            pcScreenHeight = pcDims.second,
+                            onExit = { viewModel.exitTouchMode() },
+                            onLocalCursorChange = { viewModel.setLocalCursor(it) },
+                            onDirectMove = { x, y -> viewModel.sendDirectMove(x, y) },
+                            onDirectClick = { x, y, btn, cnt -> viewModel.sendDirectClick(x, y, btn, cnt) },
                             onMouseScroll = { dx, dy -> viewModel.sendMouseScroll(dx, dy) },
                             onMouseDown = { viewModel.sendMouseDown() },
-                            onMouseUp = { viewModel.sendMouseUp() }
+                            onMouseUp = { viewModel.sendMouseUp() },
                         )
                     }
 
-                    // Cursor arrow — shows the PC mouse position over the video
+                    // Cursor arrow — local (zero-latency) in touch modes, remote otherwise.
                     val remoteCursor by viewModel.remoteCursorPosition.collectAsState()
-                    CursorArrowOverlay(cursorPos = remoteCursor)
+                    val arrowPos: Offset? = when {
+                        isTouchpadMode || isTabletMode -> localCursor
+                        else -> remoteCursor
+                    }
+                    CursorArrowOverlay(
+                        cursorPos = arrowPos,
+                        pcScreenWidth = pcDims.first,
+                        pcScreenHeight = pcDims.second,
+                    )
 
                     // Window selector overlay
                     if (isWindowSelectorMode) {
@@ -1949,8 +2033,8 @@ fun ConversationScreen(
             )
         }
 
-        // Agent Dropdown
-        if (showAgentDropdown) {
+        // Agent Dropdown — suppressed in fullscreen/screen-sharing mode
+        if (showAgentDropdown && !isFullscreen) {
             AgentDropdown(
                 agents = AgentInfo.AGENTS,
                 selectedAgent = selectedAgent,
@@ -1981,15 +2065,33 @@ fun ConversationScreen(
                     Icon(Icons.Default.Mic, contentDescription = "Mic", tint = Color.White)
                 }
                 
-                // Mouse Control Toggle
+                // Touch-mode cycle: NONE → TOUCHPAD → TABLET → NONE
+                val touchMode by viewModel.touchMode.collectAsState()
+                val touchIcon = when (touchMode) {
+                    TouchMode.TOUCHPAD -> Icons.Default.Mouse
+                    TouchMode.TABLET -> Icons.Default.TouchApp
+                    TouchMode.NONE -> Icons.Default.DoNotTouch
+                }
+                val touchTint = when (touchMode) {
+                    TouchMode.TOUCHPAD -> Color(0xFF8BE9FD.toInt())
+                    TouchMode.TABLET -> Color(0xFFFFB86C.toInt())
+                    TouchMode.NONE -> Color.White.copy(alpha = 0.6f)
+                }
+                val touchBg = when (touchMode) {
+                    TouchMode.TOUCHPAD -> Color(0xFF8BE9FD.toInt()).copy(alpha = 0.2f)
+                    TouchMode.TABLET -> Color(0xFFFFB86C.toInt()).copy(alpha = 0.2f)
+                    TouchMode.NONE -> Color.Transparent
+                }
+                val touchDesc = when (touchMode) {
+                    TouchMode.TOUCHPAD -> "Touchpad mode"
+                    TouchMode.TABLET -> "Tablet mode"
+                    TouchMode.NONE -> "Touch disabled"
+                }
                 IconButton(
-                    onClick = { viewModel.toggleTouchpadMode() },
-                    modifier = Modifier.background(
-                        if (isTouchpadMode) Color(0xFF8BE9FD.toInt()).copy(alpha = 0.2f) else Color.Transparent,
-                        shape = CircleShape
-                    )
+                    onClick = { viewModel.cycleTouchMode() },
+                    modifier = Modifier.background(touchBg, shape = CircleShape)
                 ) {
-                    Icon(Icons.Default.Mouse, contentDescription = "Mouse Control", tint = if (isTouchpadMode) Color(0xFF8BE9FD.toInt()) else Color.White)
+                    Icon(touchIcon, contentDescription = touchDesc, tint = touchTint)
                 }
 
                 // Window Selector Toggle
@@ -2034,20 +2136,7 @@ fun ConversationScreen(
             }
         }
 
-        // Agent Selector at Top End for Fullscreen
-        if (isFullscreen) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 0.dp, end = 16.dp)
-            ) {
-                AgentToolbarButton(
-                    agentName = selectedAgent.name,
-                    agentType = selectedAgent.type,
-                    onClick = { viewModel.toggleAgentDropdown() }
-                )
-            }
-        }
+        // Agent Selector at Top End — hidden in screen sharing / fullscreen mode
 
         // Left-side fixed Toolbar - only shown during fullscreen mode
         if (isFullscreen) {
@@ -2083,11 +2172,13 @@ fun ConversationScreen(
         }
 
         // Full Keyboard Overlay - only shown during fullscreen mode
+        // startPadding clears the left toolbar (32dp offset + ~48dp pill + 8dp gap)
         if (isFullscreen && isKeyboardOpen) {
             FullKeyboardOverlay(
                 onKeyPress = { viewModel.sendKey(it) },
                 onComboPress = { viewModel.sendKey(it) },
-                onClose = { viewModel.toggleKeyboard() }
+                onClose = { viewModel.toggleKeyboard() },
+                startPadding = 88.dp,
             )
         }
 

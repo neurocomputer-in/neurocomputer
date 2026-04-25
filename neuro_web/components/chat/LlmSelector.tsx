@@ -1,8 +1,10 @@
 'use client';
-import { CSSProperties, useEffect, useMemo, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   apiGetConversationLlm,
   apiGetConversationRole,
@@ -19,8 +21,9 @@ type Mode = 'role' | 'raw';
 
 export default function LlmSelector() {
   const activeTabCid = useAppSelector(s => s.conversations.activeTabCid);
-  const openTabs = useAppSelector(s => s.conversations.openTabs);
-  const activeAgent = useMemo(() => {
+  const openTabs     = useAppSelector(s => s.conversations.openTabs);
+  const isMobile     = useIsMobile();
+  const activeAgent  = useMemo(() => {
     const tab = openTabs.find(t => t.cid === activeTabCid);
     return tab?.agentId || 'neuro';
   }, [openTabs, activeTabCid]);
@@ -35,6 +38,9 @@ export default function LlmSelector() {
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const roleWrapRef = useRef<HTMLDivElement>(null);
+  const providerWrapRef = useRef<HTMLDivElement>(null);
+  const modelWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const isOpenCode = activeAgent === 'opencode';
@@ -180,16 +186,36 @@ export default function LlmSelector() {
     fontFeatureSettings: '"cv01", "ss03"',
   };
 
-  const dropStyle: CSSProperties = {
-    position: 'absolute',
-    bottom: 'calc(100% + 4px)',
-    left: 0,
-    minWidth: '100%',
-    borderRadius: '8px',
-    boxShadow: '0 -8px 30px rgba(0,0,0,0.5)',
-    padding: '3px',
-    zIndex: 50,
-    maxHeight: '240px',
+  const getDesktopDropStyle = useCallback((anchorEl: HTMLDivElement | null): CSSProperties => {
+    if (!anchorEl || typeof window === 'undefined') return {};
+    const rect = anchorEl.getBoundingClientRect();
+    return {
+      position: 'fixed',
+      left: rect.left,
+      bottom: window.innerHeight - rect.top + 4,
+      minWidth: rect.width,
+      borderRadius: '8px',
+      boxShadow: '0 -8px 30px rgba(0,0,0,0.5)',
+      padding: '3px',
+      zIndex: 9980,
+      maxHeight: '240px',
+      overflowY: 'auto',
+    };
+  }, []);
+
+  // Mobile: fixed panel above the keyboard / ChatInput, full-width
+  const mobileDropStyle: CSSProperties = {
+    position: 'fixed',
+    left: '8px',
+    right: '8px',
+    bottom: '140px',          // sits above ChatInput area
+    borderRadius: '12px',
+    background: '#1a1b1d',
+    border: '1px solid rgba(255,255,255,0.12)',
+    boxShadow: '0 -16px 48px rgba(0,0,0,0.85)',
+    padding: '4px',
+    zIndex: 9980,
+    maxHeight: '45vh',
     overflowY: 'auto',
   };
 
@@ -199,13 +225,57 @@ export default function LlmSelector() {
     background: 'transparent',
     color: '#d0d6e0',
     textAlign: 'left',
-    padding: '6px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
+    padding: isMobile ? '13px 14px' : '6px 8px',
+    borderRadius: isMobile ? '8px' : '4px',
+    fontSize: isMobile ? '14px' : '11px',
     cursor: 'pointer',
     transition: 'background 0.12s',
     fontFamily: 'inherit',
     fontFeatureSettings: '"cv01", "ss03"',
+    touchAction: 'manipulation',
+    WebkitTapHighlightColor: 'transparent',
+  };
+
+  const renderDrop = (
+    open: boolean,
+    onClose: () => void,
+    extraStyle: CSSProperties,
+    children: React.ReactNode,
+    anchorEl?: HTMLDivElement | null,
+  ) => {
+    const computedStyle = isMobile ? mobileDropStyle : getDesktopDropStyle(anchorEl ?? null);
+    const content = (
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              style={{ position: 'fixed', inset: 0, zIndex: 9979, background: isMobile ? 'rgba(0,0,0,0.5)' : 'transparent' }}
+            />
+            <motion.div
+              key="menu"
+              initial={{ opacity: 0, y: isMobile ? 12 : 10, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: isMobile ? 12 : 10, scale: 0.97 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className={isMobile ? undefined : 'glass-dropdown'}
+              style={{ ...computedStyle, ...extraStyle }}
+            >
+              {children}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    );
+
+    if (typeof window !== 'undefined') {
+      return createPortal(content, document.body);
+    }
+    return content;
   };
 
   const modeToggleStyle = (active: boolean): CSSProperties => ({
@@ -244,7 +314,7 @@ export default function LlmSelector() {
       )}
 
       {mode === 'role' && roles.length > 0 ? (
-        <div style={{ position: 'relative' }}>
+        <div ref={roleWrapRef} style={{ position: 'relative' }}>
           <button
             type="button"
             onClick={() => { setRoleMenuOpen(o => !o); }}
@@ -259,49 +329,38 @@ export default function LlmSelector() {
             </span>
             {roleMenuOpen ? <ChevronUp size={10} color="#62666d" /> : <ChevronDown size={10} color="#62666d" />}
           </button>
-          <AnimatePresence>
-            {roleMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="glass-dropdown"
-                style={{ ...dropStyle, minWidth: '260px' }}
-              >
-                {roles.map(([slug, r]) => {
-                  const pinnedAlias = library?.aliases?.[r.pinned];
-                  const active = slug === selectedRole;
-                  return (
-                    <button
-                      key={slug}
-                      type="button"
-                      onClick={() => handleRoleChange(slug)}
-                      style={{
-                        ...itemStyle,
-                        background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
-                        color: active ? '#f7f8f8' : '#d0d6e0',
-                        fontWeight: active ? 510 : 400,
-                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px',
-                      }}
-                    >
-                      <span>{r.display_name}</span>
-                      {pinnedAlias && (
-                        <span style={{ fontSize: '9px', color: '#62666d' }}>
-                          → {pinnedAlias.display_name}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {renderDrop(roleMenuOpen, () => setRoleMenuOpen(false), { minWidth: '260px' },
+            roles.map(([slug, r]) => {
+              const pinnedAlias = library?.aliases?.[r.pinned];
+              const active = slug === selectedRole;
+              return (
+                <button
+                  key={slug}
+                  type="button"
+                  onClick={() => handleRoleChange(slug)}
+                  style={{
+                    ...itemStyle,
+                    background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    color: active ? '#f7f8f8' : '#d0d6e0',
+                    fontWeight: active ? 510 : 400,
+                    display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px',
+                  }}
+                >
+                  <span>{r.display_name}</span>
+                  {pinnedAlias && (
+                    <span style={{ fontSize: isMobile ? '11px' : '9px', color: '#62666d' }}>
+                      → {pinnedAlias.display_name}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          , roleWrapRef.current)}
         </div>
       ) : (
         <>
           {/* Provider selector */}
-          <div style={{ position: 'relative' }}>
+          <div ref={providerWrapRef} style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={() => { setProviderMenuOpen(o => !o); setModelMenuOpen(false); }}
@@ -312,38 +371,27 @@ export default function LlmSelector() {
               </span>
               {providerMenuOpen ? <ChevronUp size={10} color="#62666d" /> : <ChevronDown size={10} color="#62666d" />}
             </button>
-            <AnimatePresence>
-              {providerMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className="glass-dropdown"
-                  style={dropStyle}
+            {renderDrop(providerMenuOpen, () => setProviderMenuOpen(false), {},
+              providers.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleProviderChange(p.id)}
+                  style={{
+                    ...itemStyle,
+                    background: p.id === (selectedProvider || activeProvider?.id) ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    color: p.id === (selectedProvider || activeProvider?.id) ? '#f7f8f8' : '#d0d6e0',
+                    fontWeight: p.id === (selectedProvider || activeProvider?.id) ? 510 : 400,
+                  }}
                 >
-                  {providers.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleProviderChange(p.id)}
-                      style={{
-                        ...itemStyle,
-                        background: p.id === (selectedProvider || activeProvider?.id) ? 'rgba(255,255,255,0.05)' : 'transparent',
-                        color: p.id === (selectedProvider || activeProvider?.id) ? '#f7f8f8' : '#d0d6e0',
-                        fontWeight: p.id === (selectedProvider || activeProvider?.id) ? 510 : 400,
-                      }}
-                    >
-                      {p.name}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {p.name}
+                </button>
+              ))
+            , providerWrapRef.current)}
           </div>
 
           {/* Model selector */}
-          <div style={{ position: 'relative' }}>
+          <div ref={modelWrapRef} style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={() => { if (visibleModels.length > 0) { setModelMenuOpen(o => !o); setProviderMenuOpen(false); } }}
@@ -355,36 +403,25 @@ export default function LlmSelector() {
               </span>
               {modelMenuOpen ? <ChevronUp size={10} color="#62666d" /> : <ChevronDown size={10} color="#62666d" />}
             </button>
-            <AnimatePresence>
-              {modelMenuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className="glass-dropdown"
-                  style={{ ...dropStyle, minWidth: '240px' }}
+            {renderDrop(modelMenuOpen, () => setModelMenuOpen(false), { minWidth: isMobile ? undefined : '240px' },
+              visibleModels.map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleModelChange(m)}
+                  style={{
+                    ...itemStyle,
+                    background: m === modelValue ? 'rgba(255,255,255,0.05)' : 'transparent',
+                    color: m === modelValue ? '#f7f8f8' : '#d0d6e0',
+                    fontFamily: "'Berkeley Mono', ui-monospace, 'SF Mono', Menlo, monospace",
+                    fontSize: isMobile ? '12px' : '10px',
+                    fontWeight: m === modelValue ? 510 : 400,
+                  }}
                 >
-                  {visibleModels.map(m => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => handleModelChange(m)}
-                      style={{
-                        ...itemStyle,
-                        background: m === modelValue ? 'rgba(255,255,255,0.05)' : 'transparent',
-                        color: m === modelValue ? '#f7f8f8' : '#d0d6e0',
-                        fontFamily: "'Berkeley Mono', ui-monospace, 'SF Mono', Menlo, monospace",
-                        fontSize: '10px',
-                        fontWeight: m === modelValue ? 510 : 400,
-                      }}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  {m}
+                </button>
+              ))
+            , modelWrapRef.current)}
           </div>
         </>
       )}

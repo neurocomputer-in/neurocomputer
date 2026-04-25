@@ -23,6 +23,8 @@ from typing import Optional
 from fastapi import WebSocket, WebSocketDisconnect
 import ptyprocess
 
+from . import tmux_manager
+
 logger = logging.getLogger(__name__)
 
 READ_CHUNK = 4096
@@ -62,6 +64,17 @@ class PtyBridge:
     async def _spawn_pty(self) -> None:
         env = os.environ.copy()
         env["TERM"] = "xterm-256color"
+        # Idempotent: apply mouse-on / history-limit to this session so
+        # wheel-forwarding works for sessions that pre-date these defaults.
+        import subprocess as _sp
+        for opt, val in (("mouse", "on"), ("history-limit", "10000")):
+            try:
+                _sp.run(
+                    ["tmux", "set-option", "-t", self.session, opt, val],
+                    capture_output=True, timeout=2,
+                )
+            except Exception:
+                pass
         # ``ptyprocess.spawn`` forks; run in a worker thread so the event
         # loop stays responsive.
         self.pty = await asyncio.to_thread(
@@ -151,6 +164,17 @@ class PtyBridge:
                         self.pty.setwinsize(rows, cols)
                     except Exception:
                         pass
+                elif t == "tmux-scroll":
+                    action = str(payload.get("action") or "")
+                    try:
+                        count = int(payload.get("count") or 1)
+                    except (TypeError, ValueError):
+                        count = 1
+                    count = max(1, min(200, count))
+                    logger.info("[tmux-scroll] action=%s count=%s", action, count)
+                    await asyncio.to_thread(
+                        tmux_manager.scroll, self.session, action, count
+                    )
                 elif t == "ping":
                     try:
                         await self.ws.send_text(json.dumps({"type": "pong"}))

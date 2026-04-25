@@ -5,9 +5,11 @@ import { ChevronDown, Check, FolderOpen } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedProject } from '@/store/projectSlice';
 import { fetchConversations, switchProjectTabs } from '@/store/conversationSlice';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 export default function ProjectDropdown() {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const projects = useAppSelector(s => s.projects.projects);
   const selectedProjectId = useAppSelector(s => s.projects.selectedProjectId);
   const selectedWorkspaceId = useAppSelector(s => s.workspace.selectedWorkspaceId);
@@ -39,7 +41,7 @@ export default function ProjectDropdown() {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <div
         data-testid="project-dropdown-trigger"
         onClick={() => setOpen(!open)}
@@ -49,6 +51,7 @@ export default function ProjectDropdown() {
           borderRadius: '6px', cursor: 'pointer', userSelect: 'none',
           transition: 'background 0.15s',
           border: '1px solid rgba(255,255,255,0.05)',
+          width: '100%',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
@@ -72,7 +75,8 @@ export default function ProjectDropdown() {
             className="glass-dropdown"
             style={{
               position: 'absolute', top: '100%', left: 0, marginTop: '6px',
-              borderRadius: '8px', minWidth: '200px', zIndex: 100, overflow: 'hidden',
+              borderRadius: '8px', minWidth: isMobile ? '100%' : '200px', width: isMobile ? '100%' : undefined,
+              zIndex: 100, overflow: 'hidden',
               boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
             }}
           >

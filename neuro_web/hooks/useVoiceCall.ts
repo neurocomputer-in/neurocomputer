@@ -4,11 +4,11 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setVoiceCallActive, setVoiceCallMuted } from '@/store/chatSlice';
 import { apiStartVoiceCall, apiEndVoiceCall } from '@/services/api';
 import { useEnsureConversation } from './useEnsureConversation';
-import { usePaneCid } from '@/components/panes/PaneContext';
+import { useActiveCid } from '@/components/os/WindowContext';
 
 export function useVoiceCall() {
   const dispatch = useAppDispatch();
-  const paneCid = usePaneCid();
+  const paneCid = useActiveCid();
   const globalActiveCid = useAppSelector(s => s.conversations.activeTabCid);
   const activeTabCid = paneCid ?? globalActiveCid;
   const openTabs = useAppSelector(s => s.conversations.openTabs);
@@ -82,7 +82,12 @@ export function useVoiceCall() {
         } catch {}
       });
 
-      await voiceRoom.connect(result.url, result.token);
+      let voiceUrl = result.url;
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:' && voiceUrl.startsWith('ws://')) {
+        voiceUrl = 'wss://' + voiceUrl.slice(5);
+      }
+
+      await voiceRoom.connect(voiceUrl, result.token);
 
       // Publish local mic audio
       const micTrack = await createLocalAudioTrack({

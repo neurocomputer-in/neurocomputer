@@ -7,6 +7,7 @@ import { closeTab, loadMessages, setActiveTab } from '@/store/conversationSlice'
 import { useLiveKitContext } from '@/providers/LiveKitProvider';
 import { AGENT_LIST, AgentType } from '@/types';
 import AgentIcon from '@/components/agent/AgentIcon';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface Props {
   onNewTab: () => void;
@@ -18,6 +19,7 @@ export default function TabBar({ onNewTab }: Props) {
   const activeTabCid = useAppSelector(s => s.conversations.activeTabCid);
   const tabMessages = useAppSelector(s => s.conversations.tabMessages);
   const agentFilter = useAppSelector(s => s.agent.agentFilter);
+  const isMobile = useIsMobile();
   const { connectToConversation } = useLiveKitContext();
 
   const visibleTabs = agentFilter === AgentType.ALL
@@ -34,15 +36,9 @@ export default function TabBar({ onNewTab }: Props) {
   };
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  // Tabs are restored from localStorage on the client after mount, so
-  // server-rendered HTML (0 tabs) diverges from client-rendered HTML
-  // (N tabs). Gate the tab list on mount to avoid hydration mismatch.
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  // Convert vertical wheel scrolls into horizontal scrolls inside the tab
-  // strip, so laptops without a trackpad can still traverse many tabs.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -55,11 +51,18 @@ export default function TabBar({ onNewTab }: Props) {
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
+  const tabPadding = isMobile ? '0 10px' : '0 14px';
+  const titleMaxWidth = isMobile ? '90px' : '140px';
+  const workdirMaxWidth = isMobile ? '50px' : '80px';
+  const fontSize = isMobile ? '11px' : '12px';
+  const iconSize = isMobile ? 12 : 13;
+  const tabHeight = isMobile ? '40px' : '36px';
+  const isBottom = useAppSelector(s => s.ui.tabBarPosition) === 'bottom';
+
   return (
     <div
       style={{
-        height: '36px',
-        minHeight: '36px',
+        minHeight: tabHeight,
         display: 'flex',
         alignItems: 'stretch',
         background: 'rgba(15, 16, 17, 0.8)',
@@ -67,6 +70,7 @@ export default function TabBar({ onNewTab }: Props) {
         borderTop: '1px solid rgba(255,255,255,0.05)',
         flexShrink: 0,
         overflow: 'hidden',
+        paddingBottom: (isMobile && isBottom) ? 'var(--safe-bottom)' : undefined,
       }}
     >
       <div
@@ -95,12 +99,12 @@ export default function TabBar({ onNewTab }: Props) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              padding: '0 14px',
-              fontSize: '12px',
+              padding: tabPadding,
+              fontSize,
               color: isActive ? '#f7f8f8' : '#62666d',
               borderTop: isActive ? '2px solid var(--accent)' : '2px solid transparent',
               background: isActive ? 'rgba(255,255,255,0.03)' : 'transparent',
-              gap: '6px',
+              gap: isMobile ? '4px' : '6px',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               userSelect: 'none',
@@ -108,35 +112,36 @@ export default function TabBar({ onNewTab }: Props) {
             }}
             onClick={() => handleSwitchTab(tab.cid)}
           >
-            <AgentIcon agent={agent} size={13} />
+            <AgentIcon agent={agent} size={iconSize} />
             <span
               title={tab.workdir ? `${tab.title} — ${tab.workdir}` : tab.title}
-              style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isActive ? 510 : 400 }}
+              style={{ maxWidth: titleMaxWidth, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isActive ? 510 : 400 }}
             >
               {tab.title}
             </span>
-            {tab.workdir && (
+            {tab.workdir && !isMobile && (
               <span style={{
                 fontSize: '10px', color: isActive ? 'var(--accent)' : 'rgba(113,112,255,0.5)',
                 fontFamily: "'Berkeley Mono', ui-monospace, 'SF Mono', Menlo, monospace",
-                maxWidth: '80px',
+                maxWidth: workdirMaxWidth,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {tab.workdir.split('/').pop() || tab.workdir}
               </span>
             )}
-            <motion.span
-              whileHover={{ opacity: 1, backgroundColor: 'rgba(255,255,255,0.08)' }}
-              whileTap={{ scale: 0.9 }}
+            <span
               onClick={(e) => { e.stopPropagation(); dispatch(closeTab(tab.cid)); }}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '16px', height: '16px', borderRadius: '4px',
+                width: isMobile ? '28px' : '16px', height: isMobile ? '28px' : '16px',
+                borderRadius: '4px',
                 opacity: 0.3,
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
               }}
             >
-              <X size={11} color="#8a8f98" />
-            </motion.span>
+              <X size={isMobile ? 12 : 11} color="#8a8f98" />
+            </span>
           </motion.div>
         );
       })}
@@ -154,7 +159,7 @@ export default function TabBar({ onNewTab }: Props) {
           title="New chat"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '0 14px', cursor: 'pointer',
+            padding: isMobile ? '0 10px' : '0 14px', cursor: 'pointer',
             opacity: 0.7, height: '100%',
           }}
         >

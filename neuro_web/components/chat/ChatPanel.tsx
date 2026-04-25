@@ -2,7 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
 import { Plus, Sparkles, ArrowRight, Search, FileText, Code, ChevronDown, Folder } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { usePaneCid } from '@/components/panes/PaneContext';
+import { useActiveCid } from '@/components/os/WindowContext';
 import { AGENT_LIST, AgentType } from '@/types';
 import { createConversation, openTab, setActiveTab, updateTabAgent } from '@/store/conversationSlice';
 import { setInputText } from '@/store/chatSlice';
@@ -12,9 +12,8 @@ import { apiUpdateConversationAgent } from '@/services/api';
 import AgentIcon from '@/components/agent/AgentIcon';
 import MessageBubble from './MessageBubble';
 import ThinkingIndicator from './ThinkingIndicator';
-// NOTE: VoiceCallPanel is rendered at page-level now (app/page.tsx) so it
-// persists across chat/terminal/3D views. Don't reintroduce it here.
 import LoadingIndicator from '@/components/common/LoadingIndicator';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 const SUGGESTIONS = [
   { icon: ArrowRight, text: 'What can you help me with?' },
@@ -25,10 +24,11 @@ const SUGGESTIONS = [
 
 function WelcomePage({ projectName }: { projectName: string }) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
+      alignItems: 'center', justifyContent: 'center', padding: isMobile ? '20px 16px' : '40px 24px',
     }}>
       <div style={{ maxWidth: '600px', width: '100%', textAlign: 'center' }}>
         <div style={{
@@ -175,10 +175,11 @@ function EmptyChat({ onSuggestionClick, cid, currentAgentId, allowedAgents }: {
   currentAgentId: string;
   allowedAgents: string[];
 }) {
+  const isMobile = useIsMobile();
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: '40px 24px',
+      alignItems: 'center', justifyContent: 'center', padding: isMobile ? '20px 16px' : '40px 24px',
     }}>
       <div style={{ maxWidth: '600px', width: '100%', textAlign: 'center' }}>
         <div style={{
@@ -306,7 +307,8 @@ function WorkdirModal({ onConfirm, onCancel }: {
 
 export default function ChatPanel() {
   const dispatch = useAppDispatch();
-  const paneCid = usePaneCid();
+  const paneCid = useActiveCid();
+  const isMobile = useIsMobile();
   const globalActiveCid = useAppSelector(s => s.conversations.activeTabCid);
   const activeTabCid = paneCid ?? globalActiveCid;
   const openTabs = useAppSelector(s => s.conversations.openTabs);
@@ -389,7 +391,7 @@ export default function ChatPanel() {
         isActive: true,
         workdir: conv.workdir,
       }));
-      await connectToConversation(conv.id);
+      connectToConversation(conv.id);
     }
   }, [dispatch, selectedProjectId, connectToConversation]);
 
@@ -482,7 +484,7 @@ export default function ChatPanel() {
         <div
           style={{
             width: '100%', maxWidth: '1024px',
-            padding: '24px 28px',
+            padding: isMobile ? '12px 12px' : '24px 28px',
             display: 'flex', flexDirection: 'column',
           }}
         >

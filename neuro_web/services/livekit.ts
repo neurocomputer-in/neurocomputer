@@ -41,7 +41,23 @@ class LiveKitService {
 
     this.currentCid = cid;
 
-    const { token, url } = await apiGetChatToken(cid);
+    const { token, url: rawUrl } = await apiGetChatToken(cid);
+
+    let url = rawUrl;
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
+      const isIp = /^ws:\/\/\d+\.\d+\.\d+\.\d+/.test(url);
+      if (isIp) {
+        console.warn(
+          '[LiveKit] Remote LiveKit server (%s) does not support WSS. ' +
+          'Voice/realtime features disabled when accessed over HTTPS. ' +
+          'Set up a WSS-enabled LiveKit or access via HTTP to use voice.',
+          url
+        );
+        this.connecting = false;
+        throw new Error('LiveKit WSS unavailable');
+      }
+      url = 'wss://' + url.slice(5);
+    }
 
     const options: RoomOptions = {
       adaptiveStream: false,

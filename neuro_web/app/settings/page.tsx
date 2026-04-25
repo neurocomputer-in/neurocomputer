@@ -2,6 +2,7 @@
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { ArrowLeft, User, Key, Monitor, Mic as MicIcon, Waves, Info, Library, Plus, Trash2, Pin, PinOff } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setTabBarPosition, setLiveWallpaperEnabled, setInterfaceMode } from '@/store/uiSlice';
@@ -42,83 +43,113 @@ export default function SettingsPage() {
 
 function SettingsPageInner() {
   const search = useSearchParams();
+  const isMobile = useIsMobile();
   const initialTab = (search.get('tab') as TabId) || 'profile';
   const [tab, setTab] = useState<TabId>(initialTab);
+  // Mobile: show nav list (false) or content panel (true)
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     const q = search.get('tab') as TabId | null;
     if (q && TABS.some(t => t.id === q)) setTab(q);
   }, [search]);
 
+  const navPanel = (
+    <aside style={{
+      width: isMobile ? '100%' : '240px',
+      flexShrink: 0,
+      background: '#0f1011',
+      borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)',
+      display: 'flex', flexDirection: 'column',
+      minHeight: 0,
+    }}>
+      <div style={{ padding: '18px 18px 12px' }}>
+        <Link href="/" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          color: '#8a8f98', fontSize: '13px', textDecoration: 'none',
+          padding: '6px 8px', borderRadius: '6px',
+          minHeight: '40px',
+        }}>
+          <ArrowLeft size={14} /> Back to chat
+        </Link>
+      </div>
+      <div style={{
+        fontSize: '11px', textTransform: 'uppercase',
+        letterSpacing: '0.8px', color: '#62666d', fontWeight: 510,
+        padding: '8px 20px 10px',
+      }}>
+        Settings
+      </div>
+      <nav style={{ flex: 1, padding: '0 8px 16px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
+        {TABS.map(t => {
+          const active = t.id === tab;
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); if (isMobile) setShowContent(true); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: isMobile ? '14px 14px' : '9px 12px',
+                borderRadius: '8px',
+                background: active ? 'rgba(94,106,210,0.12)' : 'transparent',
+                border: '1px solid ' + (active ? 'rgba(94,106,210,0.2)' : 'transparent'),
+                color: active ? '#f7f8f8' : '#d0d6e0',
+                fontSize: isMobile ? '15px' : '13px',
+                fontWeight: active ? 510 : 400,
+                cursor: 'pointer', textAlign: 'left',
+                transition: 'background 0.12s',
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <Icon size={isMobile ? 16 : 14} color={active ? '#c4b5fd' : '#8a8f98'} />
+              <span>{t.label}</span>
+              {isMobile && <ArrowLeft size={14} color="#4a4f58" style={{ marginLeft: 'auto', transform: 'rotate(180deg)' }} />}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
+  );
+
+  const contentPanel = (
+    <main style={{ flex: 1, overflow: 'auto', padding: isMobile ? '20px 16px' : '40px 48px', minHeight: 0 }}>
+      {isMobile && (
+        <button
+          onClick={() => setShowContent(false)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            color: '#8a8f98', fontSize: '13px', background: 'transparent',
+            border: 'none', cursor: 'pointer', padding: '6px 0', marginBottom: '16px',
+            touchAction: 'manipulation',
+          }}
+        >
+          <ArrowLeft size={14} /> Settings
+        </button>
+      )}
+      <div style={{ maxWidth: '760px' }}>
+        {tab === 'profile'    && <ProfileSection />}
+        {tab === 'api-keys'   && <ApiKeysSection />}
+        {tab === 'models'     && <ModelLibrarySection />}
+        {tab === 'appearance' && <AppearanceSection />}
+        {tab === 'voice'      && <VoiceSection />}
+        {tab === 'background' && <BackgroundSection />}
+        {tab === 'about'      && <AboutSection />}
+      </div>
+    </main>
+  );
+
   return (
     <div style={{
-      display: 'flex', height: '100vh',
+      display: 'flex', height: 'var(--app-height, 100vh)',
       background: '#0a0a0b', color: '#d0d6e0', overflow: 'hidden',
+      flexDirection: isMobile ? 'column' : 'row',
     }}>
-      {/* Left nav */}
-      <aside style={{
-        width: '240px', flexShrink: 0,
-        background: '#0f1011',
-        borderRight: '1px solid rgba(255,255,255,0.05)',
-        display: 'flex', flexDirection: 'column',
-      }}>
-        <div style={{ padding: '18px 18px 12px' }}>
-          <Link href="/" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            color: '#8a8f98', fontSize: '12px', textDecoration: 'none',
-            padding: '4px 6px', borderRadius: '4px',
-          }}>
-            <ArrowLeft size={14} /> Back to chat
-          </Link>
-        </div>
-        <div style={{
-          fontSize: '11px', textTransform: 'uppercase',
-          letterSpacing: '0.8px', color: '#62666d', fontWeight: 510,
-          padding: '8px 20px 10px',
-        }}>
-          Settings
-        </div>
-        <nav style={{ flex: 1, padding: '0 8px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {TABS.map(t => {
-            const active = t.id === tab;
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '9px 12px', borderRadius: '6px',
-                  background: active ? 'rgba(94,106,210,0.12)' : 'transparent',
-                  border: '1px solid ' + (active ? 'rgba(94,106,210,0.2)' : 'transparent'),
-                  color: active ? '#f7f8f8' : '#d0d6e0',
-                  fontSize: '13px', fontWeight: active ? 510 : 400,
-                  cursor: 'pointer', textAlign: 'left',
-                  transition: 'background 0.12s',
-                }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
-              >
-                <Icon size={14} color={active ? '#c4b5fd' : '#8a8f98'} />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* Content */}
-      <main style={{ flex: 1, overflow: 'auto', padding: '40px 48px' }}>
-        <div style={{ maxWidth: '760px' }}>
-          {tab === 'profile'    && <ProfileSection />}
-          {tab === 'api-keys'   && <ApiKeysSection />}
-          {tab === 'models'     && <ModelLibrarySection />}
-          {tab === 'appearance' && <AppearanceSection />}
-          {tab === 'voice'      && <VoiceSection />}
-          {tab === 'background' && <BackgroundSection />}
-          {tab === 'about'      && <AboutSection />}
-        </div>
-      </main>
+      {isMobile
+        ? (!showContent ? navPanel : contentPanel)
+        : <>{navPanel}{contentPanel}</>
+      }
     </div>
   );
 }
@@ -144,14 +175,14 @@ function Row({ label, description, children }: { label: string; description?: st
     <div style={{
       padding: '16px 0',
       borderBottom: '1px solid rgba(255,255,255,0.05)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      gap: '20px',
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+      gap: '16px', flexWrap: 'wrap',
     }}>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: '1 1 140px', minWidth: 0 }}>
         <div style={{ fontSize: '13px', color: '#f7f8f8', fontWeight: 510, marginBottom: '4px' }}>{label}</div>
         {description && <div style={{ fontSize: '12px', color: '#8a8f98' }}>{description}</div>}
       </div>
-      <div style={{ flexShrink: 0 }}>{children}</div>
+      <div style={{ flexShrink: 0, maxWidth: '100%' }}>{children}</div>
     </div>
   );
 }
@@ -220,8 +251,8 @@ function ProfileSection() {
           placeholder="Not set"
           style={{
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '6px', padding: '6px 10px', color: '#f7f8f8',
-            fontSize: '13px', outline: 'none', minWidth: '200px',
+            borderRadius: '6px', padding: '8px 10px', color: '#f7f8f8',
+            fontSize: '14px', outline: 'none', width: '100%', maxWidth: '280px', minWidth: '120px',
           }}
         />
       </Row>
@@ -230,8 +261,8 @@ function ProfileSection() {
           placeholder="you@example.com"
           style={{
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '6px', padding: '6px 10px', color: '#f7f8f8',
-            fontSize: '13px', outline: 'none', minWidth: '200px',
+            borderRadius: '6px', padding: '8px 10px', color: '#f7f8f8',
+            fontSize: '14px', outline: 'none', width: '100%', maxWidth: '280px', minWidth: '120px',
           }}
         />
       </Row>
@@ -253,8 +284,9 @@ function ApiKeysSection() {
             placeholder="sk-..."
             style={{
               background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '6px', padding: '6px 10px', color: '#f7f8f8',
-              fontSize: '13px', fontFamily: 'monospace', outline: 'none', minWidth: '300px',
+              borderRadius: '6px', padding: '8px 10px', color: '#f7f8f8',
+              fontSize: '13px', fontFamily: 'monospace', outline: 'none',
+              width: '100%', maxWidth: '300px', minWidth: '120px',
             }}
           />
         </Row>

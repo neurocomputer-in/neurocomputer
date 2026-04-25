@@ -1,8 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { appendMessage, createConversation, openTab } from '@/store/conversationSlice';
-import { usePaneCid } from '@/components/panes/PaneContext';
+import { appendMessage, createConversation, openTab, loadMessages } from '@/store/conversationSlice';
+import { useActiveCid } from '@/components/os/WindowContext';
 import { setLoading, setInputText } from '@/store/chatSlice';
 import { apiSendMessage } from '@/services/api';
 import { AgentType, Message } from '@/types';
@@ -15,7 +15,7 @@ const LOADING_IDLE_TIMEOUT_MS = 30000;
 
 export function useChat() {
   const dispatch = useAppDispatch();
-  const paneCid = usePaneCid();
+  const paneCid = useActiveCid();
   const globalActiveCid = useAppSelector(s => s.conversations.activeTabCid);
   const activeTabCid = paneCid ?? globalActiveCid;
   const openTabs = useAppSelector(s => s.conversations.openTabs);
@@ -48,6 +48,22 @@ export function useChat() {
       }
     };
   }, [isLoading, activityTick, dispatch]);
+
+  // Fallback: if LiveKit drops, poll for new messages while loading
+  useEffect(() => {
+    if (!isLoading || !activeTabCid) return;
+    const poll = async () => {
+      const result = await dispatch(loadMessages(activeTabCid));
+      if (loadMessages.fulfilled.match(result)) {
+        const msgs = result.payload.messages;
+        if (msgs.length > 0 && !msgs[msgs.length - 1].isUser) {
+          dispatch(setLoading(false));
+        }
+      }
+    };
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, [isLoading, activeTabCid, dispatch]);
 
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();

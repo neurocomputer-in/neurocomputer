@@ -1,15 +1,20 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Plus, Terminal as TerminalIcon, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createTerminal, fetchTerminalTabs, deleteTerminal } from '@/store/terminalSlice';
 import { openTab, closeTab, setActiveTab } from '@/store/conversationSlice';
 import { setPaneActiveCid } from '@/store/uiSlice';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import type { TerminalTab } from '@/types';
+
+const EMPTY_ARR: TerminalTab[] = [];
 
 export default function TerminalButton() {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const available = useAppSelector(s => s.terminal.available);
   const selectedWorkspaceId = useAppSelector(s => s.workspace.selectedWorkspaceId);
   const selectedProjectId = useAppSelector(s => s.projects.selectedProjectId);
@@ -18,7 +23,7 @@ export default function TerminalButton() {
   const focusedPaneId = useAppSelector(s => s.ui.focusedPaneId);
 
   const scopeKey = `${selectedWorkspaceId || 'default'}:${selectedProjectId || 'main-default'}`;
-  const tabs = useAppSelector(s => s.terminal.tabsByProject[scopeKey] || []);
+  const tabs = useAppSelector(s => s.terminal.tabsByProject[scopeKey] ?? EMPTY_ARR);
 
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -90,120 +95,169 @@ export default function TerminalButton() {
 
   if (available === false) return null;
 
+  const triggerEl = (
+    <div
+      onClick={() => setOpen(v => !v)}
+      title="Terminals"
+      data-testid="terminal-button-trigger"
+      style={{
+        display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '6px',
+        background: 'rgba(255,255,255,0.02)',
+        padding: isMobile ? '6px' : '5px 10px',
+        borderRadius: '6px', cursor: 'pointer', userSelect: 'none',
+        transition: 'background 0.15s',
+        border: '1px solid rgba(255,255,255,0.05)',
+        touchAction: isMobile ? 'manipulation' : undefined,
+        WebkitTapHighlightColor: isMobile ? 'transparent' : undefined,
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+    >
+      <TerminalIcon size={isMobile ? 14 : 13} color="#d0d6e0" />
+      {!isMobile && <span style={{ fontSize: '13px', color: '#d0d6e0', fontWeight: 510 }}>Terminal</span>}
+      <ChevronDown size={isMobile ? 10 : 12} color="#62666d" style={{
+        transition: 'transform 0.2s',
+        transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+      }} />
+    </div>
+  );
+
+  const dropdownContent = (
+    <div style={{ padding: '4px' }}>
+      <button
+        onClick={createNew}
+        style={actionItemStyle}
+        data-testid="terminal-new"
+      >
+        <div style={iconBoxStyle}><Plus size={14} color="#c4b5fd" /></div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: isMobile ? '14px' : '13px', fontWeight: 510, color: '#f7f8f8' }}>New Terminal</div>
+          {!isMobile && <div style={{ fontSize: '11px', color: '#62666d', marginTop: '1px' }}>
+            Creates a tmux session in current project
+          </div>}
+        </div>
+      </button>
+
+      {tabs.length > 0 && (
+        <div style={{
+          padding: '8px 12px 4px',
+          fontSize: '10px', textTransform: 'uppercase',
+          letterSpacing: '0.6px', color: '#62666d', fontWeight: 510,
+        }}>
+          Existing
+        </div>
+      )}
+
+      {tabs.map(t => {
+        const isOpen = openTabs.some(x => x.cid === t.cid);
+        const isActive = t.cid === activeCid;
+        return (
+          <div
+            key={t.cid}
+            onClick={() => openExisting(t)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: isMobile ? '12px 10px' : '8px 10px',
+              cursor: 'pointer', fontSize: isMobile ? '14px' : '13px',
+              color: isActive ? '#f7f8f8' : '#d0d6e0',
+              background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
+              borderRadius: '6px', transition: 'background 0.12s',
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+            onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+            onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          >
+            <div style={iconBoxStyle}>
+              <TerminalIcon size={13} color={isActive ? '#c4b5fd' : '#8a8f98'} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: isMobile ? '14px' : '13px', fontWeight: 510, overflow: 'hidden',
+                            textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {t.title}{isOpen && <span style={{ color: '#7170ff' }}> •</span>}
+              </div>
+              {!isMobile && <div style={{
+                fontSize: '10px', color: '#62666d', marginTop: '1px',
+                fontFamily: "'Berkeley Mono', ui-monospace, monospace",
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {t.tmux_session}
+              </div>}
+            </div>
+            <button
+              title="Close tab + kill tmux session"
+              onClick={(e) => { e.stopPropagation(); removeTab(t, true); }}
+              style={{
+                border: 'none', background: 'transparent',
+                cursor: 'pointer', padding: '4px', borderRadius: '4px',
+                display: 'flex', alignItems: 'center',
+              }}
+            >
+              <X size={12} color="#62666d" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div
-        onClick={() => setOpen(v => !v)}
-        title="Terminals"
-        data-testid="terminal-button-trigger"
-        style={{
-          display: 'flex', alignItems: 'center', gap: '6px',
-          background: 'rgba(255,255,255,0.02)', padding: '5px 10px',
-          borderRadius: '6px', cursor: 'pointer', userSelect: 'none',
-          transition: 'background 0.15s',
-          border: '1px solid rgba(255,255,255,0.05)',
-        }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-      >
-        <TerminalIcon size={13} color="#d0d6e0" />
-        <span style={{ fontSize: '13px', color: '#d0d6e0', fontWeight: 510 }}>Terminal</span>
-        <ChevronDown size={12} color="#62666d" style={{
-          transition: 'transform 0.2s',
-          transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-        }} />
-      </div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="glass-dropdown"
-            style={{
-              position: 'absolute', top: '100%', left: 0, marginTop: '6px',
-              borderRadius: '8px', minWidth: '260px', zIndex: 100, overflow: 'hidden',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-            }}
-          >
-            <div style={{ padding: '4px' }}>
-              <button
-                onClick={createNew}
-                style={actionItemStyle}
-                data-testid="terminal-new"
+      {triggerEl}
+      {typeof window !== 'undefined' && isMobile ? createPortal(
+        <AnimatePresence>
+          {open && (
+            <>
+              <motion.div
+                key="term-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setOpen(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 9994 }}
+              />
+              <motion.div
+                key="term-menu"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                style={{
+                  position: 'fixed', top: '48px', left: '8px',
+                  borderRadius: '12px', minWidth: '240px',
+                  maxWidth: 'calc(100vw - 16px)',
+                  background: '#1a1b1d',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.8)',
+                  overflow: 'hidden', zIndex: 9995,
+                }}
               >
-                <div style={iconBoxStyle}><Plus size={14} color="#c4b5fd" /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 510, color: '#f7f8f8' }}>New Terminal</div>
-                  <div style={{ fontSize: '11px', color: '#62666d', marginTop: '1px' }}>
-                    Creates a tmux session in current project
-                  </div>
-                </div>
-              </button>
-
-              {tabs.length > 0 && (
-                <div style={{
-                  padding: '8px 12px 4px',
-                  fontSize: '10px', textTransform: 'uppercase',
-                  letterSpacing: '0.6px', color: '#62666d', fontWeight: 510,
-                }}>
-                  Existing
-                </div>
-              )}
-
-              {tabs.map(t => {
-                const isOpen = openTabs.some(x => x.cid === t.cid);
-                const isActive = t.cid === activeCid;
-                return (
-                  <div
-                    key={t.cid}
-                    onClick={() => openExisting(t)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '8px 10px', cursor: 'pointer', fontSize: '13px',
-                      color: isActive ? '#f7f8f8' : '#d0d6e0',
-                      background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-                      borderRadius: '6px', transition: 'background 0.12s',
-                    }}
-                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
-                    onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                  >
-                    <div style={iconBoxStyle}>
-                      <TerminalIcon size={13} color={isActive ? '#c4b5fd' : '#8a8f98'} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 510, overflow: 'hidden',
-                                    textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {t.title}{isOpen && <span style={{ color: '#7170ff' }}> •</span>}
-                      </div>
-                      <div style={{
-                        fontSize: '10px', color: '#62666d', marginTop: '1px',
-                        fontFamily: "'Berkeley Mono', ui-monospace, monospace",
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {t.tmux_session}
-                      </div>
-                    </div>
-                    <button
-                      title="Close tab + kill tmux session"
-                      onClick={(e) => { e.stopPropagation(); removeTab(t, true); }}
-                      style={{
-                        border: 'none', background: 'transparent',
-                        cursor: 'pointer', padding: '4px', borderRadius: '4px',
-                        display: 'flex', alignItems: 'center',
-                      }}
-                    >
-                      <X size={12} color="#62666d" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {dropdownContent}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      ) : (
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="glass-dropdown"
+              style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: '6px',
+                borderRadius: '8px', minWidth: '260px', zIndex: 100, overflow: 'hidden',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+              }}
+            >
+              {dropdownContent}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

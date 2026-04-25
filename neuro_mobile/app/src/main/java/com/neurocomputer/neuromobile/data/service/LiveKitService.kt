@@ -168,7 +168,7 @@ class LiveKitService @Inject constructor(
                 val payload = json.encodeToString(event)
                 val data = payload.toByteArray(Charsets.UTF_8)
 
-                val reliability = if (event.type == "mouse_move" || event.type == "scroll") {
+                val reliability = if (event.type == "mouse_move" || event.type == "scroll" || event.type == "direct_move") {
                     DataPublishReliability.LOSSY
                 } else {
                     DataPublishReliability.RELIABLE
@@ -205,6 +205,20 @@ class LiveKitService @Inject constructor(
         sendMouseEvent(MouseEvent(type = type, button = button, count = count))
     }
 
+    // Absolute-position helpers — phone owns cursor, PC follows.
+    fun sendDirectMove(x: Float, y: Float) {
+        sendMouseEvent(MouseEvent(type = "direct_move", x = x, y = y))
+    }
+
+    fun sendDirectClick(x: Float, y: Float, button: String = "left", count: Int = 1) {
+        val type = when {
+            button == "right" -> "direct_right_click"
+            count >= 2 -> "direct_double_click"
+            else -> "direct_click"
+        }
+        sendMouseEvent(MouseEvent(type = type, x = x, y = y, button = button, count = count))
+    }
+
     // ─── Tablet-mode data-channel senders ────────────────────────────────
 
     private fun publishJson(jsonPayload: String) {
@@ -228,8 +242,8 @@ class LiveKitService @Inject constructor(
         publishJson("""{"type":"orientation","state":"$state","locked":$locked}""")
     }
 
-    fun sendTouchEvent(kind: String, nx: Float, ny: Float, dy: Float = 0f) {
-        publishJson("""{"type":"$kind","nx":$nx,"ny":$ny,"dy":$dy}""")
+    fun sendTouchEvent(kind: String, nx: Float, ny: Float, dy: Float = 0f, count: Int = 1) {
+        publishJson("""{"type":"$kind","nx":$nx,"ny":$ny,"dy":$dy,"count":$count}""")
     }
 
     fun sendSession(event: String) {

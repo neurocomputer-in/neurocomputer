@@ -109,7 +109,7 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
             flex: 1, minWidth: 0,
             background: 'transparent', border: 'none', outline: 'none',
             color: '#f7f8f8',
-            fontSize: 13, lineHeight: '20px',
+            fontSize: 16, lineHeight: '20px', // 16px prevents iOS auto-zoom on tap
             fontFamily: "'Berkeley Mono', ui-monospace, monospace",
             resize: 'none', padding: 0,
             maxHeight: 160,

@@ -11,9 +11,11 @@ import { AGENT_LIST, AgentType } from '@/types';
 import AgentIcon from '@/components/agent/AgentIcon';
 import { apiUpdateWorkspace } from '@/services/api';
 import WorkspaceCreate from './WorkspaceCreate';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 export default function WorkspaceDropdown() {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const workspaces = useAppSelector(s => s.workspace.workspaces);
   const selectedWorkspaceId = useAppSelector(s => s.workspace.selectedWorkspaceId);
   const selectedProjectId = useAppSelector(s => s.projects.selectedProjectId);
@@ -73,7 +75,7 @@ export default function WorkspaceDropdown() {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <div
         onClick={() => { setOpen(!open); setEditingWorkspaceId(null); }}
         style={{
@@ -81,8 +83,11 @@ export default function WorkspaceDropdown() {
           background: 'rgba(255,255,255,0.02)', padding: '5px 10px',
           borderRadius: '6px', cursor: 'pointer', userSelect: 'none',
           borderLeft: `3px solid ${color}`,
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          borderRight: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
           transition: 'background 0.15s',
-          border: '1px solid rgba(255,255,255,0.05)',
+          width: '100%',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
@@ -105,7 +110,8 @@ export default function WorkspaceDropdown() {
             className="glass-dropdown"
             style={{
               position: 'absolute', top: '100%', left: 0, marginTop: '6px',
-              borderRadius: '8px', minWidth: '280px', zIndex: 100, overflow: 'hidden',
+              borderRadius: '8px', minWidth: isMobile ? '100%' : '280px', width: isMobile ? '100%' : undefined,
+              zIndex: 100, overflow: 'hidden',
               boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
             }}
           >
@@ -201,7 +207,8 @@ export default function WorkspaceDropdown() {
             className="glass-dropdown"
             style={{
               position: 'absolute', top: '100%', left: 0, marginTop: '6px',
-              borderRadius: '8px', minWidth: '260px', zIndex: 100, overflow: 'hidden',
+              borderRadius: '8px', minWidth: isMobile ? '100%' : '260px', width: isMobile ? '100%' : undefined,
+              zIndex: 100, overflow: 'hidden',
               boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
             }}
           >
