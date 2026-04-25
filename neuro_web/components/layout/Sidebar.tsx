@@ -1,15 +1,20 @@
 'use client';
 import { Plus, X, MessageSquare, Folder, Settings, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setShowProjectCreate } from '@/store/uiSlice';
+import { setShowProjectCreate, setSidebarOpen } from '@/store/uiSlice';
 import { AGENT_LIST, AgentType } from '@/types';
 import AgentIcon from '@/components/agent/AgentIcon';
 import ProjectList from '@/components/project/ProjectList';
 import ProjectCreate from '@/components/project/ProjectCreate';
+import WorkspaceDropdown from '@/components/workspace/WorkspaceDropdown';
+import ProjectDropdown from '@/components/project/ProjectDropdown';
 import { useLiveKitContext } from '@/providers/LiveKitProvider';
 import { setActiveTab, closeTab, loadMessages, openTab } from '@/store/conversationSlice';
+import { openWindow, focusWindow } from '@/store/osSlice';
+import { APP_MAP } from '@/lib/appRegistry';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 export default function Sidebar() {
   const dispatch = useAppDispatch();
@@ -21,14 +26,13 @@ export default function Sidebar() {
   const activeTabCid = useAppSelector(s => s.conversations.activeTabCid);
   const agentFilter = useAppSelector(s => s.agent.agentFilter);
   const selectedProjectId = useAppSelector(s => s.projects.selectedProjectId);
+  const isMobile = useIsMobile();
 
-  // pid → { name, color } for rendering a badge next to open/history rows
-  // when the user hasn't narrowed to a specific project.
   const projectIndex: Record<string, { name: string; color: string }> = {};
   for (const p of projects) {
     if (p.id) projectIndex[p.id] = { name: p.name, color: p.color };
   }
-  const showProjectBadge = !selectedProjectId; // "All Projects" view
+  const showProjectBadge = !selectedProjectId;
 
   const projectFor = (cid: string | undefined | null) => {
     if (!cid) return null;
@@ -42,23 +46,48 @@ export default function Sidebar() {
     : openTabs.filter(t => t.agentId === agentFilter);
 
   const openTabCids = new Set(openTabs.map(t => t.cid));
-  // General chat history: every conversation in the currently scoped set
-  // (already filtered by project/workspace at fetch time), regardless of
-  // whether it's currently open as a tab. We keep open ones in the list
-  // (marked with an active dot) so the count intuitively reflects "all
-  // chats in this scope" — matching the Project sidebar's count.
-  // Honours the agent filter when one is set.
   const chatHistory = conversations.filter(c => {
     if (agentFilter !== AgentType.ALL && c.agentId !== agentFilter) return false;
     return true;
   });
 
   const { connectToConversation } = useLiveKitContext();
+  const osWindows = useAppSelector(s => s.os.windows);
+  const osNextZIndex = useAppSelector(s => s.os.nextZIndex);
 
   const handleTabClick = async (cid: string) => {
     dispatch(setActiveTab(cid));
     dispatch(loadMessages(cid));
     await connectToConversation(cid);
+
+    const existing = osWindows.find(w => w.tabs.some(t => t.cid === cid));
+    if (existing) {
+      dispatch(focusWindow(existing.id));
+    } else {
+      const tab = openTabs.find(t => t.cid === cid);
+      if (tab) {
+        const appId = tab.type === 'terminal' ? 'terminal'
+                    : tab.type === 'neuroide' ? 'ide'
+                    : (tab.agentId && APP_MAP[tab.agentId as keyof typeof APP_MAP]) ? tab.agentId as keyof typeof APP_MAP
+                    : 'neuro';
+        const app = APP_MAP[appId] || APP_MAP.neuro;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const tabId = 'tab-' + cid;
+        dispatch(openWindow({
+          id: 'w-' + cid,
+          tabs: [{ id: tabId, cid, appId: app.id, title: tab.title || app.name, type: tab.type ?? 'chat' }],
+          activeTabId: tabId,
+          x: 80 + Math.random() * 60,
+          y: 50 + Math.random() * 40,
+          width: Math.min(vw * 0.55, 900),
+          height: Math.min(vh * 0.65, 700),
+          zIndex: osNextZIndex,
+          minimized: false,
+          maximized: false,
+        }));
+      }
+    }
   };
 
   const handleCloseTab = (e: React.MouseEvent, cid: string) => {
@@ -66,20 +95,21 @@ export default function Sidebar() {
     dispatch(closeTab(cid));
   };
 
-  return (
-    <div
-      className="glass-panel"
-      style={{
-        width: sidebarOpen ? '272px' : '0px',
-        minWidth: sidebarOpen ? '272px' : '0px',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: sidebarOpen ? '1px solid rgba(255,255,255,0.05)' : 'none',
-        overflow: 'hidden',
-        flexShrink: 0,
-        transition: 'width 0.2s ease, min-width 0.2s ease',
-      }}
-    >
+  const closeSidebar = () => { if (isMobile && sidebarOpen) dispatch(setSidebarOpen(false)); };
+
+  const sidebarWidth = isMobile ? '85vw' : '272px';
+  const sidebarMaxWidth = isMobile ? '320px' : undefined;
+
+  const sidebarContent = (
+    <>
+      {/* Workspace & Project selectors */}
+      <div style={{ padding: '14px 12px 4px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <WorkspaceDropdown />
+        <ProjectDropdown />
+      </div>
+
+      <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 16px' }} />
+
       {/* Projects */}
       <div style={{ padding: '14px 16px 8px' }}>
         <div style={{
@@ -138,7 +168,7 @@ export default function Sidebar() {
                 key={tab.cid}
                 whileHover={!isActive ? { backgroundColor: 'rgba(255,255,255,0.03)' } : {}}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => handleTabClick(tab.cid)}
+                onClick={() => { handleTabClick(tab.cid); closeSidebar(); }}
                 style={{
                   padding: '8px 10px',
                   background: isActive ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.01)',
@@ -230,7 +260,7 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Chat History — every conversation in scope not already open */}
+      {/* Chat History */}
       {chatHistory.length > 0 && (
         <>
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 16px' }} />
@@ -258,22 +288,22 @@ export default function Sidebar() {
                   whileTap={{ scale: 0.98 }}
                   onClick={async () => {
                     if (isOpen) {
-                      // Already open → just switch to its tab
                       dispatch(setActiveTab(conv.id));
                       dispatch(loadMessages(conv.id));
                       await connectToConversation(conv.id);
-                      return;
+                    } else {
+                      dispatch(openTab({
+                        cid: conv.id,
+                        title: conv.title || 'New Chat',
+                        agentId: conv.agentId || AgentType.NEURO,
+                        isActive: true,
+                        workdir: conv.workdir,
+                      }));
+                      dispatch(setActiveTab(conv.id));
+                      dispatch(loadMessages(conv.id));
+                      await connectToConversation(conv.id);
                     }
-                    dispatch(openTab({
-                      cid: conv.id,
-                      title: conv.title || 'New Chat',
-                      agentId: conv.agentId || AgentType.NEURO,
-                      isActive: true,
-                      workdir: conv.workdir,
-                    }));
-                    dispatch(setActiveTab(conv.id));
-                    dispatch(loadMessages(conv.id));
-                    await connectToConversation(conv.id);
+                    closeSidebar();
                   }}
                   style={{
                     padding: '7px 10px',
@@ -344,7 +374,7 @@ export default function Sidebar() {
         </>
       )}
 
-      {/* Bottom nav — Profile + Settings */}
+      {/* Bottom nav */}
       <div style={{
         borderTop: '1px solid rgba(255,255,255,0.05)',
         padding: '6px 8px',
@@ -355,6 +385,7 @@ export default function Sidebar() {
       }}>
         <Link
           href="/settings?tab=profile"
+          onClick={closeSidebar}
           style={{
             display: 'flex', alignItems: 'center', gap: '10px',
             padding: '8px 10px', borderRadius: '6px',
@@ -369,6 +400,7 @@ export default function Sidebar() {
         </Link>
         <Link
           href="/settings"
+          onClick={closeSidebar}
           style={{
             display: 'flex', alignItems: 'center', gap: '10px',
             padding: '8px 10px', borderRadius: '6px',
@@ -384,6 +416,66 @@ export default function Sidebar() {
       </div>
 
       {showProjectCreate && <ProjectCreate />}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={closeSidebar}
+              style={{
+                position: 'fixed', inset: 0,
+                background: 'rgba(0,0,0,0.6)',
+                zIndex: 200,
+              }}
+            />
+            <motion.div
+              key="sidebar"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="glass-panel"
+              style={{
+                position: 'fixed', top: 0, left: 0, bottom: 0,
+                width: sidebarWidth, maxWidth: sidebarMaxWidth,
+                display: 'flex', flexDirection: 'column',
+                borderRight: '1px solid rgba(255,255,255,0.05)',
+                overflow: 'visible',
+                zIndex: 201,
+              }}
+            >
+              {sidebarContent}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  return (
+    <div
+      className="glass-panel"
+      style={{
+        width: sidebarOpen ? '272px' : '0px',
+        minWidth: sidebarOpen ? '272px' : '0px',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: sidebarOpen ? '1px solid rgba(255,255,255,0.05)' : 'none',
+        overflow: sidebarOpen ? 'visible' : 'hidden',
+        flexShrink: 0,
+        transition: 'width 0.2s ease, min-width 0.2s ease',
+      }}
+    >
+      {sidebarContent}
     </div>
   );
 }
