@@ -81,6 +81,14 @@ export interface Tab {
   tmuxSession?: string | null;
 }
 
+export interface WindowTab {
+  id: string;        // window-local uuid for this tab slot
+  cid: string;       // conversation/terminal/ide session id
+  appId: string;     // key into APP_MAP for icon + color
+  title: string;
+  type: TabKind;
+}
+
 export interface TerminalTab {
   id: string;
   cid: string;
