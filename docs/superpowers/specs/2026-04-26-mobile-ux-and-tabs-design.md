@@ -141,7 +141,7 @@ All four are small, tree-shakable, and SSR-safe with `'use client'`.
 ### App-switcher (cards)
 - Trigger: mobile swipe-up from bottom 16px edge; desktop Cmd/Ctrl+` or dock right-click.
 - Layout: vertical scroll of cards on mobile (one per row, ~80% width), 3-col grid on desktop.
-- Card content: app icon (active tab), title, tab count, tiny preview of content (rendered via CSS `transform: scale()` of a snapshot div, or simple gradient header for v1).
+- Card content (v1): app icon (active tab), title, tab count, gradient header keyed by `appId`. No live preview in v1 (see Out of scope).
 - Actions: tap = focus + dismiss; horizontal swipe (mobile) / × button (desktop) = close; "+ New window" tile at end.
 
 ### Persistence + restore
