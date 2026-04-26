@@ -40,8 +40,14 @@ html, body {
   --safe-bottom: 0px;
 }
 
-@supports (height: 100dvh) {
-  :root { --app-height: 100dvh; }
+/* Use lvh (large viewport height) so the layout always fills the entire
+   window, even when the iOS Safari URL bar is visible OR when the keyboard
+   opens. Letting the layout shrink with `dvh` causes iOS to lose track of
+   the focused input during keyboard animation and snap the keyboard shut.
+   With lvh, the visible area shifts via iOS's own visualViewport pan
+   instead — which iOS handles natively without focus loss. */
+@supports (height: 100lvh) {
+  :root { --app-height: 100lvh; }
 }
 
 @supports (padding: env(safe-area-inset-bottom)) {

@@ -3,6 +3,8 @@ import { KeyboardEvent, useRef, useState } from 'react';
 import { ArrowUp, Mic, Square, Loader2, Phone, PhoneOff } from 'lucide-react';
 import { startVoiceRecording, stopVoiceRecording, transcribeAudio } from '@/services/voice';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { useIsIOS } from '@/hooks/useIsIOS';
 
 interface Props {
   /** Called with raw text (no trailing newline). Parent appends `\n`. */
@@ -24,6 +26,8 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
+  const isIOS = useIsIOS();
   const { startCall, endCall, isActive: callActive, connecting: callConnecting } = useVoiceCall();
 
   const submit = (text?: string) => {
@@ -31,7 +35,7 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
     if (!t) return;
     onSubmit(t);
     setValue('');
-    setTimeout(() => ref.current?.focus(), 0);
+    if (!isIOS) setTimeout(() => ref.current?.focus(), 0);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -82,6 +86,7 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
     <div style={{
       display: 'flex', alignItems: 'flex-end', gap: 8,
       padding: '8px 12px',
+      paddingBottom: isMobile ? 'max(env(safe-area-inset-bottom), 8px)' : '8px',
       borderTop: '1px solid rgba(255,255,255,0.05)',
       background: 'rgba(15, 16, 17, 0.8)',
       flexShrink: 0,
@@ -99,12 +104,18 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
         }}>$</span>
         <textarea
           ref={ref}
+          data-terminal-input
           value={value}
           placeholder={placeholder || 'Type a command, Enter to send'}
           onChange={e => setValue(e.target.value)}
           onKeyDown={onKeyDown}
           disabled={disabled}
           rows={1}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="send"
           style={{
             flex: 1, minWidth: 0,
             background: 'transparent', border: 'none', outline: 'none',

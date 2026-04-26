@@ -30,6 +30,7 @@ export default function TerminalPanel() {
   const sendRef        = useRef<((d: ArrayBuffer | Uint8Array | string) => void) | null>(null);
   const sendControlRef = useRef<((p: Record<string, unknown>) => void) | null>(null);
   const resizeRef      = useRef<((c: number, r: number) => void) | null>(null);
+  const pendingFitRef  = useRef(false);
 
   // ── xterm mount ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -53,6 +54,16 @@ export default function TerminalPanel() {
     term.onData(d => sendRef.current?.(new TextEncoder().encode(d).buffer));
 
     const onResize = () => {
+      // On mobile, skip fit() while the input textarea is focused. Otherwise the
+      // canvas redraw can steal focus → keyboard snaps shut. We re-fit once the
+      // user blurs the input (focusout listener below).
+      if (isMobile) {
+        const ae = document.activeElement as HTMLElement | null;
+        if (ae && ae.tagName === 'TEXTAREA' && !ae.classList.contains('xterm-helper-textarea')) {
+          pendingFitRef.current = true;
+          return;
+        }
+      }
       try { fit.fit(); resizeRef.current?.(term.cols, term.rows); } catch { /**/ }
     };
     // ResizeObserver covers all real layout changes (orientation, window resize,
@@ -62,8 +73,19 @@ export default function TerminalPanel() {
     const ro = new ResizeObserver(onResize);
     ro.observe(containerRef.current);
 
+    // When the input textarea blurs, run any deferred fit.
+    const onFocusOut = (e: FocusEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.tagName === 'TEXTAREA' && !t.classList.contains('xterm-helper-textarea') && pendingFitRef.current) {
+        pendingFitRef.current = false;
+        try { fit.fit(); resizeRef.current?.(term.cols, term.rows); } catch {}
+      }
+    };
+    document.addEventListener('focusout', onFocusOut);
+
     return () => {
       ro.disconnect();
+      document.removeEventListener('focusout', onFocusOut);
       termRef.current = null;
       fitRef.current  = null;
       const t = term;
@@ -150,8 +172,19 @@ export default function TerminalPanel() {
     g.active = false;
 
     if (!g.dragging && performance.now() - g.startT < TAP_MS) {
-      // Tap → focus terminal
-      termRef.current?.focus();
+      if (isMobile) {
+        const input = document.querySelector('textarea[data-terminal-input]') as HTMLTextAreaElement | null;
+        if (input) {
+          // Force a full focus cycle. If the element is already focused but
+          // keyboard is hidden (can happen after a spurious blur recovery),
+          // focus() alone fires no new event and iOS won't show keyboard.
+          // Blurring first guarantees a real focus event on the next call.
+          if (document.activeElement === input) input.blur();
+          input.focus();
+        }
+      } else {
+        termRef.current?.focus();
+      }
     } else if (g.dragging) {
       if (flushTimerRef.current != null) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
       flushScroll();
@@ -224,6 +257,12 @@ export default function TerminalPanel() {
               onPointerMove={onOverlayMove}
               onPointerUp={onOverlayUp}
               onPointerCancel={onOverlayUp}
+              // Prevent synthesized mousedown/click events from reaching the
+              // xterm canvas beneath. Without this, xterm's internal mousedown
+              // listener calls its helper textarea's focus() which blurs our
+              // visible textarea and dismisses the iOS keyboard.
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
               style={{
                 position: 'absolute', inset: 0, zIndex: 2,
                 touchAction: 'none',

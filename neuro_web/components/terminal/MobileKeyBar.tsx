@@ -32,15 +32,17 @@ export default function MobileKeyBar({ onKey }: Props) {
       borderTop: '1px solid rgba(255,255,255,0.05)',
       overflowX: 'auto', background: '#0f1011',
     }}>
-      <button onClick={() => setCtrl(c => !c)} style={btn(ctrl)}>Ctrl</button>
+      {/* onMouseDown preventDefault keeps the textarea focused on iOS —
+          tapping a button without this causes iOS to blur the input and
+          dismiss the keyboard before onClick fires. */}
+      <button onMouseDown={e => e.preventDefault()} onClick={() => setCtrl(c => !c)} style={btn(ctrl)}>Ctrl</button>
       {KEYS.map(k => (
-        <button key={k.label} onClick={() => press(k.seq)} style={btn(false)}>
+        <button key={k.label} onMouseDown={e => e.preventDefault()} onClick={() => press(k.seq)} style={btn(false)}>
           {k.label}
         </button>
       ))}
-      {/* Quick Ctrl combos surfaced explicitly for common terminals. */}
-      <button onClick={() => { onKey('\x03'); setCtrl(false); }} style={btn(false)}>Ctrl+C</button>
-      <button onClick={() => { onKey('\x04'); setCtrl(false); }} style={btn(false)}>Ctrl+D</button>
+      <button onMouseDown={e => e.preventDefault()} onClick={() => { onKey('\x03'); setCtrl(false); }} style={btn(false)}>Ctrl+C</button>
+      <button onMouseDown={e => e.preventDefault()} onClick={() => { onKey('\x04'); setCtrl(false); }} style={btn(false)}>Ctrl+D</button>
     </div>
   );
 }
