@@ -2,7 +2,6 @@
 
 ## 1. Core Claim
 
-NeuroFramework is not just a codebase structure.  
 It is a **modular cognition framework** that is already behaving like a proto-language.
 
 The core idea is simple:
