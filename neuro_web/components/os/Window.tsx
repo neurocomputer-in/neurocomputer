@@ -1,11 +1,12 @@
 'use client';
 import { useRef, useCallback, useState, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Minus, Square, Copy, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-  closeWindow, removeWindow, focusWindow, minimizeWindow, maximizeWindow,
-  moveWindow, resizeWindow, closeTabFromWindow, setActiveTabInWindow, reorderWindowTabs,
+  closeWindow, removeWindow, focusWindow, maximizeWindow,
+  moveWindow, resizeWindow, closeTabFromWindow, setActiveTabInWindow,
+  reorderWindowTabs, renameTab,
 } from '@/store/osSlice';
 import { closeTab, deleteConversation } from '@/store/conversationSlice';
 import { WindowContext } from './WindowContext';
@@ -19,18 +20,16 @@ const TITLEBAR_H = 36;
 interface Props {
   windowId: string;
   children: ReactNode;
-  desktopRect?: { width: number; height: number } | null;
   onNewTab?: (windowId: string, appId: string, tabKind: string) => void;
 }
 
-export default function Window({ windowId, children, desktopRect, onNewTab }: Props) {
+export default function Window({ windowId, children, onNewTab }: Props) {
   const dispatch = useAppDispatch();
   const win = useAppSelector(s => s.os.windows.find(w => w.id === windowId));
   const activeWindowId = useAppSelector(s => s.os.activeWindowId);
   const tabMessages = useAppSelector(s => s.conversations.tabMessages);
   const isMobile = useIsMobile();
   const isActive = activeWindowId === windowId;
-  const [hoverTraffic, setHoverTraffic] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(false);
 
@@ -52,7 +51,11 @@ export default function Window({ windowId, children, desktopRect, onNewTab }: Pr
 
   const handleDragMove = useCallback((e: React.PointerEvent) => {
     if (!dragRef.current || !win) return;
-    dispatch(moveWindow({ id: win.id, x: dragRef.current.winX + (e.clientX - dragRef.current.startX), y: dragRef.current.winY + (e.clientY - dragRef.current.startY) }));
+    dispatch(moveWindow({
+      id: win.id,
+      x: dragRef.current.winX + (e.clientX - dragRef.current.startX),
+      y: dragRef.current.winY + (e.clientY - dragRef.current.startY),
+    }));
   }, [win, dispatch]);
 
   const handleDragEnd = useCallback(() => { dragRef.current = null; }, []);
@@ -97,92 +100,102 @@ export default function Window({ windowId, children, desktopRect, onNewTab }: Pr
   if (!win || !activeTab) return null;
 
   const isMax = win.maximized;
-  const winStyle: React.CSSProperties = isMax
+  // On mobile windows always fill their container (no floating windows)
+  const winStyle: React.CSSProperties = (isMax || isMobile)
     ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: win.zIndex }
     : { position: 'absolute', left: win.x, top: win.y, width: win.width, height: win.height, zIndex: win.zIndex };
+
+  const closeButton = (
+    <button
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => { e.stopPropagation(); handleCloseWindow(); }}
+      style={{
+        flexShrink: 0, width: 32, height: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        color: 'rgba(255,255,255,0.4)',
+        borderLeft: '1px solid rgba(255,255,255,0.05)',
+      }}
+      title="Close window"
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,80,60,0.2)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+    >
+      <X size={12} strokeWidth={2} />
+    </button>
+  );
+
+  // On mobile, skip framer-motion's scale animation. Its transform: scale(1)
+  // creates a stacking/transform context that interferes with iOS keyboard
+  // (focused inputs inside transformed ancestors can lose focus during reflow).
+  const motionProps = isMobile
+    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
+    : {
+        initial: { opacity: 0, scale: 0.92 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.92 },
+        transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] },
+      };
 
   return (
     <AnimatePresence>
       {!win.minimized && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.92 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          {...motionProps}
           style={{
             ...winStyle,
             display: 'flex', flexDirection: 'column',
-            borderRadius: isMax ? '0' : '12px',
+            borderRadius: (isMax || isMobile) ? '0' : '12px',
             overflow: 'hidden',
-            boxShadow: isActive
+            pointerEvents: 'auto',
+            // On mobile: no shadow / no 1px outline border — the window IS the
+            // screen, framing it as a "card" makes it look like a stray tab.
+            boxShadow: isMobile ? 'none' : (isActive
               ? '0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)'
-              : '0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04)',
-            background: 'rgba(22, 22, 24, 0.92)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              : '0 4px 16px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04)'),
+            // Opaque on mobile so the 3D wallpaper / home-screen doesn't bleed
+            // through and read as "padding around the chat panel."
+            background: isMobile ? '#0e0e10' : 'rgba(22, 22, 24, 0.92)',
+            backdropFilter: isMobile ? 'none' : 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: isMobile ? 'none' : 'blur(20px) saturate(180%)',
           }}
           onMouseDown={() => dispatch(focusWindow(win.id))}
         >
-          {/* Title / Tab bar */}
-          <div
-            onPointerDown={handleDragStart}
-            onPointerMove={handleDragMove}
-            onPointerUp={handleDragEnd}
-            onDoubleClick={() => dispatch(maximizeWindow(win.id))}
-            onMouseEnter={() => setHoverTraffic(true)}
-            onMouseLeave={() => setHoverTraffic(false)}
-            style={{
-              position: 'relative', zIndex: 10,
-              height: TITLEBAR_H, minHeight: TITLEBAR_H,
-              display: 'flex', alignItems: 'stretch',
-              background: isActive ? 'rgba(40,40,44,0.95)' : 'rgba(30,30,34,0.9)',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
-              cursor: isMax ? 'default' : 'grab',
-              userSelect: 'none', flexShrink: 0,
-            }}
-          >
-            {/* Traffic lights */}
-            <div style={{ display: 'flex', gap: '7px', alignItems: 'center', padding: '0 12px', flexShrink: 0 }}>
-              {([
-                { color: '#ff5f57', hoverBg: '#ff3b30', action: handleCloseWindow, Icon: X },
-                { color: '#febd2f', hoverBg: '#f5a623', action: () => dispatch(minimizeWindow(win.id)), Icon: Minus },
-                { color: '#28c840', hoverBg: '#26b024', action: () => dispatch(maximizeWindow(win.id)), Icon: isMax ? Copy : Square },
-              ] as const).map((btn, i) => (
-                <button
-                  key={i}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => { e.stopPropagation(); btn.action(); }}
-                  style={{
-                    width: 12, height: 12, borderRadius: '50%',
-                    background: hoverTraffic && isActive ? btn.hoverBg : btn.color,
-                    border: 'none', cursor: 'pointer', padding: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background 0.15s',
-                    opacity: hoverTraffic && isActive ? 1 : (isActive ? 0.85 : 0.5),
-                  }}
-                >
-                  {hoverTraffic && isActive && <btn.Icon size={7} color="#000" strokeWidth={3} />}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab strip */}
-            <WindowTabStrip
-              tabs={win.tabs}
-              activeTabId={win.activeTabId}
-              isWindowActive={isActive}
-              onActivate={(tabId) => dispatch(setActiveTabInWindow({ windowId: win.id, tabId }))}
-              onClose={(tabId) => {
-                const tab = win.tabs.find(t => t.id === tabId);
-                if (tab) dispatch(closeTab(tab.cid));
-                dispatch(closeTabFromWindow({ windowId: win.id, tabId }));
+          {/* Title / Tab bar — desktop only; MobileTabStrip in page.tsx provides mobile chrome */}
+          {!isMobile && (
+            <div
+              onPointerDown={handleDragStart}
+              onPointerMove={handleDragMove}
+              onPointerUp={handleDragEnd}
+              onDoubleClick={() => dispatch(maximizeWindow(win.id))}
+              style={{
+                position: 'relative', zIndex: 10,
+                height: TITLEBAR_H, minHeight: TITLEBAR_H,
+                display: 'flex', alignItems: 'stretch',
+                background: isActive ? 'rgba(40,40,44,0.95)' : 'rgba(30,30,34,0.9)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                cursor: isMax ? 'default' : 'grab',
+                userSelect: 'none', flexShrink: 0,
               }}
-              onReorder={(from, to) => dispatch(reorderWindowTabs({ windowId: win.id, fromIndex: from, toIndex: to }))}
-              onOverflowPill={() => setOverviewOpen(true)}
-              onNewTab={() => setPickerOpen(true)}
-            />
-          </div>
+            >
+              <WindowTabStrip
+                tabs={win.tabs}
+                activeTabId={win.activeTabId}
+                isWindowActive={isActive}
+                onActivate={(tabId) => dispatch(setActiveTabInWindow({ windowId: win.id, tabId }))}
+                onClose={(tabId) => {
+                  const tab = win.tabs.find(t => t.id === tabId);
+                  if (tab) dispatch(closeTab(tab.cid));
+                  dispatch(closeTabFromWindow({ windowId: win.id, tabId }));
+                }}
+                onReorder={(from, to) => dispatch(reorderWindowTabs({ windowId: win.id, fromIndex: from, toIndex: to }))}
+                onRename={(tabId, newTitle) => dispatch(renameTab({ windowId: win.id, tabId, title: newTitle }))}
+                onOverflowPill={() => setOverviewOpen(true)}
+                onNewTab={() => setPickerOpen(true)}
+                trailingSlot={closeButton}
+              />
+            </div>
+          )}
 
           {/* Content — keyed to activeTab.id so components re-mount on tab switch */}
           <div key={activeTab.id} style={{ flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
@@ -191,7 +204,7 @@ export default function Window({ windowId, children, desktopRect, onNewTab }: Pr
             </WindowContext.Provider>
           </div>
 
-          {/* Resize handles */}
+          {/* Resize handles — desktop only */}
           {!isMax && !isMobile && (
             <>
               {['n','s','e','w','ne','nw','se','sw'].map(edge => {
@@ -203,9 +216,9 @@ export default function Window({ windowId, children, desktopRect, onNewTab }: Pr
                   ...(edge.includes('s') ? { bottom: 0 } : {}),
                   ...(edge.includes('e') ? { right: 0 } : {}),
                   ...(edge.includes('w') ? { left: 0 } : {}),
-                  ...(edge === 'n' || edge === 's' ? { left: size, right: size, height: size, cursor: `${edge}-resize` } : {}),
+                  ...(edge === 'n' || edge === 's' ? { left: size, right: size, height: size, cursor: `${edge}-resize` } : {}) ,
                   ...(edge === 'e' || edge === 'w' ? { top: size, bottom: size, width: size, cursor: `${edge}-resize` } : {}),
-                  ...(isCorner ? { width: size*2, height: size*2, cursor: `${edge}-resize` } : {}),
+                  ...(isCorner ? { width: size * 2, height: size * 2, cursor: `${edge}-resize` } : {}),
                 };
                 return (
                   <div key={edge}
@@ -219,7 +232,6 @@ export default function Window({ windowId, children, desktopRect, onNewTab }: Pr
             </>
           )}
 
-          {/* Pickers */}
           {pickerOpen && (
             <AppPicker
               onPick={(appId, tabKind) => { setPickerOpen(false); onNewTab?.(win.id, appId, tabKind); }}

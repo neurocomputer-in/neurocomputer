@@ -254,6 +254,14 @@ const osSlice = createSlice({
       _persistWindows(state);
     },
 
+    renameTab(state, action: PayloadAction<{ windowId: string; tabId: string; title: string }>) {
+      const win = state.windows.find(w => w.id === action.payload.windowId);
+      if (!win) return;
+      const tab = win.tabs.find(t => t.id === action.payload.tabId);
+      if (tab) tab.title = action.payload.title;
+      _persistWindows(state);
+    },
+
     /** Restore windows from localStorage on app boot. */
     restoreWindows(state, action: PayloadAction<{ windows: WindowState[]; activeWindowId: string | null }>) {
       state.windows = action.payload.windows;
@@ -270,7 +278,7 @@ export const {
   openWindow, addTabToWindow, closeTabFromWindow, setActiveTabInWindow,
   reorderWindowTabs, moveTabToNewWindow,
   closeWindow, removeWindow, focusWindow, minimizeWindow, maximizeWindow,
-  moveWindow, resizeWindow, setWindowTitle, restoreWindows,
+  moveWindow, resizeWindow, setWindowTitle, renameTab, restoreWindows,
 } = osSlice.actions;
 
 export default osSlice.reducer;

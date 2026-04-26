@@ -7,6 +7,7 @@ import chatReducer from './chatSlice';
 import uiReducer from './uiSlice';
 import terminalReducer from './terminalSlice';
 import osReducer from './osSlice';
+import iconsReducer from './iconsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     ui: uiReducer,
     terminal: terminalReducer,
     os: osReducer,
+    icons: iconsReducer,
   },
 });
 

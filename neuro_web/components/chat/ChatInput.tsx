@@ -10,11 +10,13 @@ import { useChat } from '@/hooks/useChat';
 import { useVoice } from '@/hooks/useVoice';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useIsIOS } from '@/hooks/useIsIOS';
 import LlmSelector from './LlmSelector';
 
 export default function ChatInput() {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
+  const isIOS = useIsIOS();
   const { sendMessage, inputText, isLoading } = useChat();
   const { recording, startRecording, stopAndSend } = useVoice();
   const { startCall, endCall, isActive: voiceCallActive, connecting: voiceConnecting } = useVoiceCall();
@@ -33,22 +35,28 @@ export default function ChatInput() {
       e.preventDefault();
       if (!isLoading && inputText.trim()) {
         sendMessage(inputText);
-        setTimeout(() => textareaRef.current?.focus(), 0);
+        // Skip on real iOS only. Programmatic focus from a setTimeout is
+        // outside the user-gesture context on iOS Safari → keyboard dismisses.
+        // Desktop mobile-emulation in DevTools is fine since there's no
+        // virtual keyboard there.
+        if (!isIOS) setTimeout(() => textareaRef.current?.focus(), 0);
       }
     }
   };
 
   useEffect(() => {
+    if (isIOS) return;
     if (!recording && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [activeTabCid, recording]);
+  }, [activeTabCid, recording, isIOS]);
 
   useEffect(() => {
+    if (isIOS) return;
     if (!isLoading && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [isLoading]);
+  }, [isLoading, isIOS]);
 
   const handleMicClick = () => {
     if (recording) {
@@ -67,7 +75,7 @@ export default function ChatInput() {
 
   const handleSend = () => {
     sendMessage(inputText);
-    setTimeout(() => textareaRef.current?.focus(), 0);
+    if (!isIOS) setTimeout(() => textareaRef.current?.focus(), 0);
   };
 
   const canSend = !isLoading && inputText.trim().length > 0 && !recording;
@@ -88,17 +96,10 @@ export default function ChatInput() {
       flexShrink: 0,
       display: 'flex',
       flexDirection: 'column',
-      gap: isMobile ? '6px' : '0px',
+      gap: '0px',
       justifyContent: 'center',
       alignItems: 'center',
     }}>
-      {/* Mobile: LLM selector row above input */}
-      {isMobile && (
-        <div style={{ width: '100%', maxWidth: '1024px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <LlmSelector />
-        </div>
-      )}
-
       <motion.div
         className="glass-bubble"
         style={{
@@ -108,12 +109,29 @@ export default function ChatInput() {
           borderRadius: '8px',
           padding: containerPad,
           display: 'flex',
-          alignItems: 'flex-end',
-          gap,
+          // Mobile: stack LlmSelector ABOVE input row inside the same bubble
+          // so they read as one panel — not two separate floating tabs.
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'flex-end',
+          gap: isMobile ? '6px' : gap,
           transition: 'border-color 0.2s',
-          flexWrap: isMobile ? 'nowrap' : 'nowrap',
+          flexWrap: 'nowrap',
         }}
       >
+        {isMobile && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            paddingBottom: '6px',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            overflowX: 'auto',
+          }}>
+            <LlmSelector />
+          </div>
+        )}
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', gap,
+          width: '100%',
+        }}>
         {!isMobile && (
           <div
             style={{
@@ -184,6 +202,7 @@ export default function ChatInput() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onMouseDown={e => e.preventDefault()}
             onClick={voiceCallActive ? endCall : startCall}
             disabled={voiceConnecting}
             style={{
@@ -208,6 +227,7 @@ export default function ChatInput() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onMouseDown={e => e.preventDefault()}
             onClick={handleMicClick}
             disabled={(isLoading && !recording) || voiceCallActive}
             style={{
@@ -231,6 +251,7 @@ export default function ChatInput() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onMouseDown={e => e.preventDefault()}
               data-testid="stop-button"
               onClick={handleStop}
               style={{
@@ -248,6 +269,7 @@ export default function ChatInput() {
             <motion.button
               whileHover={canSend ? { scale: 1.05 } : {}}
               whileTap={canSend ? { scale: 0.95 } : {}}
+              onMouseDown={e => e.preventDefault()}
               data-testid="send-button"
               onClick={handleSend}
               disabled={!canSend}
@@ -264,6 +286,7 @@ export default function ChatInput() {
               <ArrowUp size={iconSize} color={canSend ? '#fff' : '#62666d'} strokeWidth={2.5} />
             </motion.button>
           )}
+        </div>
         </div>
       </motion.div>
 

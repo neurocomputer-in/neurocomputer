@@ -9,8 +9,9 @@ import { fetchCapabilities, createTerminal } from '@/store/terminalSlice';
 import { setSidebarOpen } from '@/store/uiSlice';
 import {
   openWindow, addTabToWindow, focusWindow,
-  restoreWindows, WindowState,
+  restoreWindows, WindowState, toggleLauncher,
 } from '@/store/osSlice';
+import { restoreIcons } from '@/store/iconsSlice';
 import { useLiveKitContext } from '@/providers/LiveKitProvider';
 import { AgentType, WindowTab } from '@/types';
 import { AppDef, APP_MAP } from '@/lib/appRegistry';
@@ -24,6 +25,9 @@ import MobileTabStrip from '@/components/os/MobileTabStrip';
 import AppSwitcher from '@/components/os/AppSwitcher';
 import AppPicker from '@/components/os/AppPicker';
 import Sidebar from '@/components/layout/Sidebar';
+import DesktopIcons from '@/components/os/DesktopIcons';
+import MobileHomeScreen from '@/components/os/MobileHomeScreen';
+import MobileDock from '@/components/os/MobileDock';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
@@ -118,6 +122,14 @@ export default function Home() {
             dispatch(restoreWindows({ windows: parsed.windows, activeWindowId: parsed.activeWindowId }));
           }
         }
+      } catch {}
+
+      // Restore icon layouts
+      try {
+        const ws = savedWorkspace || 'global';
+        const proj = savedProjectId || 'global';
+        const savedIcons = localStorage.getItem(`neuro_icons_${ws}_${proj}`);
+        if (savedIcons) dispatch(restoreIcons(JSON.parse(savedIcons)));
       } catch {}
     })();
   }, [dispatch]);
@@ -283,40 +295,29 @@ export default function Home() {
         }}>
           <MobileTabStrip
             activeWindowId={activeWindowId}
-            onMenuOpen={() => {
-              if (windows.length > 0) setSwitcherOpen(true);
-              else setMobilePickerWindowId('__new__');
-            }}
             onNewTab={(windowId) => setMobilePickerWindowId(windowId)}
             onSwitcherOpen={() => setSwitcherOpen(true)}
           />
           <div
             ref={contentRef}
-            {...(swipeGestureBind() as any)}
-            style={{ flex: 1, position: 'relative', overflow: 'hidden', touchAction: 'pan-x pan-y' }}
+            style={{ flex: 1, position: 'relative', overflow: 'hidden' }}
           >
+            {/* Home screen only when nothing's launched — otherwise the icons
+                bleed through behind the active window. */}
+            {!activeWindowId && <MobileHomeScreen onLaunch={handleLaunchApp} />}
             <WindowManager onNewTab={handleNewTabInWindow} />
-
-            {/* Empty state — no windows yet */}
-            {windows.length === 0 && (
-              <div style={{
-                position: 'absolute', inset: 0,
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', gap: 16,
-              }}>
-                <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', margin: 0 }}>No apps open</p>
-                <button
-                  onClick={() => setMobilePickerWindowId('__new__')}
-                  style={{
-                    padding: '10px 28px', borderRadius: 20,
-                    background: '#8B5CF6', border: 'none', cursor: 'pointer',
-                    fontSize: 14, fontWeight: 600, color: '#fff',
-                  }}
-                >
-                  + Open App
-                </button>
-              </div>
+            {!activeWindowId && (
+              <MobileDock onLaunch={handleLaunchApp} onLauncherOpen={() => dispatch(toggleLauncher())} />
             )}
+            {/* Swipe-up gesture strip — narrow band at the very bottom edge so
+                it doesn't intercept touches on inputs (e.g., terminal input bar). */}
+            <div
+              {...(swipeGestureBind() as any)}
+              style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0, height: 8,
+                zIndex: 50, touchAction: 'none',
+              }}
+            />
           </div>
         </div>
 
@@ -358,6 +359,7 @@ export default function Home() {
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
           {sidebarOpen && <Sidebar />}
           <div ref={desktopRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <DesktopIcons onLaunch={handleLaunchApp} />
             <WindowManager onNewTab={handleNewTabInWindow} />
           </div>
         </div>
