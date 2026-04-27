@@ -316,3 +316,20 @@ export function terminalWsUrl(cid: string): string {
   }
   return base.replace(/^http/, 'ws') + `/terminal/ws/${cid}`;
 }
+
+// ---- Desktop Streaming ----
+
+export async function apiStartDesktopStream(userId: string = 'desktop-web'): Promise<void> {
+  await api.post('/screen/start', { user_id: userId });
+}
+
+export async function apiGetScreenToken(userId: string = 'desktop-web'): Promise<{
+  url: string; token: string; room_name: string;
+}> {
+  const res = await api.post('/screen/client-token', { user_id: userId });
+  return res.data;
+}
+
+export async function apiStopDesktopStream(userId: string = 'desktop-web'): Promise<void> {
+  await api.post('/voice/end', { user_id: userId });
+}

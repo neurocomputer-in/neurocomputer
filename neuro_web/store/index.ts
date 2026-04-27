@@ -8,6 +8,7 @@ import uiReducer from './uiSlice';
 import terminalReducer from './terminalSlice';
 import osReducer from './osSlice';
 import iconsReducer from './iconsSlice';
+import mobileDesktopReducer from './mobileDesktopSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     terminal: terminalReducer,
     os: osReducer,
     icons: iconsReducer,
+    mobileDesktop: mobileDesktopReducer,
   },
 });
 
