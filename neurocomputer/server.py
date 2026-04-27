@@ -1892,6 +1892,21 @@ async def start_screen_share(body: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/screen/client-token")
+async def screen_client_token(body: dict):
+    """Return a LiveKit client token for the screen room (no voice agent started)."""
+    user_id = body.get("user_id", "desktop-web")
+    conversation_id = f"voice_{user_id}"
+    room_name = f"voice-{conversation_id}"
+    identity = f"web-client-{uuid.uuid4().hex[:6]}"
+    from core.voice_manager import voice_manager
+    token = voice_manager._generate_token(room_name, identity, is_agent=False)
+    url = voice_manager._url
+    if not url or not token:
+        raise HTTPException(status_code=500, detail="LiveKit not configured")
+    return {"url": url, "token": token, "room_name": room_name}
+
+
 @app.post("/screen/view")
 async def update_screen_view(body: dict):
     """
