@@ -25,6 +25,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0a0a0a" />
+        {/* Android & legacy PWA — must be `yes` so the home-screen launcher
+            doesn't fall back to standalone-with-chrome when the manifest's
+            `display: fullscreen` isn't honored. */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <ColorModeScript initialColorMode="dark" />
       </head>

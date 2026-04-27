@@ -51,6 +51,7 @@ const NS_COLOR: Record<string, string> = {
   media:       '#fbbf24',
   upwork:      '#4ade80',
   library:     '#f472b6',
+  nl:          '#22d3ee',
 };
 const colorFor = (ns: string) => NS_COLOR[ns] || '#888';
 

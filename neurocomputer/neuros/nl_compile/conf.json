@@ -1,0 +1,14 @@
+{
+  "name": "nl_compile",
+  "description": "Compile a natural-language description into a NeuroLang flow (Python source).",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "📝",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [{"name": "prompt", "type": "string", "description": "What the flow should do"}],
+  "outputs": [{"name": "source", "type": "string", "description": "Python source using NeuroLang primitives"}],
+  "model": "default",
+  "temperature": 0.0
+}

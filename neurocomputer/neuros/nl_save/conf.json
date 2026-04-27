@@ -1,0 +1,20 @@
+{
+  "name": "nl_save",
+  "description": "Save NeuroLang Python source to ~/.neurolang/neuros/<name>.py for auto-discovery.",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "💾",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [
+    {"name": "source", "type": "string", "description": "Python source to save"},
+    {"name": "name", "type": "string", "description": "Slug name for the file (optional)"}
+  ],
+  "outputs": [
+    {"name": "path", "type": "string", "description": "Absolute path of saved file"},
+    {"name": "name", "type": "string", "description": "Slug used"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}

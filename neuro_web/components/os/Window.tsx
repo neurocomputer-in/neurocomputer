@@ -125,11 +125,17 @@ export default function Window({ windowId, children, onNewTab }: Props) {
     </button>
   );
 
-  // On mobile, skip framer-motion's scale animation. Its transform: scale(1)
-  // creates a stacking/transform context that interferes with iOS keyboard
-  // (focused inputs inside transformed ancestors can lose focus during reflow).
+  // On mobile: avoid the desktop scale animation (its transform context broke
+  // iOS keyboard focus). Explicitly set scale: 1 in animate/exit so framer-
+  // motion clears any leftover transform — without this the window can stick
+  // at scale: 0.92 if a previous render saw a different isMobile value.
   const motionProps = isMobile
-    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
+    ? {
+        initial: false,
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 1 },
+        transition: { duration: 0.15 },
+      }
     : {
         initial: { opacity: 0, scale: 0.92 },
         animate: { opacity: 1, scale: 1 },
@@ -161,9 +167,13 @@ export default function Window({ windowId, children, onNewTab }: Props) {
           }}
           onMouseDown={() => dispatch(focusWindow(win.id))}
         >
-          {/* Title / Tab bar — desktop only; MobileTabStrip in page.tsx provides mobile chrome */}
+          {/* Title / Tab bar — desktop only; MobileTabStrip in page.tsx provides mobile chrome.
+              Tagged `neuro-chrome` so it's also hidden in desktop-kiosk mode (CSS rule in
+              globals.css), since on a wide phone in landscape this Window IS the desktop
+              tab and the title bar would otherwise show above the kiosk. */}
           {!isMobile && (
             <div
+              className="neuro-chrome"
               onPointerDown={handleDragStart}
               onPointerMove={handleDragMove}
               onPointerUp={handleDragEnd}

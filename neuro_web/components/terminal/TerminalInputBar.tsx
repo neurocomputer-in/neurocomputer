@@ -20,11 +20,16 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
   const [value, setValue] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
-  const [kbOpen, setKbOpen] = useState(false);
-  const [modifiers, setModifiers] = useState({ ctrl: false, alt: false, shift: false });
-  const ref = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
   const isIOS = useIsIOS();
+  // Custom keyboard is pinned open while the terminal is mounted on mobile —
+  // tying it to focus events triggered a focus/blur race (xterm's overlay
+  // tap focus-then-blurred the readOnly textarea, snapping the keyboard
+  // shut). Pinning open is also closer to how a desktop terminal feels:
+  // the keys are always there, ready.
+  const [kbOpen, setKbOpen] = useState(isMobile);
+  const [modifiers, setModifiers] = useState({ ctrl: false, alt: false, shift: false });
+  const ref = useRef<HTMLTextAreaElement>(null);
   const { startCall, endCall, isActive: callActive, connecting: callConnecting } = useVoiceCall();
 
   const submit = (text?: string) => {
@@ -122,9 +127,6 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
             placeholder={placeholder || 'Type a command, Enter to send'}
             onChange={e => setValue(e.target.value)}
             onKeyDown={onKeyDown}
-            onFocus={() => { if (isMobile) setKbOpen(true); }}
-            onBlur={() => { if (isMobile) setKbOpen(false); }}
-            onPointerDown={() => { if (isMobile) setKbOpen(true); }}
             disabled={disabled}
             rows={1}
             autoComplete="off"
@@ -215,6 +217,7 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
       {isMobile && (
         <CustomKeyboardSheet
           open={kbOpen}
+          variant="inline"
           onKey={handleCustomKey}
           modifiers={modifiers}
           onToggleModifier={(m) => setModifiers(s => ({ ...s, [m]: !s[m] }))}

@@ -1,0 +1,5 @@
+{
+  "planner": "nl_planner",
+  "replier": "nl_reply",
+  "neuros": ["nl_*", "neuro_list", "load_neuro", "agent_talk", "agent_list", "schedule_run", "schedule_cancel", "schedule_list"]
+}

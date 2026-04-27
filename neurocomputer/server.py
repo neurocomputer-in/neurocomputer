@@ -117,6 +117,59 @@ async def get_active_agent():
     return {"agent_id": agent.agent_id, "name": agent.config.name}
 
 # ----------------------------------------------------------------------------------
+# Profile API Endpoints (S4 — IDE profile mode)
+# ----------------------------------------------------------------------------------
+
+import glob as _glob
+import json as _json
+import os as _os
+
+_PROFILES_DIR = _os.path.join(_os.path.dirname(__file__), "profiles")
+
+
+def _load_profiles() -> dict:
+    profiles = {}
+    for fp in _glob.glob(_os.path.join(_PROFILES_DIR, "*.json")):
+        name = _os.path.splitext(_os.path.basename(fp))[0]
+        try:
+            with open(fp) as f:
+                profiles[name] = _json.load(f)
+        except Exception:
+            pass
+    return profiles
+
+
+@app.get("/api/profile/list")
+async def list_profiles():
+    """List all available profiles."""
+    return {"profiles": list(_load_profiles().keys())}
+
+
+@app.get("/api/profile/active")
+async def get_active_profile():
+    """Return the active agent's profile name and config."""
+    agent = agent_manager.get_active_agent()
+    if not agent:
+        return {"profile": "general", "config": {}}
+    profile_name = agent.config.profile
+    profiles = _load_profiles()
+    return {"profile": profile_name, "config": profiles.get(profile_name, {}), "agent_id": agent.agent_id}
+
+
+@app.post("/api/profile/switch")
+async def switch_profile(body: dict):
+    """Switch the active agent to one that uses the requested profile, or create it."""
+    profile = body.get("profile", "general")
+    from core.agent_configs import AGENT_CONFIGS
+    # Find an agent config that uses this profile
+    for agent_type, cfg in AGENT_CONFIGS.items():
+        if cfg.profile == profile:
+            agent = agent_manager.switch_to_agent_type(agent_type)
+            return {"agent_id": agent.agent_id, "profile": profile}
+    raise HTTPException(status_code=404, detail=f"No agent configured for profile '{profile}'")
+
+
+# ----------------------------------------------------------------------------------
 # Upwork Job Capture API Endpoints
 # ----------------------------------------------------------------------------------
 

@@ -28,6 +28,7 @@ class AgencyConfig:
     emoji: str = "🏢"
     agents: List[str] = field(default_factory=lambda: ["neuro"])
     default_agent: str = "neuro"
+    default_project: str = "default"
 
 
 class Agency:

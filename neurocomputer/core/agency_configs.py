@@ -14,8 +14,9 @@ AGENCY_CONFIGS: Dict[str, AgencyConfig] = {
         description="General AI workspace — chat, code, automate",
         color="#8B5CF6",
         emoji="🧠",
-        agents=["neuro", "opencode"],
+        agents=["neuro", "opencode", "nl_dev"],
         default_agent="neuro",
+        default_project="default",
     ),
     "upwork": AgencyConfig(
         name="Upwork Agency",

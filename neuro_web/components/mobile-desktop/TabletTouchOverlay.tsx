@@ -2,6 +2,7 @@
 import { useRef, useCallback } from 'react';
 import { useDesktopRoom } from './DesktopRoomContext';
 import { useLetterbox } from './LetterboxContext';
+import { useLocalCursor } from './LocalCursorContext';
 
 const LONG_PRESS_MS = 500;
 const DOUBLE_TAP_MS = 350;
@@ -12,6 +13,7 @@ export default function TabletTouchOverlay() {
   const lb = useLetterbox();
   const lbRef = useRef(lb);
   lbRef.current = lb;
+  const cursor = useLocalCursor();
 
   const lastTapTimeRef = useRef(0);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,15 +37,23 @@ export default function TabletTouchOverlay() {
     pointerDownPosRef.current = { nx, ny };
     isDraggingRef.current = false;
 
+    // Snap local cursor to the tap location — tablet mode is "wherever you
+    // touch is where the cursor goes." This is the behavior the user
+    // expects from the Kotlin app.
+    cursor.setPos(e.clientX, e.clientY);
+
     longPressTimerRef.current = setTimeout(() => {
       sendControl({ type: 'touch_long_press', nx, ny });
     }, LONG_PRESS_MS);
-  }, [sendControl]);
+  }, [sendControl, cursor]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (e.pointerId !== pointerIdRef.current) return;
     const { nx, ny } = toNorm(e.clientX, e.clientY);
     const dist = Math.hypot(nx - pointerDownPosRef.current.nx, ny - pointerDownPosRef.current.ny);
+
+    // Cursor follows the finger in tablet mode.
+    cursor.setPos(e.clientX, e.clientY);
 
     if (!isDraggingRef.current && dist > MOVE_THRESHOLD_NX) {
       if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
@@ -58,7 +68,7 @@ export default function TabletTouchOverlay() {
     if (isDraggingRef.current) {
       sendControl({ type: 'touch_drag_move', nx, ny });
     }
-  }, [sendControl]);
+  }, [sendControl, cursor]);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     if (e.pointerId !== pointerIdRef.current) return;

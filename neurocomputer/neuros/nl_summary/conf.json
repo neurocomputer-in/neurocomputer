@@ -1,0 +1,14 @@
+{
+  "name": "nl_summary",
+  "description": "Convert NeuroLang Python source back into a plain-English summary.",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "📖",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [{"name": "source", "type": "string", "description": "Python source of a NeuroLang flow"}],
+  "outputs": [{"name": "summary", "type": "string", "description": "Plain-English summary"}],
+  "model": "default",
+  "temperature": 0.0
+}

@@ -1,17 +1,27 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useDrag } from '@use-gesture/react';
-import { Monitor, Hand, Keyboard, Volume2, Minimize2, RotateCw, Maximize, Minimize } from 'lucide-react';
+import {
+  Monitor, Hand, Keyboard, Mic, Minimize2, RotateCw, Maximize, Minimize,
+  MonitorUp, EyeOff, ChevronDown, ChevronUp, LogOut,
+} from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   cycleDesktopMode, setDesktopKeyboardOpen, setScrollMode, setRotationLocked,
+  setHotkeysExpanded, setDisplaySwitching, setKioskActive,
 } from '@/store/mobileDesktopSlice';
-import VoiceRecordingPanel from './VoiceRecordingPanel';
+import { apiSwitchDesktopDisplay } from '@/services/api';
+import VoiceTypingPanel from './VoiceTypingPanel';
+import ExpandedHotkeysRow from './ExpandedHotkeysRow';
 
 export default function FloatingToolbar() {
   const dispatch = useAppDispatch();
-  const { mode, keyboardOpen, scrollMode, rotationLocked } = useAppSelector(s => s.mobileDesktop);
-  const [pos, setPos] = useState({ x: 16, y: 200 });
+  const { mode, keyboardOpen, scrollMode, rotationLocked, hotkeysExpanded, kioskActive } =
+    useAppSelector(s => s.mobileDesktop);
+  // Top-left so it's the first thing the user sees after entering kiosk —
+  // dragging is supported but a discoverable starting position matters more
+  // than balancing visually on first paint.
+  const [pos, setPos] = useState({ x: 8, y: 60 });
   const [collapsed, setCollapsed] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -50,19 +60,66 @@ export default function FloatingToolbar() {
       }
       dispatch(setRotationLocked(wantLocked));
     } catch {
-      // lock failed (browser unsupported or not in fullscreen) — leave Redux state untouched
+      // Lock failed (browser unsupported, or page not in fullscreen). Leave
+      // Redux untouched so the UI stays accurate to actual screen state.
     }
   }, [rotationLocked, dispatch]);
 
   const handleFullscreen = useCallback(async () => {
+    // Toggle kiosk from Redux state, NOT document.fullscreenElement. In PWA
+    // standalone mode the Fullscreen API can be a no-op (app is already
+    // immersive in the OS sense), so `fullscreenElement` stays null even when
+    // the visual outcome is fullscreen. Driving kiosk from Redux makes the
+    // chrome-hide deterministic regardless of what the API reports.
+    const goingFullscreen = !kioskActive;
+    dispatch(setKioskActive(goingFullscreen));
     try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-      } else {
+      if (goingFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen({ navigationUI: 'hide' } as any);
+      } else if (!goingFullscreen && document.fullscreenElement) {
         await document.exitFullscreen();
       }
+    } catch {
+      // Any Fullscreen-API rejection — kiosk state already toggled in Redux,
+      // chrome hides via class + conditional render either way.
+    }
+  }, [dispatch, kioskActive]);
+
+  const handleExitKiosk = useCallback(async () => {
+    // Drop kiosk first so the OS chrome (MobileTabStrip + dock) reappears
+    // immediately — even if exiting fullscreen has to await.
+    dispatch(setKioskActive(false));
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
     } catch {}
-  }, []);
+    try {
+      if ('screen' in window && screen.orientation) screen.orientation.unlock();
+    } catch {}
+    dispatch(setRotationLocked(false));
+  }, [dispatch]);
+
+  const handleSwitchDisplay = useCallback(async () => {
+    dispatch(setDisplaySwitching(true));
+    try {
+      await apiSwitchDesktopDisplay();
+    } catch (e) {
+      console.error('[Toolbar] Switch display failed:', e);
+    }
+    // Match the Kotlin app's UX: hold the spinner briefly so the user can
+    // register that something is happening, even if the request finishes
+    // instantly. The video stream takes a frame or two to repaint anyway.
+    setTimeout(() => dispatch(setDisplaySwitching(false)), 1200);
+  }, [dispatch]);
+
+  // Pick the right icon for the current touch mode. Three states match the
+  // Kotlin app: touchpad (relative pointer), tablet (absolute pointer), none
+  // (display-only, view without controlling).
+  const modeIcon = mode === 'touchpad' ? <Hand size={16} />
+    : mode === 'tablet' ? <Monitor size={16} />
+    : <EyeOff size={16} />;
+  const modeTitle = mode === 'touchpad' ? 'Touchpad mode'
+    : mode === 'tablet' ? 'Tablet mode'
+    : 'View only (no input)';
 
   return (
     <div
@@ -75,6 +132,9 @@ export default function FloatingToolbar() {
         zIndex: 40,
         touchAction: 'none',
         userSelect: 'none',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 6,
       }}
     >
       <div style={{
@@ -101,10 +161,10 @@ export default function FloatingToolbar() {
           <>
             <button
               style={btnStyle()}
-              title={mode === 'touchpad' ? 'Touchpad mode' : 'Tablet mode'}
+              title={modeTitle}
               onPointerDown={e => { e.stopPropagation(); dispatch(cycleDesktopMode()); }}
             >
-              {mode === 'touchpad' ? <Hand size={16} /> : <Monitor size={16} />}
+              {modeIcon}
             </button>
             <button
               style={btnStyle(scrollMode)}
@@ -125,7 +185,24 @@ export default function FloatingToolbar() {
               title="Voice typing"
               onPointerDown={e => { e.stopPropagation(); setShowVoice(v => !v); }}
             >
-              <Volume2 size={16} />
+              <Mic size={16} />
+            </button>
+            <button
+              style={btnStyle()}
+              title="Switch display"
+              onPointerDown={e => { e.stopPropagation(); handleSwitchDisplay(); }}
+            >
+              <MonitorUp size={16} />
+            </button>
+            <button
+              style={btnStyle(hotkeysExpanded)}
+              title={hotkeysExpanded ? 'Hide hotkeys' : 'Show hotkeys'}
+              onPointerDown={e => {
+                e.stopPropagation();
+                dispatch(setHotkeysExpanded(!hotkeysExpanded));
+              }}
+            >
+              {hotkeysExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
             <button
               style={btnStyle(rotationLocked)}
@@ -141,6 +218,18 @@ export default function FloatingToolbar() {
             >
               {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             </button>
+            {/* Kiosk exit — only visible while in kiosk so it doesn't add
+                noise to the desktop-tab-as-window experience. Returns the
+                user to the normal mobile shell with tab strip + dock. */}
+            {kioskActive && (
+              <button
+                style={{ ...btnStyle(), background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#fca5a5' }}
+                title="Exit kiosk mode"
+                onPointerDown={e => { e.stopPropagation(); handleExitKiosk(); }}
+              >
+                <LogOut size={16} />
+              </button>
+            )}
           </>
         )}
 
@@ -153,9 +242,12 @@ export default function FloatingToolbar() {
         </button>
       </div>
 
-      {showVoice && !collapsed && (
-        <div style={{ marginTop: 6 }}>
-          <VoiceRecordingPanel />
+      {/* Side panels — laid out next to the toolbar (not overlapping). The
+          parent flex row keeps them aligned to the toolbar's top edge. */}
+      {!collapsed && (showVoice || hotkeysExpanded) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {showVoice && <VoiceTypingPanel onClose={() => setShowVoice(false)} />}
+          {hotkeysExpanded && <ExpandedHotkeysRow />}
         </div>
       )}
     </div>

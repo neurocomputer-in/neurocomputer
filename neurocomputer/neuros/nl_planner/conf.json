@@ -1,0 +1,14 @@
+{
+  "name": "nl_planner",
+  "description": "NeuroLang dev planner — emits a 3-node DAG (nl_propose→nl_compile→nl_save) from a user message.",
+  "kind": "planner",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "🧠",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [{"name": "message", "type": "string", "description": "User's NL request"}],
+  "outputs": [{"name": "dag", "type": "object", "description": "Executor DAG"}],
+  "model": "default",
+  "temperature": 0.0
+}

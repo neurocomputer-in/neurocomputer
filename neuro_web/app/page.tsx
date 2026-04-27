@@ -50,6 +50,10 @@ export default function Home() {
   const closedCids = useAppSelector(s => s.os.closedCids ?? []);
   const liveWallpaperEnabled = useAppSelector(s => s.ui.liveWallpaperEnabled);
   const sidebarOpen = useAppSelector(s => s.ui.sidebarOpen);
+  // When the desktop tab is in kiosk mode, hide the mobile tab strip so the
+  // remote desktop covers the entire viewport (matches the Kotlin app's
+  // immersive mode).
+  const desktopKioskActive = useAppSelector(s => s.mobileDesktop.kioskActive);
   const { connectToConversation } = useLiveKitContext();
   const restoredRef = useRef(false);
   const desktopRef = useRef<HTMLDivElement | null>(null);
@@ -305,11 +309,15 @@ export default function Home() {
           height: 'var(--app-height)', overflow: 'hidden',
           position: 'relative', zIndex: 1,
         }}>
-          <MobileTabStrip
-            activeWindowId={activeWindowId}
-            onNewTab={(windowId) => setMobilePickerWindowId(windowId)}
-            onSwitcherOpen={() => setSwitcherOpen(true)}
-          />
+          {!desktopKioskActive && (
+            <div className="neuro-chrome" style={{ flexShrink: 0 }}>
+              <MobileTabStrip
+                activeWindowId={activeWindowId}
+                onNewTab={(windowId) => setMobilePickerWindowId(windowId)}
+                onSwitcherOpen={() => setSwitcherOpen(true)}
+              />
+            </div>
+          )}
           <div
             ref={contentRef}
             style={{ flex: 1, position: 'relative', overflow: 'hidden' }}
@@ -367,41 +375,45 @@ export default function Home() {
         height: 'var(--app-height)', overflow: 'hidden',
         position: 'relative', zIndex: 1,
       }}>
-        <MenuBar />
+        {!desktopKioskActive && <div className="neuro-chrome" style={{ flexShrink: 0 }}><MenuBar /></div>}
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
-          {sidebarOpen && <Sidebar />}
+          {sidebarOpen && !desktopKioskActive && <div className="neuro-chrome" style={{ display: 'flex' }}><Sidebar /></div>}
           <div ref={desktopRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
             <DesktopIcons onLaunch={handleLaunchApp} />
             <WindowManager onNewTab={handleNewTabInWindow} />
           </div>
         </div>
 
-        <div
-          onClick={() => setDockHidden(h => !h)}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            height: 14, flexShrink: 0, cursor: 'pointer',
-            background: 'transparent', zIndex: 101, position: 'relative',
-          }}
-        >
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '2px 12px', borderRadius: 6,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.06)',
-          }}>
-            <div style={{ width: 24, height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.2)' }} />
-            {dockHidden
-              ? <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>▲</span>
-              : <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>▼</span>
-            }
+        {!desktopKioskActive && (
+          <div
+            className="neuro-chrome"
+            onClick={() => setDockHidden(h => !h)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              height: 14, flexShrink: 0, cursor: 'pointer',
+              background: 'transparent', zIndex: 101, position: 'relative',
+            }}
+          >
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '2px 12px', borderRadius: 6,
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ width: 24, height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.2)' }} />
+              {dockHidden
+                ? <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>▲</span>
+                : <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)' }}>▼</span>
+              }
+            </div>
           </div>
-        </div>
+        )}
 
         <AnimatePresence initial={false}>
-          {!dockHidden && (
+          {!dockHidden && !desktopKioskActive && (
             <motion.div
               key="dock"
+              className="neuro-chrome"
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}

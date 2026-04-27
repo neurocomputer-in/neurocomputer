@@ -115,3 +115,20 @@ textarea, input { font-family: inherit; font-feature-settings: "cv01", "ss03"; }
     overscroll-behavior: contain;
   }
 }
+
+/*
+ * Desktop kiosk mode — set by DesktopApp while `kioskActive` is true. Hides
+ * every chrome element on the page so the remote-pc stream covers the entire
+ * viewport. Marker class on <body> rather than React conditionals so the
+ * chrome stays gone even if a stale render briefly slips through (matters on
+ * Android PWA where the OS occasionally re-shows system bars + the manifest
+ * fullscreen mode is best-effort).
+ */
+body.desktop-kiosk .neuro-chrome {
+  display: none !important;
+}
+body.desktop-kiosk {
+  /* Block any accidental scroll that would expose chrome above/below the
+     fixed kiosk container. */
+  overscroll-behavior: none;
+}

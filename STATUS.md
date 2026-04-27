@@ -6,11 +6,23 @@
 
 ## Last updated: 2026-04-28
 
-## Current phase: NeuroLang integration + multi-agent architecture (specs drafted)
+## Current phase: NeuroLang integration — S2 + S1 + S4 (partial) SHIPPED
 
 ## Just shipped (most recent first)
 
-1. **Spec batch — NeuroLang integration + multi-agent (DRAFT, 2026-04-28).**
+1. **S2 + S1 + S4(partial) — Main defaults + NL profile + IDE color (2026-04-28).**
+   - `core/defaults.py` — MAIN_AGENCY_ID/AGENT_ID/PROJECT_ID constants.
+   - `core/project.py` + `core/project_configs.py` — Project model + default project.
+   - `core/agency.py` — `default_project` field on AgencyConfig.
+   - `core/agent_manager.py` — removed hardcoded `"neuro"`, added `get_agent_or_default()`.
+   - `core/agent_configs.py` — `nl_dev` agent entry.
+   - `core/agency_configs.py` — `nl_dev` in default agency, `default_project="default"`.
+   - `profiles/neurolang_dev.json` — new profile for `nl_dev`.
+   - 7 neuros: `nl_compile`, `nl_propose`, `nl_summary`, `nl_save`, `nl_run`, `nl_planner`, `nl_reply`.
+   - `Graph3D.tsx` — `nl: '#22d3ee'` added to NS_COLOR palette.
+   - `server.py` — `/api/profile/list`, `/api/profile/active`, `/api/profile/switch` endpoints.
+
+2. **Spec batch — NeuroLang integration + multi-agent (DRAFT, 2026-04-28).**
    - Master plan: `docs/superpowers/specs/2026-04-28-MASTER-neurolang-integration-plan.md`
    - Six sub-specs under `docs/superpowers/specs/2026-04-28-S{1..6}-*.md` covering:
      - **S1** — `neurolang_dev` profile + 8 `nl_*` neuros wrapping NeuroLang's `compile_source`/`propose_plan`/`decompile_summary`.
@@ -24,17 +36,15 @@
 
 ## Working on now
 
-*Awaiting user spec review.*
+S5 (schedule neuro) → S6 (agent.talk) → S3 (meeting rooms)
 
 ## Next up
 
-### Critical path (ship first — hours scale)
+### Critical path (ship next)
 
-1. **S2 — Main defaults** (30 min) — `core/defaults.py`, tiny.
-2. **S1 — NL profile + neuros** (60–90 min) — biggest deliverable; the headline feature.
-3. **S4 — IDE profile mode** (30–45 min) — closes the loop visually.
-4. **First end-to-end demo** — `nl_dev` agent compiles a flow from voice/text, saves it, and the IDE renders it as a node.
-5. **STATUS update + tag the slice as shipped.**
+1. **S5 — Schedule neuro** (60–90 min) — APScheduler + schedules.db + 3 neuros.
+2. **S6 — agent.talk primitive** (60 min) — core/talk.py + agent_talk/agent_list neuros.
+3. **S3 — Meeting Rooms refresh** (90+ min) — rooms + mediator + RoomPanel.tsx.
 
 ### Then (independent, any order)
 

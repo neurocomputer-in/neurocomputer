@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 from core.agent import Agent, AgentConfig
 from core.agent_configs import AGENT_CONFIGS
+from core.defaults import MAIN_AGENT_ID
 
 
 class AgentManager:
@@ -103,10 +104,18 @@ class AgentManager:
             return self.agents.get(self.active_agent_id)
         return None
 
+    def get_agent_or_default(self, agent_id: Optional[str]) -> Optional["Agent"]:
+        """Return agent by id, or the active agent if id is None/unknown."""
+        if agent_id:
+            found = self.get_agent(agent_id) or self.get_agent_by_type(agent_id)
+            if found:
+                return found
+        return self.get_active_agent()
+
     def ensure_default_agent(self) -> Agent:
         """Ensure a default agent exists and is active."""
         if not self.active_agent_id or self.active_agent_id not in self.agents:
-            agent = self.create_agent("neuro")
+            agent = self.create_agent(MAIN_AGENT_ID)
             self.active_agent_id = agent.agent_id
             return agent
         return self.get_active_agent()

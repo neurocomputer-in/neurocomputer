@@ -1,0 +1,17 @@
+{
+  "name": "nl_reply",
+  "description": "NeuroLang dev replier — summarises the saved flow source or returns the planner rationale.",
+  "kind": "replier",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "💬",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [
+    {"name": "source", "type": "string", "description": "Python source of saved flow (or empty)"},
+    {"name": "rationale", "type": "string", "description": "Planner rationale if no save happened"}
+  ],
+  "outputs": [{"name": "text", "type": "string", "description": "Natural-language reply"}],
+  "model": "default",
+  "temperature": 0.7
+}

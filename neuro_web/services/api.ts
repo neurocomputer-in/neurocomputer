@@ -335,3 +335,26 @@ export async function apiStopDesktopStream(userId: string = 'desktop-web'): Prom
   // no dedicated /screen/stop exists on the backend.
   await api.post('/voice/end', { user_id: userId });
 }
+
+export async function apiSwitchDesktopDisplay(): Promise<{
+  status: string; message?: string; display_index?: number;
+}> {
+  const res = await api.post('/screen/switch-display');
+  return res.data;
+}
+
+/**
+ * Voice-typing — uploads recorded audio, server transcribes via Whisper and
+ * types the text at the focused desktop window via xdotool.
+ */
+export async function apiVoiceType(
+  blob: Blob,
+  pressEnter: boolean = false,
+): Promise<{ transcription: string; typed: boolean }> {
+  const form = new FormData();
+  form.append('file', blob, 'voice-type.webm');
+  const res = await api.post(`/voice-type?press_enter=${pressEnter ? 'true' : 'false'}`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "nl_propose",
+  "description": "Plan a NeuroLang flow by calling propose_plan — returns intents, neuros, missing, rationale, cost.",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "🗺️",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [{"name": "prompt", "type": "string", "description": "What the flow should do"}],
+  "outputs": [{"name": "proposed", "type": "object", "description": "ProposedPlan as dict"}],
+  "model": "default",
+  "temperature": 0.0
+}

@@ -4,6 +4,7 @@
   "description": "Multi-agent AI workspace",
   "start_url": "/",
   "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",

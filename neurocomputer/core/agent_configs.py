@@ -39,4 +39,13 @@ AGENT_CONFIGS: Dict[str, AgentConfig] = {
         neuro_dirs=[],
         profile="general"
     ),
+    "nl_dev": AgentConfig(
+        name="NL Dev",
+        description="NeuroLang authoring agent — compile NL descriptions into runnable flows",
+        router_neuro="smart_router",
+        planner_neuro="nl_planner",
+        replier_neuro="nl_reply",
+        neuro_dirs=[],
+        profile="neurolang_dev"
+    ),
 }

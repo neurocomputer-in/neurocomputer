@@ -1,0 +1,17 @@
+{
+  "name": "nl_run",
+  "description": "Import a saved NeuroLang .py file and run its flow object.",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "▶️",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [
+    {"name": "path", "type": "string", "description": "Absolute path to the saved .py flow"},
+    {"name": "input", "type": "any", "description": "Input passed to flow.run()"}
+  ],
+  "outputs": [{"name": "result", "type": "any", "description": "Return value of flow.run()"}],
+  "model": "default",
+  "temperature": 0.0
+}
