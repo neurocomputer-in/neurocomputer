@@ -6,7 +6,7 @@
 
 ## Last updated: 2026-04-28
 
-## Current phase: NeuroLang integration — S2 + S1 + S4 (partial) SHIPPED
+## Current phase: NeuroLang integration — S1–S6 ALL SHIPPED ✓
 
 ## Just shipped (most recent first)
 
@@ -22,7 +22,19 @@
    - `Graph3D.tsx` — `nl: '#22d3ee'` added to NS_COLOR palette.
    - `server.py` — `/api/profile/list`, `/api/profile/active`, `/api/profile/switch` endpoints.
 
-2. **Spec batch — NeuroLang integration + multi-agent (DRAFT, 2026-04-28).**
+2. **S5 + S6 — Schedule neuro + agent.talk (2026-04-28).**
+   - `core/schedules_db.py`, `core/trigger_parse.py`, `core/scheduler.py` (APScheduler).
+   - 3 neuros: `schedule_run`, `schedule_cancel`, `schedule_list`.
+   - `core/talk.py` — `talk()` with depth guard (MAX=4), `TalkDepthExceeded`.
+   - 2 neuros: `agent_talk`, `agent_list`.
+   - `server.py` — `/api/schedules` + `/api/rooms` endpoints.
+
+3. **S3 — Meeting Rooms (2026-04-28).**
+   - `core/rooms_db.py`, `core/rooms.py` — Room model + RoomManager + round-robin `_pick_next_agent`.
+   - 4 neuros: `room_create`, `room_post`, `room_close`, `room_mediator`.
+   - `neuro_web/components/rooms/RoomPanel.tsx` — transcript view + create/close + send.
+
+4. **Spec batch — NeuroLang integration + multi-agent (DRAFT, 2026-04-28).**
    - Master plan: `docs/superpowers/specs/2026-04-28-MASTER-neurolang-integration-plan.md`
    - Six sub-specs under `docs/superpowers/specs/2026-04-28-S{1..6}-*.md` covering:
      - **S1** — `neurolang_dev` profile + 8 `nl_*` neuros wrapping NeuroLang's `compile_source`/`propose_plan`/`decompile_summary`.
@@ -36,15 +48,13 @@
 
 ## Working on now
 
-S5 (schedule neuro) → S6 (agent.talk) → S3 (meeting rooms)
+All 6 specs implemented. Ready for end-to-end testing.
 
 ## Next up
 
-### Critical path (ship next)
-
-1. **S5 — Schedule neuro** (60–90 min) — APScheduler + schedules.db + 3 neuros.
-2. **S6 — agent.talk primitive** (60 min) — core/talk.py + agent_talk/agent_list neuros.
-3. **S3 — Meeting Rooms refresh** (90+ min) — rooms + mediator + RoomPanel.tsx.
+1. **End-to-end test** — start server, switch to nl_dev agent, send "fetch arxiv papers and email me a summary", verify .py lands in ~/.neurolang/neuros/ and reply contains summary.
+2. **Meeting Rooms live test** — create room with neuro+nl_dev, post a message, verify alternating replies.
+3. **S4 ProfileBadge** — UI badge showing active profile name (optional polish).
 
 ### Then (independent, any order)
 
