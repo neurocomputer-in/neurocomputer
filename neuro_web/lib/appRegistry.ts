@@ -1,6 +1,6 @@
 import { AgentType } from '@/types';
 
-export type AppId = 'neuro' | 'openclaw' | 'opencode' | 'neuroupwork' | 'terminal' | 'ide'
+export type AppId = 'neuro' | 'openclaw' | 'opencode' | 'neuroupwork' | 'nl_dev' | 'terminal' | 'ide'
   | 'neurodesktop'
   | 'neuroresearch' | 'neurowrite' | 'neurodata' | 'neurofiles'
   | 'neuroemail' | 'neurocalendar' | 'neuronotes' | 'neurobrowse'
@@ -55,6 +55,16 @@ export const APP_LIST: AppDef[] = [
     icon: 'briefcase',
     color: '#14b8a6',
     agentType: AgentType.NEUROUPWORK,
+    tabKind: 'chat',
+    pinned: true,
+  },
+  {
+    id: 'nl_dev',
+    name: 'NL Dev',
+    description: 'Compile NL → runnable NeuroLang flows',
+    icon: 'sparkles',
+    color: '#22d3ee',
+    agentType: AgentType.NL_DEV,
     tabKind: 'chat',
     pinned: true,
   },

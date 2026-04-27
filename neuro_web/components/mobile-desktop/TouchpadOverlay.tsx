@@ -1,98 +1,121 @@
 'use client';
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback } from 'react';
 import { useDesktopRoom } from './DesktopRoomContext';
 import { useAppSelector } from '@/store/hooks';
 import { useLocalCursor } from './LocalCursorContext';
+import { useLetterbox } from './LetterboxContext';
 
+// Constants — exactly mirror Kotlin's TouchpadOverlay.kt so the cursor
+// behaves identically across devices.
+const MOVE_THRESHOLD = 3;             // px
+const DOUBLE_TAP_INTERVAL = 350;      // ms
+const TAP_CONFIRM_DELAY = 180;        // ms
 const BASE_SENSITIVITY = 1.0;
 const ACCEL_FACTOR = 0.18;
 const ACCEL_POWER = 0.65;
 const MAX_SENSITIVITY = 12.0;
 const PC_SENS = 2.5;
-// Local cursor moves faster than what we send to the server so the user gets
-// instant visual feedback even though the server actuates the real mouse a
-// few frames later. Tune to match Kotlin's CursorArrowOverlay feel.
-const LOCAL_CURSOR_GAIN = 1.6;
-const LONG_PRESS_MS = 500;
-const DOUBLE_TAP_MS = 350;
-const TAP_CONFIRM_MS = 180;
-const MOVE_THRESHOLD_PX = 3;
 
-function applyAccel(delta: number): number {
-  const abs = Math.abs(delta);
-  const accel = 1 + ACCEL_FACTOR * Math.pow(abs, ACCEL_POWER);
-  return Math.sign(delta) * Math.min(abs * accel, abs * MAX_SENSITIVITY) * PC_SENS * BASE_SENSITIVITY;
-}
-
-type GestureState = 'idle' | 'potential-tap' | 'dragging' | 'scrolling' | 'dt-drag';
-
+/**
+ * Touchpad mode — relative pointer with acceleration. Ports the Kotlin
+ * algorithm 1:1 so the local cursor and the remote-actuated cursor stay
+ * in sync within network latency.
+ *
+ * Wire format (matches Kotlin's `direct_*` family — backend's
+ * mouse_controller dispatches these to absolute positions, no delta math
+ * server-side):
+ *   direct_move          {x, y}                         — absolute cursor
+ *   direct_click         {x, y, button:'left',  count:1}
+ *   direct_double_click  {x, y, button:'left',  count:2}
+ *   direct_right_click   {x, y, button:'right', count:1}
+ *   mousedown / mouseup  {button:'left'}                — for double-tap-and-drag
+ *   scroll               {dy}                           — when scroll mode is on
+ */
 export default function TouchpadOverlay() {
   const { sendControl } = useDesktopRoom();
   const { scrollMode } = useAppSelector(s => s.mobileDesktop);
   const cursor = useLocalCursor();
+  const lb = useLetterbox();
+  const lbRef = useRef(lb);
+  lbRef.current = lb;
 
-  const stateRef = useRef<GestureState>('idle');
-  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
-  const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const lastTapTimeRef = useRef(0);
-  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pointer/gesture state — refs because we read them inside async timers.
   const pointerIdRef = useRef<number | null>(null);
-  const elRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
+  const downPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Track our own size so cursor clamping stays inside the visible area when
-  // the window resizes (rotation, fullscreen toggles).
-  useEffect(() => {
-    const el = elRef.current;
-    if (!el) return;
-    const update = () => setContainerSize({ w: el.clientWidth, h: el.clientHeight });
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  // Tap disambiguation:
+  //   pointerDownCount + lastDownTime → tracks raw DOWNs to enable
+  //     double-tap-and-drag (drag-mode kicks in if pointer goes down 2x in a row).
+  //   tapCount + lastTapTime + pendingTapTimerRef → debounced single/double click.
+  const pointerDownCountRef = useRef(0);
+  const lastDownTimeRef = useRef(0);
+  const tapCountRef = useRef(0);
+  const lastTapTimeRef = useRef(0);
+  const pendingTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Center the local cursor on first mount so the user can see where it is
-  // before they touch anything. Kotlin behaves the same way.
-  useEffect(() => {
-    if (containerSize.w > 0 && containerSize.h > 0) {
-      cursor.setPos(containerSize.w / 2, containerSize.h / 2);
-    }
-    // Only on first non-zero size — re-centering on every resize would feel
-    // jarring during fullscreen transitions.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerSize.w > 0]);
+  // Drag state
+  const isDraggingRef = useRef(false);     // true once movement crossed MOVE_THRESHOLD
+  const isDragModeRef = useRef(false);     // true if double-tap initiated a drag (mousedown sent)
+  const totalMovementRef = useRef(0);
+  const longPressFiredRef = useRef(false); // skip tap-on-up if long-press already sent right-click
 
-  const clearTimers = () => {
-    if (tapTimerRef.current) { clearTimeout(tapTimerRef.current); tapTimerRef.current = null; }
+  const clearTapTimers = () => {
+    if (pendingTapTimerRef.current) { clearTimeout(pendingTapTimerRef.current); pendingTapTimerRef.current = null; }
     if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
   };
+
+  // Fire the pending tap (single or double) after the confirmation window.
+  const flushPendingTap = useCallback(() => {
+    pendingTapTimerRef.current = null;
+    const count = Math.min(2, Math.max(1, tapCountRef.current));
+    const { nx, ny } = cursor.posRef.current;
+    if (count === 2) {
+      sendControl({ type: 'direct_double_click', x: nx, y: ny, button: 'left', count: 2 });
+    } else {
+      sendControl({ type: 'direct_click', x: nx, y: ny, button: 'left', count: 1 });
+    }
+    tapCountRef.current = 0;
+  }, [sendControl, cursor]);
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (pointerIdRef.current !== null) return;
     pointerIdRef.current = e.pointerId;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
-    clearTimers();
-    pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
-    lastPosRef.current = { x: e.clientX, y: e.clientY };
-
-    const isDoubleTap = Date.now() - lastTapTimeRef.current < DOUBLE_TAP_MS;
-
-    if (isDoubleTap) {
-      stateRef.current = 'dt-drag';
-      sendControl({ type: 'mousedown', button: 'left' });
+    const now = Date.now();
+    // Update raw DOWN counter — used to enable drag-mode on double-tap-and-hold.
+    if (now - lastDownTimeRef.current < DOUBLE_TAP_INTERVAL) {
+      pointerDownCountRef.current += 1;
     } else {
-      stateRef.current = 'potential-tap';
-      longPressTimerRef.current = setTimeout(() => {
-        if (stateRef.current === 'potential-tap') {
-          stateRef.current = 'idle';
-          sendControl({ type: 'click', button: 'right', count: 1 });
-        }
-      }, LONG_PRESS_MS);
+      pointerDownCountRef.current = 1;
     }
-  }, [sendControl]);
+    lastDownTimeRef.current = now;
+
+    downPosRef.current = { x: e.clientX, y: e.clientY };
+    lastPosRef.current = { x: e.clientX, y: e.clientY };
+    totalMovementRef.current = 0;
+    isDraggingRef.current = false;
+    longPressFiredRef.current = false;
+
+    // Cancel any in-flight tap-confirm — if user is starting a new gesture
+    // we don't want a stale single-click to fire underneath.
+    if (pendingTapTimerRef.current) {
+      // Don't fire it; let the new gesture decide.
+      clearTimeout(pendingTapTimerRef.current);
+      pendingTapTimerRef.current = null;
+    }
+
+    // Long-press → right-click. Fires only if the user hasn't moved by then.
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      if (isDraggingRef.current) return;
+      longPressFiredRef.current = true;
+      const { nx, ny } = cursor.posRef.current;
+      sendControl({ type: 'direct_right_click', x: nx, y: ny, button: 'right', count: 1 });
+    }, 500);
+  }, [sendControl, cursor]);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (e.pointerId !== pointerIdRef.current) return;
@@ -100,60 +123,109 @@ export default function TouchpadOverlay() {
 
     const dx = e.clientX - lastPosRef.current.x;
     const dy = e.clientY - lastPosRef.current.y;
-    const startDist = Math.hypot(
-      e.clientX - pointerDownPosRef.current.x,
-      e.clientY - pointerDownPosRef.current.y
-    );
     lastPosRef.current = { x: e.clientX, y: e.clientY };
 
-    if (stateRef.current === 'potential-tap' && startDist > MOVE_THRESHOLD_PX) {
-      clearTimers();
-      stateRef.current = scrollMode ? 'scrolling' : 'dragging';
+    totalMovementRef.current += Math.abs(dx) + Math.abs(dy);
+    if (!isDraggingRef.current && totalMovementRef.current > MOVE_THRESHOLD) {
+      isDraggingRef.current = true;
+      // Crossed the move threshold — cancel long-press (we're dragging now).
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      // Decide drag-mode: did the user just complete a tap before this hold?
+      const now = Date.now();
+      const recentDown = now - lastDownTimeRef.current < DOUBLE_TAP_INTERVAL;
+      if (recentDown && pointerDownCountRef.current >= 2) {
+        isDragModeRef.current = true;
+        sendControl({ type: 'mousedown', button: 'left' });
+      }
+      pointerDownCountRef.current = 0;
     }
 
-    if (stateRef.current === 'dragging' || stateRef.current === 'dt-drag') {
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
-      const accelDx = applyAccel(dx);
-      const accelDy = applyAccel(dy);
-      sendControl({ type: 'mouse_move', dx: accelDx, dy: accelDy });
-      // Move local cursor with extra gain — it leads the server-driven cursor
-      // by a few px so the user gets sub-RTT visual response. The server's
-      // cursor_position broadcast (via ServerCursorOverlay) will catch up.
-      cursor.movePos(accelDx * LOCAL_CURSOR_GAIN, accelDy * LOCAL_CURSOR_GAIN, containerSize);
-    }
+    if (!isDraggingRef.current) return;
 
-    if (stateRef.current === 'scrolling') {
+    if (scrollMode && !isDragModeRef.current) {
+      // Scroll mode — vertical drag becomes scroll. Inverse Y so finger-down
+      // = scroll up (page reveals older content), matching every native UI.
       sendControl({ type: 'scroll', dy: -dy * 0.08 });
+      return;
     }
-  }, [sendControl, scrollMode, cursor, containerSize]);
+
+    // Cursor move with Kotlin's acceleration.
+    const speed = Math.hypot(dx, dy);
+    const sens = Math.min(BASE_SENSITIVITY + ACCEL_FACTOR * Math.pow(speed, ACCEL_POWER), MAX_SENSITIVITY);
+    const drawW = Math.max(lbRef.current.drawW, 1);
+    const drawH = Math.max(lbRef.current.drawH, 1);
+    const ndx = (dx * sens * PC_SENS) / drawW;
+    const ndy = (dy * sens * PC_SENS) / drawH;
+    const c = cursor.posRef.current;
+    const nx = Math.max(0, Math.min(1, c.nx + ndx));
+    const ny = Math.max(0, Math.min(1, c.ny + ndy));
+    cursor.setNorm(nx, ny);
+    sendControl({ type: 'direct_move', x: nx, y: ny });
+  }, [sendControl, scrollMode, cursor]);
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     if (e.pointerId !== pointerIdRef.current) return;
     pointerIdRef.current = null;
-    clearTimers();
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
 
-    if (stateRef.current === 'dt-drag') {
+    // Drag-mode end → emit mouseup, no tap.
+    if (isDragModeRef.current) {
       sendControl({ type: 'mouseup', button: 'left' });
-      stateRef.current = 'idle';
+      isDragModeRef.current = false;
+      isDraggingRef.current = false;
+      tapCountRef.current = 0;
       lastTapTimeRef.current = 0;
       return;
     }
 
-    if (stateRef.current === 'potential-tap') {
-      const now = Date.now();
-      lastTapTimeRef.current = now;
-      tapTimerRef.current = setTimeout(() => {
-        sendControl({ type: 'click', button: 'left', count: 1 });
-      }, TAP_CONFIRM_MS);
+    // Plain drag (no double-tap precursor) → no click on release.
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      return;
     }
 
-    stateRef.current = 'idle';
-    lastPosRef.current = null;
+    // Long-press already sent the right-click → don't also send a left.
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      return;
+    }
+
+    // Tap → bump tapCount, schedule debounced fire after TAP_CONFIRM_DELAY.
+    const now = Date.now();
+    if (now - lastTapTimeRef.current < DOUBLE_TAP_INTERVAL) {
+      tapCountRef.current += 1;
+    } else {
+      tapCountRef.current = 1;
+    }
+    lastTapTimeRef.current = now;
+
+    if (pendingTapTimerRef.current) {
+      clearTimeout(pendingTapTimerRef.current);
+    }
+    pendingTapTimerRef.current = setTimeout(flushPendingTap, TAP_CONFIRM_DELAY);
+  }, [sendControl, flushPendingTap]);
+
+  const onPointerCancel = useCallback((e: React.PointerEvent) => {
+    if (e.pointerId !== pointerIdRef.current) return;
+    pointerIdRef.current = null;
+    clearTapTimers();
+    if (isDragModeRef.current) {
+      sendControl({ type: 'mouseup', button: 'left' });
+      isDragModeRef.current = false;
+    }
+    isDraggingRef.current = false;
+    tapCountRef.current = 0;
+    longPressFiredRef.current = false;
   }, [sendControl]);
 
   return (
     <div
-      ref={elRef}
       style={{
         position: 'absolute', inset: 0,
         zIndex: 10,
@@ -163,7 +235,7 @@ export default function TouchpadOverlay() {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerCancel={onPointerCancel}
     />
   );
 }

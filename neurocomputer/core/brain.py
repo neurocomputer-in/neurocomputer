@@ -263,6 +263,17 @@ class Brain:
 
     async def handle(self, cid: str, user_text: str, agent_id: str = None, publish_to_hub: bool = True, audio_url: str = None, is_voice: bool = False) -> str:
         dev_ctx = self.dev_ctx.setdefault(cid, {})
+
+        # Auto-apply the agent's profile if this conversation hasn't been bound yet
+        if agent_id and cid not in self.active_profile:
+            try:
+                from core.agent_configs import AGENT_CONFIGS
+                _ac = AGENT_CONFIGS.get(agent_id)
+                if _ac and _ac.profile:
+                    self._apply_profile(cid, _ac.profile)
+            except Exception:
+                pass
+
         # ensure we have a profile
         cfg = self._profile_cfg(cid)
 

@@ -16,6 +16,7 @@ export enum AgentType {
   OPENCLAW = 'openclaw',
   OPENCODE = 'opencode',
   NEUROUPWORK = 'neuroupwork',
+  NL_DEV = 'nl_dev',
 }
 
 export interface AgentInfo {
@@ -163,4 +164,5 @@ export const AGENT_LIST: AgentInfo[] = [
   { type: AgentType.OPENCLAW, name: 'OpenClaw', description: 'Web automation & scraping', icon: 'globe', color: '#f97316' },
   { type: AgentType.OPENCODE, name: 'OpenCode', description: 'Code assistant', icon: 'code', color: '#3b82f6' },
   { type: AgentType.NEUROUPWORK, name: 'NeuroUpwork', description: 'Upwork automation', icon: 'briefcase', color: '#14b8a6' },
+  { type: AgentType.NL_DEV, name: 'NL Dev', description: 'Compile NL → runnable NeuroLang flows', icon: 'sparkles', color: '#22d3ee' },
 ];

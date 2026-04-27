@@ -2,29 +2,62 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useDrag } from '@use-gesture/react';
 import {
-  Monitor, Hand, Keyboard, Mic, Minimize2, RotateCw, Maximize, Minimize,
+  Monitor, Hand, Keyboard, Mic, RotateCw, Maximize, Minimize as MinimizeIcon,
   MonitorUp, EyeOff, ChevronDown, ChevronUp, LogOut,
+  Eye, CornerDownLeft, Delete, Space, MousePointer2, Move, Focus,
+  Undo2, Redo2, Camera, ChevronsLeft, ChevronsRight,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   cycleDesktopMode, setDesktopKeyboardOpen, setScrollMode, setRotationLocked,
   setHotkeysExpanded, setDisplaySwitching, setKioskActive,
 } from '@/store/mobileDesktopSlice';
+import { closeTab } from '@/store/conversationSlice';
+import { closeTabFromWindow, removeWindow } from '@/store/osSlice';
 import { apiSwitchDesktopDisplay } from '@/services/api';
+import { useDesktopRoom } from './DesktopRoomContext';
 import VoiceTypingPanel from './VoiceTypingPanel';
-import ExpandedHotkeysRow from './ExpandedHotkeysRow';
 
+// Loose `icon` typing because lucide-react icons + our inline span shims
+// don't share a single React.ComponentType signature.
+type IconLike = (props: { size?: number }) => JSX.Element;
+interface ButtonDef {
+  icon: IconLike | React.ComponentType<any>;
+  title: string;
+  active?: boolean;
+  activeColor?: string;
+  onClick: () => void;
+}
+
+/**
+ * Right-side docked floating toolbar for the remote-PC kiosk view. Mirrors
+ * the Kotlin DraggableToolbar layout (vertical column, drag handle, two-tier
+ * primary + expanded shortcuts) and adds Minimize / Exit Remote buttons the
+ * web port specifically needs to leave kiosk mode cleanly.
+ */
 export default function FloatingToolbar() {
   const dispatch = useAppDispatch();
+  const { sendControl } = useDesktopRoom();
   const { mode, keyboardOpen, scrollMode, rotationLocked, hotkeysExpanded, kioskActive } =
     useAppSelector(s => s.mobileDesktop);
-  // Top-left so it's the first thing the user sees after entering kiosk —
-  // dragging is supported but a discoverable starting position matters more
-  // than balancing visually on first paint.
-  const [pos, setPos] = useState({ x: 8, y: 60 });
+
+  // Selectors for closing the desktop tab (Exit Remote).
+  const activeWindowId = useAppSelector(s => s.os.activeWindowId);
+  const windows = useAppSelector(s => s.os.windows);
+  const desktopTab = (() => {
+    const w = windows.find(w => w.id === activeWindowId);
+    return w?.tabs.find(t => t.id === w.activeTabId && t.type === 'desktop');
+  })();
+
+  // Initial position: docked right edge, vertically centered-ish (top:64).
+  const [pos, setPos] = useState(() => ({
+    x: typeof window !== 'undefined' ? window.innerWidth - 56 : 320,
+    y: 64,
+  }));
   const [collapsed, setCollapsed] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,37 +73,17 @@ export default function FloatingToolbar() {
     filterTaps: true,
   });
 
-  const btnStyle = (active?: boolean): React.CSSProperties => ({
-    width: 36, height: 36, borderRadius: 8,
-    background: active ? '#6366f1' : 'rgba(255,255,255,0.1)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: active ? '#fff' : 'rgba(255,255,255,0.85)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', padding: 0,
-  });
-
   const handleRotationLock = useCallback(async () => {
     const wantLocked = !rotationLocked;
     if (typeof window === 'undefined' || !('screen' in window) || !screen.orientation) return;
     try {
-      if (wantLocked) {
-        await (screen.orientation as any).lock('landscape');
-      } else {
-        screen.orientation.unlock();
-      }
+      if (wantLocked) await (screen.orientation as any).lock('landscape');
+      else screen.orientation.unlock();
       dispatch(setRotationLocked(wantLocked));
-    } catch {
-      // Lock failed (browser unsupported, or page not in fullscreen). Leave
-      // Redux untouched so the UI stays accurate to actual screen state.
-    }
+    } catch {}
   }, [rotationLocked, dispatch]);
 
   const handleFullscreen = useCallback(async () => {
-    // Toggle kiosk from Redux state, NOT document.fullscreenElement. In PWA
-    // standalone mode the Fullscreen API can be a no-op (app is already
-    // immersive in the OS sense), so `fullscreenElement` stays null even when
-    // the visual outcome is fullscreen. Driving kiosk from Redux makes the
-    // chrome-hide deterministic regardless of what the API reports.
     const goingFullscreen = !kioskActive;
     dispatch(setKioskActive(goingFullscreen));
     try {
@@ -79,47 +92,103 @@ export default function FloatingToolbar() {
       } else if (!goingFullscreen && document.fullscreenElement) {
         await document.exitFullscreen();
       }
-    } catch {
-      // Any Fullscreen-API rejection — kiosk state already toggled in Redux,
-      // chrome hides via class + conditional render either way.
-    }
+    } catch {}
   }, [dispatch, kioskActive]);
-
-  const handleExitKiosk = useCallback(async () => {
-    // Drop kiosk first so the OS chrome (MobileTabStrip + dock) reappears
-    // immediately — even if exiting fullscreen has to await.
-    dispatch(setKioskActive(false));
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen();
-    } catch {}
-    try {
-      if ('screen' in window && screen.orientation) screen.orientation.unlock();
-    } catch {}
-    dispatch(setRotationLocked(false));
-  }, [dispatch]);
 
   const handleSwitchDisplay = useCallback(async () => {
     dispatch(setDisplaySwitching(true));
-    try {
-      await apiSwitchDesktopDisplay();
-    } catch (e) {
-      console.error('[Toolbar] Switch display failed:', e);
-    }
-    // Match the Kotlin app's UX: hold the spinner briefly so the user can
-    // register that something is happening, even if the request finishes
-    // instantly. The video stream takes a frame or two to repaint anyway.
+    try { await apiSwitchDesktopDisplay(); } catch (e) { console.error(e); }
     setTimeout(() => dispatch(setDisplaySwitching(false)), 1200);
   }, [dispatch]);
 
-  // Pick the right icon for the current touch mode. Three states match the
-  // Kotlin app: touchpad (relative pointer), tablet (absolute pointer), none
-  // (display-only, view without controlling).
-  const modeIcon = mode === 'touchpad' ? <Hand size={16} />
-    : mode === 'tablet' ? <Monitor size={16} />
-    : <EyeOff size={16} />;
-  const modeTitle = mode === 'touchpad' ? 'Touchpad mode'
-    : mode === 'tablet' ? 'Tablet mode'
-    : 'View only (no input)';
+  // Minimize → drop kiosk so the OS chrome reappears + TapToConnect shows.
+  // Connection stays alive; user can re-enter via the Tap-to-Start button.
+  const handleMinimize = useCallback(async () => {
+    dispatch(setKioskActive(false));
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+    try { if ('screen' in window && screen.orientation) screen.orientation.unlock(); } catch {}
+    dispatch(setRotationLocked(false));
+  }, [dispatch]);
+
+  // Exit Remote → close the desktop tab entirely. DesktopApp's unmount
+  // cleanup will disconnect LiveKit and call apiStopDesktopStream.
+  const handleExitRemote = useCallback(async () => {
+    dispatch(setKioskActive(false));
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+    try { if ('screen' in window && screen.orientation) screen.orientation.unlock(); } catch {}
+    dispatch(setRotationLocked(false));
+    if (desktopTab && activeWindowId) {
+      dispatch(closeTab(desktopTab.cid));
+      dispatch(closeTabFromWindow({ windowId: activeWindowId, tabId: desktopTab.id }));
+      // If that was the last tab in the window, remove the window too.
+      const w = windows.find(w => w.id === activeWindowId);
+      if (w && w.tabs.length <= 1) dispatch(removeWindow(activeWindowId));
+    }
+  }, [dispatch, desktopTab, activeWindowId, windows]);
+
+  const sendKey = (key: string) => sendControl({ type: 'key', key });
+
+  // Mode icon (3-state: touchpad/tablet/none) — colored to match Kotlin.
+  const modeIcon = mode === 'touchpad' ? <Hand size={18} />
+    : mode === 'tablet' ? <Monitor size={18} />
+    : <EyeOff size={18} />;
+  const modeTitle = mode === 'touchpad' ? 'Touchpad'
+    : mode === 'tablet' ? 'Tablet'
+    : 'View only';
+
+  // Primary buttons — same order/colors as Kotlin DraggableToolbar.
+  const primary: ButtonDef[] = [
+    { icon: () => <>{modeIcon}</>, title: modeTitle, onClick: () => dispatch(cycleDesktopMode()) },
+    { icon: CornerDownLeft, title: 'Enter', activeColor: '#86efac', onClick: () => sendKey('Return') },
+    { icon: Delete, title: 'Backspace', activeColor: '#fca5a5', onClick: () => sendKey('BackSpace') },
+    { icon: Space, title: 'Space', onClick: () => sendKey('space') },
+    { icon: Keyboard, title: 'Keyboard', active: keyboardOpen, activeColor: '#c4b5fd', onClick: () => dispatch(setDesktopKeyboardOpen(!keyboardOpen)) },
+    { icon: Move, title: 'Scroll', active: scrollMode, activeColor: '#67e8f9', onClick: () => dispatch(setScrollMode(!scrollMode)) },
+    { icon: Mic, title: 'Voice typing', active: showVoice, activeColor: '#fca5a5', onClick: () => setShowVoice(v => !v) },
+    { icon: MonitorUp, title: 'Switch display', onClick: handleSwitchDisplay },
+    { icon: RotateCw, title: 'Rotation lock', active: rotationLocked, activeColor: '#fca5a5', onClick: handleRotationLock },
+    { icon: isFullscreen ? MinimizeIcon : Maximize, title: isFullscreen ? 'Exit fullscreen' : 'Fullscreen', onClick: handleFullscreen },
+  ];
+
+  // Expanded tier (toggled by the chevron).
+  const expanded: ButtonDef[] = [
+    { icon: () => <span style={{ fontSize: 10, fontWeight: 700 }}>ESC</span>, title: 'Escape', onClick: () => sendKey('Escape') },
+    { icon: () => <span style={{ fontSize: 10, fontWeight: 700 }}>Tab</span>, title: 'Tab', onClick: () => sendKey('Tab') },
+    { icon: Undo2, title: 'Undo', onClick: () => sendKey('ctrl+z') },
+    { icon: Redo2, title: 'Redo', onClick: () => sendKey('ctrl+shift+z') },
+    { icon: ChevronsLeft, title: 'Page Up', onClick: () => sendKey('Page_Up') },
+    { icon: ChevronsRight, title: 'Page Down', onClick: () => sendKey('Page_Down') },
+    { icon: Camera, title: 'Screenshot', onClick: () => sendKey('Print') },
+  ];
+
+  const btnStyle = (active?: boolean, activeColor?: string): React.CSSProperties => ({
+    width: 40, height: 40, borderRadius: 10,
+    background: active ? `${activeColor || '#6366f1'}26` : 'rgba(255,255,255,0.06)',
+    border: `1px solid ${active ? `${activeColor || '#6366f1'}66` : 'rgba(255,255,255,0.06)'}`,
+    color: active ? (activeColor || '#a5b4fc') : 'rgba(255,255,255,0.85)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    cursor: 'pointer', padding: 0, gap: 1,
+    transition: 'background 0.15s, border-color 0.15s',
+  });
+
+  const renderBtn = (b: ButtonDef, key: string) => {
+    const Icon = b.icon;
+    return (
+      <button
+        key={key}
+        style={btnStyle(b.active, b.activeColor)}
+        title={b.title}
+        onPointerDown={e => { e.stopPropagation(); b.onClick(); }}
+      >
+        <Icon size={16} />
+        {showLabels && (
+          <span style={{ fontSize: 7, lineHeight: 1, opacity: 0.7 }}>
+            {b.title.length > 7 ? b.title.slice(0, 7) : b.title}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div
@@ -134,120 +203,105 @@ export default function FloatingToolbar() {
         userSelect: 'none',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 6,
+        gap: 8,
+        // Mirror so the toolbar's own column reads right→left when docked at
+        // the right edge — side panels (voice, hotkeys) appear to its LEFT.
+        flexDirection: 'row-reverse',
       }}
     >
       <div style={{
         background: 'rgba(14,14,18,0.92)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        borderRadius: 12,
+        borderRadius: 14,
         border: '1px solid rgba(255,255,255,0.1)',
-        padding: 6,
+        padding: 5,
         display: 'flex',
         flexDirection: 'column',
-        gap: 5,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        gap: 4,
+        boxShadow: '0 6px 24px rgba(0,0,0,0.55)',
       }}>
         {/* Drag handle */}
         <div style={{
-          width: 28, height: 4, borderRadius: 2,
-          background: 'rgba(255,255,255,0.2)',
-          margin: '0 auto 2px',
+          width: 32, height: 4, borderRadius: 2,
+          background: 'rgba(255,255,255,0.25)',
+          margin: '2px auto 4px',
           cursor: 'grab',
         }} />
 
+        {/* Show-labels toggle (Kotlin's Eye/EyeOff button) */}
+        <button
+          style={btnStyle(showLabels, '#c4b5fd')}
+          title="Toggle labels"
+          onPointerDown={e => { e.stopPropagation(); setShowLabels(v => !v); }}
+        >
+          {showLabels ? <Eye size={16} /> : <EyeOff size={16} />}
+        </button>
+
         {!collapsed && (
           <>
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '2px 4px' }} />
+            {primary.map((b, i) => renderBtn(b, `p${i}`))}
+            <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '2px 4px' }} />
+
+            {/* Expand/collapse for second tier */}
             <button
-              style={btnStyle()}
-              title={modeTitle}
-              onPointerDown={e => { e.stopPropagation(); dispatch(cycleDesktopMode()); }}
-            >
-              {modeIcon}
-            </button>
-            <button
-              style={btnStyle(scrollMode)}
-              title="Scroll mode"
-              onPointerDown={e => { e.stopPropagation(); dispatch(setScrollMode(!scrollMode)); }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 700 }}>SCR</span>
-            </button>
-            <button
-              style={btnStyle(keyboardOpen)}
-              title="Keyboard"
-              onPointerDown={e => { e.stopPropagation(); dispatch(setDesktopKeyboardOpen(!keyboardOpen)); }}
-            >
-              <Keyboard size={16} />
-            </button>
-            <button
-              style={btnStyle(showVoice)}
-              title="Voice typing"
-              onPointerDown={e => { e.stopPropagation(); setShowVoice(v => !v); }}
-            >
-              <Mic size={16} />
-            </button>
-            <button
-              style={btnStyle()}
-              title="Switch display"
-              onPointerDown={e => { e.stopPropagation(); handleSwitchDisplay(); }}
-            >
-              <MonitorUp size={16} />
-            </button>
-            <button
-              style={btnStyle(hotkeysExpanded)}
-              title={hotkeysExpanded ? 'Hide hotkeys' : 'Show hotkeys'}
-              onPointerDown={e => {
-                e.stopPropagation();
-                dispatch(setHotkeysExpanded(!hotkeysExpanded));
-              }}
+              style={btnStyle(hotkeysExpanded, '#c4b5fd')}
+              title={hotkeysExpanded ? 'Hide shortcuts' : 'Show shortcuts'}
+              onPointerDown={e => { e.stopPropagation(); dispatch(setHotkeysExpanded(!hotkeysExpanded)); }}
             >
               {hotkeysExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
+
+            {/* Minimize — exit kiosk only, keep connection */}
             <button
-              style={btnStyle(rotationLocked)}
-              title="Rotation lock"
-              onPointerDown={e => { e.stopPropagation(); handleRotationLock(); }}
+              style={{ ...btnStyle(), background: 'rgba(250,204,21,0.12)', border: '1px solid rgba(250,204,21,0.4)', color: '#fde047' }}
+              title="Minimize"
+              onPointerDown={e => { e.stopPropagation(); handleMinimize(); }}
             >
-              <RotateCw size={16} />
+              <ChevronDown size={16} />
             </button>
+
+            {/* Exit Remote — close tab + disconnect */}
             <button
-              style={btnStyle(isFullscreen)}
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-              onPointerDown={e => { e.stopPropagation(); handleFullscreen(); }}
+              style={{ ...btnStyle(), background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.5)', color: '#fca5a5' }}
+              title="Exit remote"
+              onPointerDown={e => { e.stopPropagation(); handleExitRemote(); }}
             >
-              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+              <LogOut size={16} />
             </button>
-            {/* Kiosk exit — only visible while in kiosk so it doesn't add
-                noise to the desktop-tab-as-window experience. Returns the
-                user to the normal mobile shell with tab strip + dock. */}
-            {kioskActive && (
-              <button
-                style={{ ...btnStyle(), background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', color: '#fca5a5' }}
-                title="Exit kiosk mode"
-                onPointerDown={e => { e.stopPropagation(); handleExitKiosk(); }}
-              >
-                <LogOut size={16} />
-              </button>
-            )}
           </>
         )}
 
         <button
           style={{ ...btnStyle(), opacity: 0.55 }}
-          title={collapsed ? 'Expand' : 'Collapse'}
+          title={collapsed ? 'Expand toolbar' : 'Collapse toolbar'}
           onPointerDown={e => { e.stopPropagation(); setCollapsed(v => !v); }}
         >
-          <Minimize2 size={14} />
+          {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
       </div>
 
-      {/* Side panels — laid out next to the toolbar (not overlapping). The
-          parent flex row keeps them aligned to the toolbar's top edge. */}
+      {/* Side panels — to the LEFT of the toolbar (we use row-reverse) */}
       {!collapsed && (showVoice || hotkeysExpanded) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginRight: 4 }}>
           {showVoice && <VoiceTypingPanel onClose={() => setShowVoice(false)} />}
-          {hotkeysExpanded && <ExpandedHotkeysRow />}
+          {hotkeysExpanded && (
+            <div
+              onPointerDown={e => e.stopPropagation()}
+              style={{
+                display: 'flex', flexWrap: 'wrap', gap: 4,
+                background: 'rgba(14,14,18,0.92)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 12,
+                padding: 6,
+                width: 200,
+              }}
+            >
+              {expanded.map((b, i) => renderBtn(b, `e${i}`))}
+            </div>
+          )}
         </div>
       )}
     </div>

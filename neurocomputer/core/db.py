@@ -431,8 +431,8 @@ class Database:
                     """, (wid, cfg.name, cfg.description, cfg.color, cfg.emoji,
                           json.dumps(cfg.agents), cfg.default_agent, now, now, theme))
                     await conn.execute(
-                        "UPDATE agencies SET name = ?, updated_at = ? WHERE id = ?",
-                        (cfg.name, now, wid),
+                        "UPDATE agencies SET name = ?, agents = ?, updated_at = ? WHERE id = ?",
+                        (cfg.name, json.dumps(cfg.agents), now, wid),
                     )
                 await conn.commit()
 

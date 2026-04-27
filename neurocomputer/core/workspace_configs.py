@@ -14,7 +14,7 @@ WORKSPACE_CONFIGS: Dict[str, WorkspaceConfig] = {
         description="General AI workspace — chat, code, automate",
         color="#8B5CF6",
         emoji="🧠",
-        agents=["neuro", "opencode"],
+        agents=["neuro", "opencode", "nl_dev"],
         default_agent="neuro",
         theme="cosmic",
     ),
