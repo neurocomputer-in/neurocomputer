@@ -4,7 +4,9 @@
 
 **Goal:** Add a full-screen remote desktop view at `/mobile/desktop` in neuro_web that mirrors all features of the Kotlin neuro_mobile app: live video, touchpad/tablet pointer modes, custom overlay keyboard, voice typing, floating toolbar, and server cursor.
 
-**Architecture:** A single Next.js route (`app/mobile/desktop/page.tsx`) renders `MobileDesktopScreen` which manages a dedicated LiveKit room connecting to the desktop stream. Child components share the room via React context (`DesktopRoomContext`). All mouse/keyboard events are JSON over LiveKit DataChannel topic `mouse_control` — identical wire format to the Kotlin app, so the existing Python backend handles them unchanged (except one new `/screen/client-token` endpoint).
+**Architecture:** Desktop streaming is a regular **app** (like Terminal/IDE) — opens as a tab in the existing window manager. On mobile, windows are already fullscreen-by-default (existing `maximized: isMobile` behavior). A new tabKind `'desktop'` is added; `WindowManager.WindowContent` switch routes it to `<DesktopApp />`. The `CustomKeyboard` component is **shared** between the desktop streaming app and the terminal app — on Android, tapping the terminal input shows the custom keyboard instead of the native Android keyboard (set `inputMode="none"`). All mouse/keyboard events are JSON over LiveKit DataChannel topic `mouse_control` (identical to Kotlin wire format). One new backend endpoint: `/screen/client-token`.
+
+**REVISED 2026-04-27:** Originally planned as `/mobile/desktop` route. Refactored to "app inside window" pattern so it behaves like every other app, supports browser-fullscreen toggle, and integrates with the existing tab/window UX. Custom keyboard moved to shared `components/keyboard/` and reused in Terminal app.
 
 **Tech Stack:** Next.js App Router, `livekit-client@^2.5.7`, `@use-gesture/react@^10.3.1`, `framer-motion@^11.1.7`, Redux Toolkit (existing store), TypeScript.
 
@@ -14,26 +16,31 @@
 
 **New files:**
 ```
-neurocomputer/server.py                                   — add /screen/client-token endpoint
-neuro_web/app/mobile/desktop/page.tsx                    — route shell
+neurocomputer/server.py                                     — add /screen/client-token endpoint
 neuro_web/components/mobile-desktop/DesktopRoomContext.tsx  — room + sendControl context
 neuro_web/components/mobile-desktop/LetterboxContext.tsx    — coordinate math context
-neuro_web/components/mobile-desktop/MobileDesktopScreen.tsx — connection lifecycle + layout
+neuro_web/components/mobile-desktop/DesktopApp.tsx          — connection lifecycle + layout (window content)
 neuro_web/components/mobile-desktop/DesktopVideoView.tsx    — <video> + letterbox + zoom
 neuro_web/components/mobile-desktop/ServerCursorOverlay.tsx — server cursor dot
 neuro_web/components/mobile-desktop/TouchpadOverlay.tsx     — relative pointer + gestures
 neuro_web/components/mobile-desktop/TabletTouchOverlay.tsx  — absolute touch mapping
-neuro_web/components/mobile-desktop/FullKeyboardOverlay.tsx — 6-row custom keyboard
-neuro_web/components/mobile-desktop/FloatingToolbar.tsx     — draggable control toolbar
+neuro_web/components/mobile-desktop/FloatingToolbar.tsx     — draggable control toolbar (with fullscreen)
 neuro_web/components/mobile-desktop/VoiceRecordingPanel.tsx — voice toggle UI
-neuro_web/store/mobileDesktopSlice.ts                      — RTK slice for desktop state
+neuro_web/components/keyboard/CustomKeyboard.tsx            — SHARED 6-row custom keyboard
+neuro_web/components/keyboard/CustomKeyboardSheet.tsx       — bottom-sheet wrapper (open/close + slide-in)
+neuro_web/store/mobileDesktopSlice.ts                       — RTK slice for desktop state
 ```
 
 **Modified files:**
 ```
-neuro_web/store/index.ts               — register mobileDesktop reducer
-neuro_web/services/api.ts              — add apiStartDesktopStream, apiGetScreenToken, apiStopDesktopStream
-neuro_web/components/os/MobileDock.tsx — add Desktop launcher icon
+neuro_web/store/index.ts                              — register mobileDesktop reducer
+neuro_web/services/api.ts                             — add apiStartDesktopStream, apiGetScreenToken, apiStopDesktopStream
+neuro_web/types/index.ts                              — add 'desktop' to TabKind union
+neuro_web/components/os/WindowManager.tsx             — add 'desktop' case to WindowContent switch
+neuro_web/lib/appRegistry.ts                          — add 'neurodesktop' app entry
+neuro_web/app/page.tsx                                — handle 'desktop' tabKind in handleLaunchApp (no cid needed)
+neuro_web/store/iconsSlice.ts                         — include 'neurodesktop' in default mobileDock
+neuro_web/components/terminal/TerminalInputBar.tsx    — use CustomKeyboardSheet on mobile (suppress native kb)
 ```
 
 ---
