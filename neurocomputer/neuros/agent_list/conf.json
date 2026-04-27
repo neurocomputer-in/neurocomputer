@@ -1,0 +1,16 @@
+{
+  "name": "agent_list",
+  "description": "List available agents in the active agency.",
+  "kind": "skill",
+  "kind_namespace": "agent",
+  "category": "multiagent",
+  "icon": "📋",
+  "color": "#f9a8d4",
+  "scope": "process",
+  "inputs": [],
+  "outputs": [
+    {"name": "agents", "type": "array", "description": "List of {id, name, agency_id} dicts"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}

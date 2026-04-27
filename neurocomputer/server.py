@@ -170,6 +170,41 @@ async def switch_profile(body: dict):
 
 
 # ----------------------------------------------------------------------------------
+# Schedule API Endpoints (S5)
+# ----------------------------------------------------------------------------------
+
+@app.get("/api/schedules")
+async def list_schedules():
+    from core.scheduler import scheduler as _scheduler
+    return {"schedules": _scheduler.list()}
+
+
+@app.post("/api/schedules")
+async def create_schedule(body: dict):
+    from core.scheduler import scheduler as _scheduler
+    from core.trigger_parse import parse_any
+    target_path = body.get("target_path", "")
+    trigger = body.get("trigger", "")
+    kwargs = body.get("kwargs") or {}
+    if not target_path or not trigger:
+        raise HTTPException(status_code=400, detail="target_path and trigger required")
+    try:
+        trigger_kind, _ = parse_any(trigger)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    schedule_id = _scheduler.add(target_path, trigger_kind, trigger, kwargs=kwargs or None)
+    return {"schedule_id": schedule_id}
+
+
+@app.delete("/api/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str):
+    from core.scheduler import scheduler as _scheduler
+    if _scheduler.cancel(schedule_id):
+        return {"cancelled": True}
+    raise HTTPException(status_code=404, detail=f"Schedule {schedule_id} not found")
+
+
+# ----------------------------------------------------------------------------------
 # Upwork Job Capture API Endpoints
 # ----------------------------------------------------------------------------------
 
@@ -2445,6 +2480,9 @@ async def startup_event():
     await db.seed_main_projects([w["id"] for w in existing_workspaces])
     logger.info("Starting background pollers...")
     asyncio.create_task(_global_openclaw_poller())
+    from core.scheduler import scheduler as _scheduler
+    await _scheduler.start()
+    app.state.scheduler = _scheduler
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -2452,6 +2490,8 @@ async def shutdown_event():
     if _httpx_client is not None:
         await _httpx_client.aclose()
         _httpx_client = None
+    from core.scheduler import scheduler as _scheduler
+    await _scheduler.stop()
 
 
 async def _global_openclaw_poller():

@@ -1,0 +1,21 @@
+{
+  "name": "agent_talk",
+  "description": "Invoke another agent and return its reply. Depth-limited to 4 hops.",
+  "kind": "skill",
+  "kind_namespace": "agent",
+  "category": "multiagent",
+  "icon": "💬",
+  "color": "#f9a8d4",
+  "scope": "process",
+  "inputs": [
+    {"name": "target_agent_id", "type": "string", "description": "ID of the agent to call"},
+    {"name": "message", "type": "string", "description": "Message to send"},
+    {"name": "timeout", "type": "number", "description": "Seconds to wait (default 30)"}
+  ],
+  "outputs": [
+    {"name": "reply", "type": "string", "description": "Target agent's reply"},
+    {"name": "cid", "type": "string", "description": "Conversation id used"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}

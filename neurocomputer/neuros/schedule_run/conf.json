@@ -1,0 +1,20 @@
+{
+  "name": "schedule_run",
+  "description": "Schedule a saved NeuroLang flow to run on an interval or cron expression.",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "⏰",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [
+    {"name": "target_path", "type": "string", "description": "Absolute path to saved .py flow"},
+    {"name": "trigger", "type": "string", "description": "Trigger expression: '30m', '2h', or '0 9 * * 1-5'"},
+    {"name": "kwargs", "type": "object", "description": "Optional kwargs passed to flow.run()"}
+  ],
+  "outputs": [
+    {"name": "schedule_id", "type": "string", "description": "ID of the created schedule"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}

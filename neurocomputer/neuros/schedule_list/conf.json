@@ -1,0 +1,16 @@
+{
+  "name": "schedule_list",
+  "description": "List all schedules (id, target, trigger, last_run, last_status, next_run, enabled).",
+  "kind": "skill",
+  "kind_namespace": "nl",
+  "category": "neurolang",
+  "icon": "📅",
+  "color": "#22d3ee",
+  "scope": "process",
+  "inputs": [],
+  "outputs": [
+    {"name": "schedules", "type": "array", "description": "List of schedule dicts"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}
