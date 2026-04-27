@@ -9,6 +9,7 @@ import WindowComponent from './Window';
 import ChatPanel from '@/components/chat/ChatPanel';
 import ChatInput from '@/components/chat/ChatInput';
 import VoiceCallPanel from '@/components/chat/VoiceCallPanel';
+import DesktopApp from '@/components/mobile-desktop/DesktopApp';
 
 const TerminalPanel = dynamic(() => import('@/components/terminal/TerminalPanel'), { ssr: false });
 const NeuroIDEPanel = dynamic(() => import('@/components/neuroide/NeuroIDEPanel'), { ssr: false });
@@ -63,6 +64,7 @@ function WindowContent({ tabKind }: { tabKind: string }) {
   switch (tabKind) {
     case 'terminal': return <TerminalPanel />;
     case 'neuroide': return <NeuroIDEPanel />;
+    case 'desktop': return <DesktopApp />;
     default: return <ChatWindowContent />;
   }
 }

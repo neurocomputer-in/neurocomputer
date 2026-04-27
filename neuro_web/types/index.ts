@@ -69,7 +69,7 @@ export interface ConversationSummary {
   workdir?: string | null;
 }
 
-export type TabKind = 'chat' | 'terminal' | 'neuroide';
+export type TabKind = 'chat' | 'terminal' | 'neuroide' | 'desktop';
 
 export interface Tab {
   cid: string;
