@@ -1,0 +1,28 @@
+[Unit]
+Description=Neurocomputer Server
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/neurocomputer/neurocomputer
+
+# Kill any orphan process on port 7000 before starting
+ExecStartPre=/bin/bash -c 'pids=$(lsof -ti :7000 2>/dev/null || true); [ -n "$pids" ] && kill -9 $pids && sleep 1 || true'
+
+ExecStart=/usr/bin/python3 server.py
+Restart=on-failure
+RestartSec=5
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=-/home/ubuntu/neurocomputer/neurocomputer/.env
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neurocomputer
+
+# Hardening
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

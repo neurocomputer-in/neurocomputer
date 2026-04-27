@@ -40,16 +40,17 @@ export default function FloatingToolbar() {
   });
 
   const handleRotationLock = useCallback(async () => {
-    const locked = !rotationLocked;
-    dispatch(setRotationLocked(locked));
-    if (typeof window !== 'undefined' && 'screen' in window && screen.orientation) {
-      try {
-        if (locked) {
-          await (screen.orientation as any).lock('landscape');
-        } else {
-          screen.orientation.unlock();
-        }
-      } catch {}
+    const wantLocked = !rotationLocked;
+    if (typeof window === 'undefined' || !('screen' in window) || !screen.orientation) return;
+    try {
+      if (wantLocked) {
+        await (screen.orientation as any).lock('landscape');
+      } else {
+        screen.orientation.unlock();
+      }
+      dispatch(setRotationLocked(wantLocked));
+    } catch {
+      // lock failed (browser unsupported or not in fullscreen) — leave Redux state untouched
     }
   }, [rotationLocked, dispatch]);
 

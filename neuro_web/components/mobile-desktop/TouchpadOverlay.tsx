@@ -98,6 +98,7 @@ export default function TouchpadOverlay() {
     if (stateRef.current === 'dt-drag') {
       sendControl({ type: 'mouseup', button: 'left' });
       stateRef.current = 'idle';
+      lastTapTimeRef.current = 0;
       return;
     }
 

@@ -1,0 +1,8 @@
+[Unit]
+Description=Neurocomputer Health Check Watchdog
+After=neurocomputer.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/ubuntu/neurocomputer/neurocomputer/watchdog.sh
+User=ubuntu
