@@ -5,26 +5,23 @@ import { startVoiceRecording, stopVoiceRecording, transcribeAudio } from '@/serv
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useIsIOS } from '@/hooks/useIsIOS';
+import CustomKeyboardSheet from '@/components/keyboard/CustomKeyboardSheet';
 
 interface Props {
   /** Called with raw text (no trailing newline). Parent appends `\n`. */
   onSubmit: (text: string) => void;
   disabled?: boolean;
   placeholder?: string;
-  /** If true, pressing Enter after a voice transcript is auto-submitted.
-   *  Default false — user sees the transcript and can edit first. */
+  /** If true, pressing Enter after a voice transcript is auto-submitted. */
   autoSubmitVoice?: boolean;
 }
 
-/**
- * Minimal text input for sending into a terminal's stdin. Same visual
- * language as ChatInput but routes through whatever onSubmit the parent
- * supplies — phase 2 will extract a shared MessageInput and collapse these.
- */
 export default function TerminalInputBar({ onSubmit, disabled, placeholder, autoSubmitVoice }: Props) {
   const [value, setValue] = useState('');
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [modifiers, setModifiers] = useState({ ctrl: false, alt: false, shift: false });
   const ref = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
   const isIOS = useIsIOS();
@@ -35,7 +32,7 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
     if (!t) return;
     onSubmit(t);
     setValue('');
-    if (!isIOS) setTimeout(() => ref.current?.focus(), 0);
+    if (!isIOS && !isMobile) setTimeout(() => ref.current?.focus(), 0);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -43,6 +40,23 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
       e.preventDefault();
       submit();
     }
+  };
+
+  // Custom keyboard key handler — used on mobile in lieu of native keyboard.
+  const handleCustomKey = (combo: string) => {
+    if (combo === 'Return') { submit(); return; }
+    if (combo === 'BackSpace') { setValue(v => v.slice(0, -1)); return; }
+    if (combo === 'Tab') { setValue(v => v + '\t'); return; }
+    if (combo === 'space') { setValue(v => v + ' '); return; }
+    if (combo === 'Escape') { setValue(''); return; }
+    if (combo.length === 1) {
+      // Single character — apply shift if active for letters
+      const ch = modifiers.shift && /[a-z]/.test(combo) ? combo.toUpperCase() : combo;
+      setValue(v => v + ch);
+      return;
+    }
+    // F-keys, arrows, combos like "ctrl+c" are out of scope for line-based input.
+    // Silently ignore — could route to PTY raw-send in a future task.
   };
 
   const onMicClick = async () => {
@@ -56,7 +70,6 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
       }
       return;
     }
-    // Stop + transcribe + prefill (or auto-submit).
     setRecording(false);
     setTranscribing(true);
     try {
@@ -71,10 +84,9 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
       if (autoSubmitVoice) {
         submit(text);
       } else {
-        // Append to whatever the user already has in the field.
         const next = value ? `${value} ${text}` : text;
         setValue(next);
-        ref.current?.focus();
+        if (!isMobile) ref.current?.focus();
       }
     } catch (err: any) {
       console.error('[terminal] transcribe failed:', err?.message || err);
@@ -83,114 +95,132 @@ export default function TerminalInputBar({ onSubmit, disabled, placeholder, auto
   };
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-end', gap: 8,
-      padding: '8px 12px',
-      paddingBottom: isMobile ? 'max(env(safe-area-inset-bottom), 8px)' : '8px',
-      borderTop: '1px solid rgba(255,255,255,0.05)',
-      background: 'rgba(15, 16, 17, 0.8)',
-      flexShrink: 0,
-    }}>
+    <>
       <div style={{
-        flex: 1, minWidth: 0,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 8, padding: '6px 10px',
-        display: 'flex', alignItems: 'flex-end', gap: 6,
+        display: 'flex', alignItems: 'flex-end', gap: 8,
+        padding: '8px 12px',
+        paddingBottom: isMobile ? 'max(env(safe-area-inset-bottom), 8px)' : '8px',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(15, 16, 17, 0.8)',
+        flexShrink: 0,
       }}>
-        <span style={{
-          color: '#7170ff', fontFamily: "'Berkeley Mono', ui-monospace, monospace",
-          fontSize: 13, lineHeight: '20px', flexShrink: 0, userSelect: 'none',
-        }}>$</span>
-        <textarea
-          ref={ref}
-          data-terminal-input
-          value={value}
-          placeholder={placeholder || 'Type a command, Enter to send'}
-          onChange={e => setValue(e.target.value)}
-          onKeyDown={onKeyDown}
-          disabled={disabled}
-          rows={1}
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          enterKeyHint="send"
+        <div style={{
+          flex: 1, minWidth: 0,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '6px 10px',
+          display: 'flex', alignItems: 'flex-end', gap: 6,
+        }}>
+          <span style={{
+            color: '#7170ff', fontFamily: "'Berkeley Mono', ui-monospace, monospace",
+            fontSize: 13, lineHeight: '20px', flexShrink: 0, userSelect: 'none',
+          }}>$</span>
+          <textarea
+            ref={ref}
+            data-terminal-input
+            value={value}
+            placeholder={placeholder || 'Type a command, Enter to send'}
+            onChange={e => setValue(e.target.value)}
+            onKeyDown={onKeyDown}
+            onFocus={() => { if (isMobile) setKbOpen(true); }}
+            onBlur={() => { if (isMobile) setKbOpen(false); }}
+            onPointerDown={() => { if (isMobile) setKbOpen(true); }}
+            disabled={disabled}
+            rows={1}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="send"
+            inputMode={isMobile ? 'none' : undefined}
+            readOnly={isMobile}
+            style={{
+              flex: 1, minWidth: 0,
+              background: 'transparent', border: 'none', outline: 'none',
+              color: '#f7f8f8',
+              fontSize: 16, lineHeight: '20px',
+              fontFamily: "'Berkeley Mono', ui-monospace, monospace",
+              resize: 'none', padding: 0,
+              maxHeight: 160,
+              caretColor: '#7170ff',
+            }}
+          />
+        </div>
+        <button
+          onClick={callActive ? endCall : startCall}
+          disabled={disabled || callConnecting}
+          title={callActive ? 'End voice call' : 'Live voice → terminal stdin'}
           style={{
-            flex: 1, minWidth: 0,
-            background: 'transparent', border: 'none', outline: 'none',
-            color: '#f7f8f8',
-            fontSize: 16, lineHeight: '20px', // 16px prevents iOS auto-zoom on tap
-            fontFamily: "'Berkeley Mono', ui-monospace, monospace",
-            resize: 'none', padding: 0,
-            maxHeight: 160,
-          }}
-        />
-      </div>
-      <button
-        onClick={callActive ? endCall : startCall}
-        disabled={disabled || callConnecting}
-        title={callActive ? 'End voice call' : 'Live voice → terminal stdin'}
-        style={{
-          width: 32, height: 32, borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: callActive ? 'rgba(239,68,68,0.25)'
-            : callConnecting ? 'rgba(94,106,210,0.15)'
-            : 'rgba(255,255,255,0.04)',
-          border: '1px solid ' + (callActive ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)'),
-          color: callActive ? '#f87171' : callConnecting ? '#c4b5fd' : '#8a8f98',
-          cursor: disabled || callConnecting ? 'default' : 'pointer',
-          flexShrink: 0,
-        }}
-      >
-        {callConnecting
-          ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-          : callActive ? <PhoneOff size={14} /> : <Phone size={14} />}
-      </button>
-      <button
-        onClick={onMicClick}
-        disabled={disabled || transcribing}
-        title={recording ? 'Stop & transcribe' : 'Voice input (dictation)'}
-        style={{
-          width: 32, height: 32, borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: recording
-            ? 'rgba(239,68,68,0.25)'
-            : transcribing
-              ? 'rgba(94,106,210,0.15)'
+            width: 32, height: 32, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: callActive ? 'rgba(239,68,68,0.25)'
+              : callConnecting ? 'rgba(94,106,210,0.15)'
               : 'rgba(255,255,255,0.04)',
-          border: '1px solid ' + (recording
-            ? 'rgba(239,68,68,0.5)'
-            : 'rgba(255,255,255,0.08)'),
-          color: recording ? '#f87171' : transcribing ? '#c4b5fd' : '#8a8f98',
-          cursor: disabled || transcribing ? 'default' : 'pointer',
-          flexShrink: 0,
-        }}
-      >
-        {transcribing ? (
-          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-        ) : recording ? (
-          <Square size={14} />
-        ) : (
-          <Mic size={14} />
-        )}
-      </button>
-      <button
-        onClick={() => submit()}
-        disabled={disabled || !value.trim()}
-        title="Send to terminal stdin (Enter)"
-        style={{
-          width: 32, height: 32, borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: value.trim() ? 'rgba(94,106,210,0.2)' : 'rgba(255,255,255,0.04)',
-          border: '1px solid ' + (value.trim() ? 'rgba(94,106,210,0.4)' : 'rgba(255,255,255,0.08)'),
-          color: value.trim() ? '#c4b5fd' : '#62666d',
-          cursor: value.trim() && !disabled ? 'pointer' : 'default',
-          flexShrink: 0,
-        }}
-      >
-        <ArrowUp size={14} />
-      </button>
-    </div>
+            border: '1px solid ' + (callActive ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.08)'),
+            color: callActive ? '#f87171' : callConnecting ? '#c4b5fd' : '#8a8f98',
+            cursor: disabled || callConnecting ? 'default' : 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          {callConnecting
+            ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+            : callActive ? <PhoneOff size={14} /> : <Phone size={14} />}
+        </button>
+        <button
+          onClick={onMicClick}
+          disabled={disabled || transcribing}
+          title={recording ? 'Stop & transcribe' : 'Voice input (dictation)'}
+          style={{
+            width: 32, height: 32, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: recording
+              ? 'rgba(239,68,68,0.25)'
+              : transcribing
+                ? 'rgba(94,106,210,0.15)'
+                : 'rgba(255,255,255,0.04)',
+            border: '1px solid ' + (recording
+              ? 'rgba(239,68,68,0.5)'
+              : 'rgba(255,255,255,0.08)'),
+            color: recording ? '#f87171' : transcribing ? '#c4b5fd' : '#8a8f98',
+            cursor: disabled || transcribing ? 'default' : 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          {transcribing ? (
+            <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : recording ? (
+            <Square size={14} />
+          ) : (
+            <Mic size={14} />
+          )}
+        </button>
+        <button
+          onClick={() => submit()}
+          disabled={disabled || !value.trim()}
+          title="Send to terminal stdin (Enter)"
+          style={{
+            width: 32, height: 32, borderRadius: 8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: value.trim() ? 'rgba(94,106,210,0.2)' : 'rgba(255,255,255,0.04)',
+            border: '1px solid ' + (value.trim() ? 'rgba(94,106,210,0.4)' : 'rgba(255,255,255,0.08)'),
+            color: value.trim() ? '#c4b5fd' : '#62666d',
+            cursor: value.trim() && !disabled ? 'pointer' : 'default',
+            flexShrink: 0,
+          }}
+        >
+          <ArrowUp size={14} />
+        </button>
+      </div>
+
+      {isMobile && (
+        <CustomKeyboardSheet
+          open={kbOpen}
+          onKey={handleCustomKey}
+          modifiers={modifiers}
+          onToggleModifier={(m) => setModifiers(s => ({ ...s, [m]: !s[m] }))}
+          onClearModifiers={() => setModifiers({ ctrl: false, alt: false, shift: false })}
+        />
+      )}
+    </>
   );
 }
