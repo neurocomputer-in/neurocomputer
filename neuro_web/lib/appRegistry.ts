@@ -1,6 +1,7 @@
 import { AgentType } from '@/types';
 
 export type AppId = 'neuro' | 'openclaw' | 'opencode' | 'neuroupwork' | 'terminal' | 'ide'
+  | 'neurodesktop'
   | 'neuroresearch' | 'neurowrite' | 'neurodata' | 'neurofiles'
   | 'neuroemail' | 'neurocalendar' | 'neuronotes' | 'neurobrowse'
   | 'neurovoice' | 'neurotranslate';
@@ -12,7 +13,7 @@ export interface AppDef {
   icon: string;
   color: string;
   agentType?: AgentType;
-  tabKind: 'chat' | 'terminal' | 'neuroide';
+  tabKind: 'chat' | 'terminal' | 'neuroide' | 'desktop';
   pinned: boolean;
 }
 
@@ -73,6 +74,15 @@ export const APP_LIST: AppDef[] = [
     icon: 'layers',
     color: '#a855f7',
     tabKind: 'neuroide',
+    pinned: true,
+  },
+  {
+    id: 'neurodesktop',
+    name: 'Desktop',
+    description: 'Stream and control your desktop',
+    icon: 'tv',
+    color: '#1d4ed8',
+    tabKind: 'desktop',
     pinned: true,
   },
   // ── Launcher-only apps (not pinned to dock) ──────────────────────

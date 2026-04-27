@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages,
+  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import { APP_MAP, AppDef } from '@/lib/appRegistry';
@@ -13,7 +13,7 @@ const ICON_MAP: Record<string, any> = {
   terminal: Terminal, layers: Layers,
   search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
   mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages,
+  mic: Mic, languages: Languages, tv: Tv2,
 };
 
 const ICONS_ROW_H = 52;

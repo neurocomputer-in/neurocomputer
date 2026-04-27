@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus } from 'lucide-react';
 import {
   Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages,
+  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
 } from 'lucide-react';
 import { useGesture } from '@use-gesture/react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -18,7 +18,7 @@ const ICON_MAP: Record<string, any> = {
   terminal: Terminal, layers: Layers,
   search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
   mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages,
+  mic: Mic, languages: Languages, tv: Tv2,
 };
 
 const APP_GRADIENTS: Record<string, string> = {

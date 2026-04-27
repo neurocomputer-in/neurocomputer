@@ -214,6 +214,12 @@ export default function Home() {
       dispatch(addTabToWindow({ windowId, tab: makeTab(cid, 'ide', 'NeuroIDE', 'neuroide'), makeActive: true }));
       return;
     }
+    if (tabKind === 'desktop') {
+      const cid = 'desktop-' + Date.now().toString(36);
+      dispatch(openTab({ cid, title: 'Desktop', agentId: 'neurodesktop', isActive: true, type: 'desktop' }));
+      dispatch(addTabToWindow({ windowId, tab: makeTab(cid, 'neurodesktop', 'Desktop', 'desktop'), makeActive: true }));
+      return;
+    }
     const agentType = app.agentType || AgentType.NEURO;
     const result = await dispatch(createConversation({ agentId: agentType, projectId: selectedProjectId }));
     if (createConversation.fulfilled.match(result)) {
@@ -269,6 +275,12 @@ export default function Home() {
       const cid = 'neuroide-' + Date.now().toString(36);
       dispatch(openTab({ cid, title: 'NeuroIDE', agentId: 'neuroide', isActive: true, type: 'neuroide' }));
       _openOrAddTab(makeTab(cid, 'ide', 'NeuroIDE', 'neuroide'), ww, wh);
+      return;
+    }
+    if (app.tabKind === 'desktop') {
+      const cid = 'desktop-' + Date.now().toString(36);
+      dispatch(openTab({ cid, title: 'Desktop', agentId: 'neurodesktop', isActive: true, type: 'desktop' }));
+      _openOrAddTab(makeTab(cid, 'neurodesktop', 'Desktop', 'desktop'), ww, wh);
       return;
     }
     const agentType = app.agentType || AgentType.NEURO;

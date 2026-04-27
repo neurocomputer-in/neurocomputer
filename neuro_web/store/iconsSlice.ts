@@ -9,7 +9,7 @@ export interface IconsState {
   mobileDock: string[];
 }
 
-const DEFAULT_DOCK = ['neuro', 'openclaw', 'terminal', 'opencode'];
+const DEFAULT_DOCK = ['neuro', 'openclaw', 'terminal', 'neurodesktop'];
 
 function defaultDesktopLayout(): Record<string, IconPos> {
   const layout: Record<string, IconPos> = {};

@@ -2,7 +2,7 @@
 import { Drawer } from 'vaul';
 import {
   Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages,
+  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
 } from 'lucide-react';
 import { APP_LIST, AppDef } from '@/lib/appRegistry';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -12,7 +12,7 @@ const ICON_MAP: Record<string, any> = {
   terminal: Terminal, layers: Layers,
   search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
   mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages,
+  mic: Mic, languages: Languages, tv: Tv2,
 };
 
 interface Props {

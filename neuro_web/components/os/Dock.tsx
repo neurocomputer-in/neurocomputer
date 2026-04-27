@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Globe, Code, Briefcase, Terminal, Layers, LayoutGrid } from 'lucide-react';
+import { Brain, Globe, Code, Briefcase, Terminal, Layers, LayoutGrid, Tv2 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { focusWindow, minimizeWindow, maximizeWindow, toggleLauncher } from '@/store/osSlice';
 import { APP_LIST, APP_MAP, AppDef, AppId } from '@/lib/appRegistry';
@@ -10,7 +10,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 
 const ICON_MAP: Record<string, any> = {
   brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
+  terminal: Terminal, layers: Layers, tv: Tv2,
 };
 
 function DockIcon({ app, running, hasWindows, onClick, onRightClick }: {
