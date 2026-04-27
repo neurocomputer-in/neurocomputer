@@ -1,0 +1,18 @@
+{
+  "name": "room_close",
+  "description": "Close a Meeting Room (sets status=closed; tears down voice if configured).",
+  "kind": "skill",
+  "kind_namespace": "agent",
+  "category": "multiagent",
+  "icon": "🚪",
+  "color": "#f9a8d4",
+  "scope": "process",
+  "inputs": [
+    {"name": "room_id", "type": "string", "description": "Room to close"}
+  ],
+  "outputs": [
+    {"name": "closed", "type": "boolean"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}

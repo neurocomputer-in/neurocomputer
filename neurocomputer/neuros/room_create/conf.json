@@ -1,0 +1,23 @@
+{
+  "name": "room_create",
+  "description": "Create a multi-agent Meeting Room where agents collaborate via text (and optionally voice).",
+  "kind": "skill",
+  "kind_namespace": "agent",
+  "category": "multiagent",
+  "icon": "🏠",
+  "color": "#f9a8d4",
+  "scope": "process",
+  "inputs": [
+    {"name": "name", "type": "string", "description": "Room name"},
+    {"name": "agents", "type": "array", "description": "List of agent IDs to include"},
+    {"name": "turn_policy", "type": "string", "description": "round_robin | mediator | free (default: round_robin)"},
+    {"name": "max_turns", "type": "number", "description": "Safety cap on turns (default 20)"},
+    {"name": "voice_room_id", "type": "string", "description": "Optional LiveKit room ID"}
+  ],
+  "outputs": [
+    {"name": "room_id", "type": "string", "description": "ID of the created room"},
+    {"name": "room", "type": "object", "description": "Full room dict"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}

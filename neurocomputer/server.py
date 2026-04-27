@@ -170,6 +170,82 @@ async def switch_profile(body: dict):
 
 
 # ----------------------------------------------------------------------------------
+# Meeting Rooms API Endpoints (S3)
+# ----------------------------------------------------------------------------------
+
+@app.get("/api/rooms")
+async def list_rooms():
+    from core.rooms import room_manager as _rm
+    return {"rooms": [r.to_dict() for r in _rm.list()]}
+
+
+@app.post("/api/rooms")
+async def create_room(body: dict):
+    from core.rooms import room_manager as _rm
+    name = body.get("name") or "Room"
+    agents = body.get("agents") or []
+    if not agents:
+        raise HTTPException(status_code=400, detail="agents list required")
+    room = _rm.create(
+        name=name,
+        agents=agents,
+        voice_room_id=body.get("voice_room_id"),
+        turn_policy=body.get("turn_policy", "round_robin"),
+        max_turns=int(body.get("max_turns") or 20),
+    )
+    return room.to_dict()
+
+
+@app.get("/api/rooms/{room_id}")
+async def get_room(room_id: str):
+    from core.rooms import room_manager as _rm
+    room = _rm.get(room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail=f"Room {room_id} not found")
+    return room.to_dict()
+
+
+@app.delete("/api/rooms/{room_id}")
+async def delete_room(room_id: str):
+    from core.rooms import room_manager as _rm
+    if _rm.delete(room_id):
+        return {"deleted": True}
+    raise HTTPException(status_code=404, detail=f"Room {room_id} not found")
+
+
+@app.post("/api/rooms/{room_id}/messages")
+async def post_room_message(room_id: str, body: dict):
+    from core.rooms import room_manager as _rm
+    from core.talk import talk
+    message = body.get("message") or ""
+    if not message:
+        raise HTTPException(status_code=400, detail="message required")
+    room = _rm.get(room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail=f"Room {room_id} not found")
+    if room.status == "closed":
+        raise HTTPException(status_code=409, detail="Room is closed")
+
+    room = _rm.append_message(room_id, "user", message)
+
+    # Run one mediator turn
+    if room.agents:
+        from core.rooms import _pick_next_agent
+        next_agent = _pick_next_agent(room, 0)
+        if next_agent:
+            try:
+                reply = await talk(next_agent, message, cid=f"room:{room_id}:{next_agent}")
+                room = _rm.append_message(room_id, next_agent, reply)
+                if "[room: done]" in reply.lower() or len(room.transcript) >= room.max_turns:
+                    _rm.close(room_id)
+            except Exception as exc:
+                room = _rm.append_message(room_id, next_agent, f"[error: {exc}]")
+
+    room = _rm.get(room_id)
+    return room.to_dict()
+
+
+# ----------------------------------------------------------------------------------
 # Schedule API Endpoints (S5)
 # ----------------------------------------------------------------------------------
 
@@ -2483,6 +2559,8 @@ async def startup_event():
     from core.scheduler import scheduler as _scheduler
     await _scheduler.start()
     app.state.scheduler = _scheduler
+    from core.rooms import room_manager as _rm
+    _rm.init()
 
 @app.on_event("shutdown")
 async def shutdown_event():

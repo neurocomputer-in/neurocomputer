@@ -1,0 +1,20 @@
+{
+  "name": "room_mediator",
+  "description": "Orchestrate turn-taking in a Meeting Room. Picks the next agent, calls agent.talk, appends reply to transcript.",
+  "kind": "skill",
+  "kind_namespace": "agent",
+  "category": "multiagent",
+  "icon": "🎭",
+  "color": "#f9a8d4",
+  "scope": "process",
+  "inputs": [
+    {"name": "room_id", "type": "string", "description": "ID of the room to run a turn in"},
+    {"name": "message", "type": "string", "description": "New message to inject into the room"}
+  ],
+  "outputs": [
+    {"name": "transcript", "type": "array", "description": "Updated transcript"},
+    {"name": "done", "type": "boolean", "description": "True if room reached max_turns or [room: done]"}
+  ],
+  "model": "default",
+  "temperature": 0.0
+}
