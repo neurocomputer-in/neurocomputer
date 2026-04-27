@@ -331,5 +331,7 @@ export async function apiGetScreenToken(userId: string = 'desktop-web'): Promise
 }
 
 export async function apiStopDesktopStream(userId: string = 'desktop-web'): Promise<void> {
+  // /voice/end is the legacy endpoint that tears down the LiveKit room by user_id;
+  // no dedicated /screen/stop exists on the backend.
   await api.post('/voice/end', { user_id: userId });
 }

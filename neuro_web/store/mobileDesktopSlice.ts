@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface MobileDesktopState {
+export interface MobileDesktopState {
   connected: boolean;
   serverScreenW: number;
   serverScreenH: number;
