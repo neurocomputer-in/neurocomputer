@@ -84,3 +84,5 @@ gui_screenshots/
 gui_templates/
 neurocomputer/gui_patterns.db
 neurocomputer/gui_templates/
+.claude/CONTEXT.md
+.claude/scheduled_tasks.lock
