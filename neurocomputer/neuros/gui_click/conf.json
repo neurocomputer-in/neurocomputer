@@ -1,0 +1,16 @@
+{
+    "name": "gui_click",
+    "description": "Click on a UI element either by its description or its direct coordinates (x, y).",
+    "inputs": [
+        {"name": "description", "type": "string", "description": "Optional: Description of element to click", "optional": true},
+        {"name": "x", "type": "number", "description": "Optional: X coordinate", "optional": true},
+        {"name": "y", "type": "number", "description": "Optional: Y coordinate", "optional": true},
+        {"name": "button", "type": "string", "description": "left, right, or middle", "optional": true, "default": "left"}
+    ],
+    "outputs": [
+        "success",
+        "clicked_at"
+    ],
+    "icon": "🖱️",
+    "category": "gui_automation"
+}

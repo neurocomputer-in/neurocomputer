@@ -1,0 +1,12 @@
+{
+    "name": "gui_record",
+    "description": "Initialize workflow recording.",
+    "inputs": [
+        {"name": "name", "type": "string", "description": "Name of the workflow"}
+    ],
+    "outputs": [
+        "success"
+    ],
+    "icon": "🎥",
+    "category": "gui_automation"
+}

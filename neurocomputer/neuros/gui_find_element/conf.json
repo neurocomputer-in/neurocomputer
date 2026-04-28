@@ -1,0 +1,19 @@
+{
+    "name": "gui_find_element",
+    "description": "Find a UI element on the screen using a combination of fast pattern matching, OCR, and VLM. Returns the x, y, width, and height of the element.",
+    "inputs": [
+        {"name": "description", "type": "string", "description": "Description of the element to find (e.g. 'Submit button', 'Login text')"},
+        {"name": "force_method", "type": "string", "description": "Optional: Force a specific method ('vlm', 'ocr', 'pattern')", "optional": true}
+    ],
+    "outputs": [
+        "found",
+        "x",
+        "y",
+        "w",
+        "h",
+        "confidence",
+        "method"
+    ],
+    "icon": "🔍",
+    "category": "gui_automation"
+}

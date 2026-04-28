@@ -1496,6 +1496,13 @@ async def patch_terminal(cid: str, body: dict):
     return _terminal_tab_to_dict(cid, data)
 
 
+# Track the currently-active PtyBridge per cid so a new connection can
+# evict any stale predecessor. Without this, a flaky client (mobile network
+# half-open TCP) can leak parallel bridges against the same tmux session,
+# all racing on stdin → user's input vanishes intermittently.
+_active_bridges: dict[str, "PtyBridge"] = {}
+
+
 @app.websocket("/terminal/ws/{cid}")
 async def terminal_ws(websocket: WebSocket, cid: str):
     await websocket.accept()
@@ -1541,6 +1548,14 @@ async def terminal_ws(websocket: WebSocket, cid: str):
                 await websocket.close()
             return
     bridge = PtyBridge(websocket, name)
+    # Evict any prior bridge for this cid before installing this one.
+    prev = _active_bridges.pop(cid, None)
+    if prev is not None:
+        try:
+            await prev._cleanup()
+        except Exception:
+            logger.exception("[terminal_ws] prev bridge cleanup failed for %s", cid)
+    _active_bridges[cid] = bridge
     try:
         await bridge.run()
     except WebSocketDisconnect:
@@ -1548,6 +1563,10 @@ async def terminal_ws(websocket: WebSocket, cid: str):
     except Exception:
         logger.exception("[terminal_ws] bridge error for %s", cid)
     finally:
+        # Only remove if we're still the active one (a newer connection may
+        # have replaced us; don't clobber its registration).
+        if _active_bridges.get(cid) is bridge:
+            _active_bridges.pop(cid, None)
         try:
             await websocket.close()
         except Exception:

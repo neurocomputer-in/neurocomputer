@@ -172,19 +172,14 @@ export default function TerminalPanel() {
     g.active = false;
 
     if (!g.dragging && performance.now() - g.startT < TAP_MS) {
-      if (isMobile) {
-        const input = document.querySelector('textarea[data-terminal-input]') as HTMLTextAreaElement | null;
-        if (input) {
-          // Force a full focus cycle. If the element is already focused but
-          // keyboard is hidden (can happen after a spurious blur recovery),
-          // focus() alone fires no new event and iOS won't show keyboard.
-          // Blurring first guarantees a real focus event on the next call.
-          if (document.activeElement === input) input.blur();
-          input.focus();
-        }
-      } else {
+      if (!isMobile) {
+        // Desktop: focus xterm so keyboard events reach it directly.
         termRef.current?.focus();
       }
+      // Mobile: custom keyboard is always visible — do NOT focus the textarea.
+      // Focusing it would bring up the native Android keyboard, causing native
+      // keyboard ↵ to fire onKeyDown with empty React state (textarea is
+      // readOnly so native typing never updates React state) and vanish input.
     } else if (g.dragging) {
       if (flushTimerRef.current != null) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
       flushScroll();
@@ -212,8 +207,14 @@ export default function TerminalPanel() {
     }
   }, [wsStatus, resize]);
 
-  const sendKey  = (seq: string) => send(new TextEncoder().encode(seq).buffer);
-  const sendLine = (line: string) => send(new TextEncoder().encode(line + '\n').buffer);
+  const sendKey  = (seq: string) => { send(new TextEncoder().encode(seq).buffer); };
+  // Use CR (\r), not LF (\n). Real keyboards send \r when Enter is pressed.
+  // Shells in cooked mode translate \r → run-command via ICRNL, so they
+  // accept either. But TUIs running in raw mode (Claude Code CLI, opencode,
+  // vim insert mode, etc.) read \r as Enter and treat \n as just-a-newline
+  // — so submitting "hello\n" to Claude CLI inserts a newline into its
+  // multi-line input box without ever submitting. \r fixes that.
+  const sendLine = (line: string): boolean => send(new TextEncoder().encode(line + '\r').buffer);
 
   if (!tab || tab.type !== 'terminal') return null;
 

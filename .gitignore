@@ -76,3 +76,11 @@ demo/
 .neuros_history/
 neuro_web/.env.local
 .env.local
+
+# GUI Automator Agent Data
+.venv/
+gui_patterns.db
+gui_screenshots/
+gui_templates/
+neurocomputer/gui_patterns.db
+neurocomputer/gui_templates/

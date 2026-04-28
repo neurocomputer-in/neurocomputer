@@ -1,0 +1,13 @@
+{
+    "name": "gui_type",
+    "description": "Type text on the keyboard.",
+    "inputs": [
+        {"name": "text", "type": "string", "description": "The text to type"},
+        {"name": "description", "type": "string", "description": "Optional: Description of element to click before typing", "optional": true}
+    ],
+    "outputs": [
+        "success"
+    ],
+    "icon": "⌨️",
+    "category": "gui_automation"
+}

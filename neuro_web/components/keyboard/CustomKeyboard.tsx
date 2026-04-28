@@ -1,26 +1,28 @@
 'use client';
+import { useState } from 'react';
 
-const ROWS: string[][] = [
-  ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'],
-  ['grave','1','2','3','4','5','6','7','8','9','0','minus','equal','BackSpace'],
-  ['Tab','q','w','e','r','t','y','u','i','o','p','bracketleft','bracketright','backslash'],
-  ['Caps_Lock','a','s','d','f','g','h','j','k','l','semicolon','apostrophe','Return'],
-  ['shift','z','x','c','v','b','n','m','comma','period','slash','shift'],
-  ['ctrl','alt','space','Left','Up','Down','Right','Escape'],
+type Layer = 'letters' | 'symbols';
+
+const LETTER_ROWS: string[][] = [
+  ['1','2','3','4','5','6','7','8','9','0'],
+  ['q','w','e','r','t','y','u','i','o','p'],
+  ['a','s','d','f','g','h','j','k','l'],
+  ['z','x','c','v','b','n','m'],
+];
+
+const SYMBOL_ROWS: string[][] = [
+  ['1','2','3','4','5','6','7','8','9','0'],
+  ['-','/',':',';','(',')','$','&','@','"'],
+  ['#','=','*','+','!','?','{','}','|','~'],
+  ['<','>','[',']','`','\\','^','_'],
 ];
 
 const DISPLAY: Record<string, string> = {
-  BackSpace: '⌫', Tab: 'Tab', Caps_Lock: 'Caps', Return: '↵',
-  shift: 'Shift', ctrl: 'Ctrl', alt: 'Alt', space: 'Space',
-  Escape: 'Esc', Left: '←', Right: '→', Up: '↑', Down: '↓',
-  grave: '`', minus: '-', equal: '=', bracketleft: '[', bracketright: ']',
-  backslash: '\\', semicolon: ';', apostrophe: "'", comma: ',', period: '.', slash: '/',
+  Return: '↵', BackSpace: '⌫', space: 'space',
+  shift: '⇧', SHIFT_LOCKED: '⇧',
+  bracketleft: '[', bracketright: ']',
+  semicolon: ';', apostrophe: "'", comma: ',', period: '.', slash: '/',
 };
-
-const MODIFIERS = new Set(['ctrl', 'alt', 'shift']);
-const WIDE_KEYS = new Set(['BackSpace','Tab','Caps_Lock','Return','space','shift','ctrl','alt','Escape']);
-
-function keyLabel(k: string) { return DISPLAY[k] ?? k.toUpperCase(); }
 
 export interface ModifierState {
   ctrl: boolean;
@@ -30,23 +32,40 @@ export interface ModifierState {
 
 interface Props {
   modifiers: ModifierState;
-  onKey: (combo: string) => void;       // called with full combo string like "ctrl+c" or "Return"
+  onKey: (combo: string) => void;
   onToggleModifier: (m: 'ctrl' | 'alt' | 'shift') => void;
   onClearModifiers: () => void;
 }
 
+/**
+ * Samsung / iOS-style soft keyboard. Four rows: numbers, two letter rows,
+ * one mixed (shift + letters + backspace), then a bottom strip with layer
+ * toggle, comma, space, period, return.
+ *
+ * Modifier flow: tapping Shift on the letters layer just uppercases the
+ * next typed letter (consumed automatically). The hotkey toolbar above
+ * (MobileKeyBar) handles Ctrl / Alt / Esc / Tab / Enter-to-PTY.
+ *
+ * `onKey(combo)` receives values like 'a', 'A', '1', 'Return', 'space',
+ * 'BackSpace'. Combos with modifiers (e.g. 'ctrl+c') are *not* generated
+ * here — Ctrl lives in the toolbar above and operates on raw PTY bytes.
+ */
 export default function CustomKeyboard({ modifiers, onKey, onToggleModifier, onClearModifiers }: Props) {
-  function handleKey(key: string) {
-    if (MODIFIERS.has(key)) {
-      onToggleModifier(key as 'ctrl' | 'alt' | 'shift');
-      return;
+  const [layer, setLayer] = useState<Layer>('letters');
+  const rows = layer === 'letters' ? LETTER_ROWS : SYMBOL_ROWS;
+
+  function emit(key: string) {
+    onKey(key);
+    // Shift is one-shot — after typing one character, drop it.
+    if (modifiers.shift) onClearModifiers();
+  }
+
+  function tapKey(key: string) {
+    if (key.length === 1 && /[a-z]/.test(key) && modifiers.shift) {
+      emit(key.toUpperCase());
+    } else {
+      emit(key);
     }
-    const activeMods = (Object.entries(modifiers) as [string, boolean][])
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-    const combo = activeMods.length > 0 ? [...activeMods, key].join('+') : key;
-    onKey(combo);
-    onClearModifiers();
   }
 
   return (
@@ -57,55 +76,81 @@ export default function CustomKeyboard({ modifiers, onKey, onToggleModifier, onC
       borderTop: '1px solid rgba(255,255,255,0.08)',
       padding: '6px 4px',
       paddingBottom: 'max(env(safe-area-inset-bottom), 6px)',
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
     }}>
-      {/* Modifier pills row */}
-      <div style={{ display: 'flex', gap: 6, padding: '0 4px 4px' }}>
-        {(['ctrl', 'alt', 'shift'] as const).map(mod => (
-          <button
-            key={mod}
-            onPointerDown={e => { e.preventDefault(); handleKey(mod); }}
-            style={{
-              padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-              background: modifiers[mod] ? '#6366f1' : 'rgba(255,255,255,0.08)',
-              color: modifiers[mod] ? '#fff' : 'rgba(255,255,255,0.7)',
-              border: 'none', cursor: 'pointer',
-            }}
-          >
-            {mod.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{
+          display: 'flex', gap: 4, marginBottom: 4,
+          padding: '0 4px', justifyContent: 'center',
+        }}>
+          {/* Last row of letters: shift on left, backspace on right */}
+          {layer === 'letters' && ri === 3 && (
+            <Key wide active={modifiers.shift} onTap={() => onToggleModifier('shift')}>
+              {DISPLAY.shift}
+            </Key>
+          )}
 
-      {ROWS.map((row, ri) => (
-        <div key={ri} style={{ display: 'flex', gap: 3, marginBottom: 3, justifyContent: 'center' }}>
-          {row.map((key, ki) => {
-            const isMod = MODIFIERS.has(key);
-            const modActive = isMod && modifiers[key as keyof ModifierState];
-            return (
-              <button
-                key={ki}
-                onPointerDown={e => { e.preventDefault(); handleKey(key); }}
-                style={{
-                  flex: WIDE_KEYS.has(key) ? 2 : 1,
-                  minWidth: 0,
-                  height: 34,
-                  borderRadius: 5,
-                  background: modActive ? '#6366f1' : 'rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.92)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                  fontSize: 11,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                {keyLabel(key)}
-              </button>
-            );
-          })}
+          {row.map((k) => (
+            <Key key={k} onTap={() => tapKey(k)}>
+              {modifiers.shift && /[a-z]/.test(k) ? k.toUpperCase() : k}
+            </Key>
+          ))}
+
+          {layer === 'letters' && ri === 3 && (
+            <Key wide onTap={() => emit('BackSpace')}>{DISPLAY.BackSpace}</Key>
+          )}
+          {layer === 'symbols' && ri === 3 && (
+            <Key wide onTap={() => emit('BackSpace')}>{DISPLAY.BackSpace}</Key>
+          )}
         </div>
       ))}
+
+      {/* Bottom strip: layer toggle, comma, space, period, return */}
+      <div style={{ display: 'flex', gap: 4, padding: '0 4px' }}>
+        <Key wide onTap={() => setLayer(l => l === 'letters' ? 'symbols' : 'letters')}>
+          {layer === 'letters' ? '?123' : 'ABC'}
+        </Key>
+        <Key onTap={() => emit(',')}>,</Key>
+        <Key flex={5} onTap={() => emit('space')}>space</Key>
+        <Key onTap={() => emit('.')}>.</Key>
+        <Key wide accent onTap={() => emit('Return')}>{DISPLAY.Return}</Key>
+      </div>
     </div>
+  );
+}
+
+function Key({
+  children, onTap, wide, flex, active, accent,
+}: {
+  children: React.ReactNode;
+  onTap: () => void;
+  wide?: boolean;
+  flex?: number;
+  active?: boolean;
+  accent?: boolean;
+}) {
+  const f = flex ?? (wide ? 1.6 : 1);
+  return (
+    <button
+      onPointerDown={(e) => { e.preventDefault(); onTap(); }}
+      style={{
+        flex: f, minWidth: 0,
+        height: 38, borderRadius: 6,
+        background: active ? '#6366f1'
+          : accent ? 'rgba(94,106,210,0.28)'
+          : 'rgba(255,255,255,0.10)',
+        color: 'rgba(255,255,255,0.95)',
+        border: '1px solid ' + (accent ? 'rgba(94,106,210,0.5)' : 'rgba(255,255,255,0.06)'),
+        fontSize: 14,
+        fontWeight: 500,
+        cursor: 'pointer',
+        padding: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      {children}
+    </button>
   );
 }

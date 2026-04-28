@@ -1,0 +1,12 @@
+{
+    "name": "gui_screenshot",
+    "description": "Capture a screenshot of the entire screen or a specific region.",
+    "inputs": [
+        {"name": "region", "type": "list", "description": "Optional [x, y, w, h] region to crop", "optional": true}
+    ],
+    "outputs": [
+        "image_path"
+    ],
+    "icon": "📸",
+    "category": "gui_automation"
+}

@@ -4,7 +4,8 @@ import { setWsStatus } from '@/store/terminalSlice';
 import { terminalWsUrl } from '@/services/api';
 
 export interface TerminalWsHandle {
-  send: (data: ArrayBuffer | Uint8Array | string) => void;
+  /** Returns true if the data was actually sent over an OPEN socket. */
+  send: (data: ArrayBuffer | Uint8Array | string) => boolean;
   sendControl: (payload: Record<string, unknown>) => void;
   resize: (cols: number, rows: number) => void;
   close: () => void;
@@ -28,6 +29,20 @@ export function useTerminalWs(
 
   const connect = useCallback(() => {
     if (!cid) return;
+    // Close any prior socket before opening a new one. Without this, a
+    // half-open socket whose onclose hasn't fired yet would be silently
+    // abandoned and stay alive on the server, leaking a PtyBridge per
+    // reconnect cycle. After enough reconnects, the server holds N parallel
+    // tmux attaches against the same session and stdin routing gets racey.
+    const prior = wsRef.current;
+    if (prior) {
+      try {
+        prior.onopen = null; prior.onmessage = null;
+        prior.onerror = null; prior.onclose = null;
+        prior.close();
+      } catch { /* no-op */ }
+    }
+
     const ws = new WebSocket(terminalWsUrl(cid));
     ws.binaryType = 'arraybuffer';
     wsRef.current = ws;
@@ -61,6 +76,11 @@ export function useTerminalWs(
       }
     };
     ws.onclose = () => {
+      // Crucial: if a *previous* (orphaned) socket fires onclose, ignore it.
+      // Reconnecting from a stale close handler would replace the healthy
+      // current socket with a brand-new one and avalanche the server with
+      // duplicate attaches.
+      if (wsRef.current !== ws) return;
       wsRef.current = null;
       if (!shouldReconnectRef.current) return;
       dispatch(setWsStatus({ cid, status: 'reconnecting' }));
@@ -88,13 +108,26 @@ export function useTerminalWs(
     };
   }, [connect]);
 
-  const send = useCallback((data: ArrayBuffer | Uint8Array | string) => {
+  const send = useCallback((data: ArrayBuffer | Uint8Array | string): boolean => {
     const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    if (typeof data === 'string') {
-      ws.send(new TextEncoder().encode(data));
-    } else {
-      ws.send(data);
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn('[terminal-ws] send dropped — wsState=', ws?.readyState);
+      // Do NOT trigger a reconnect here. The natural onclose-driven reconnect
+      // is enough; piling on extra connect() calls from send() was creating
+      // a thundering herd of orphan WS connections on the server (each one
+      // holding a tmux attach against the same session).
+      return false;
+    }
+    try {
+      if (typeof data === 'string') {
+        ws.send(new TextEncoder().encode(data));
+      } else {
+        ws.send(data);
+      }
+      return true;
+    } catch (e) {
+      console.warn('[terminal-ws] send threw', e);
+      return false;
     }
   }, []);
 

@@ -49,9 +49,9 @@ export default function FloatingToolbar() {
     return w?.tabs.find(t => t.id === w.activeTabId && t.type === 'desktop');
   })();
 
-  // Initial position: docked right edge, vertically centered-ish (top:64).
+  // Initial position: docked left edge, vertically centered-ish (top:64).
   const [pos, setPos] = useState(() => ({
-    x: typeof window !== 'undefined' ? window.innerWidth - 56 : 320,
+    x: 8,
     y: 64,
   }));
   const [collapsed, setCollapsed] = useState(false);
@@ -61,9 +61,21 @@ export default function FloatingToolbar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
+    const handleFullscreen = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleResize = () => {
+      setPos(p => ({
+        x: Math.min(Math.max(0, p.x), window.innerWidth - 56),
+        y: Math.min(Math.max(0, p.y), window.innerHeight - 56),
+      }));
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreen);
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreen);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const bind = useDrag(({ offset: [ox, oy] }) => {
@@ -204,9 +216,8 @@ export default function FloatingToolbar() {
         display: 'flex',
         alignItems: 'flex-start',
         gap: 8,
-        // Mirror so the toolbar's own column reads right→left when docked at
-        // the right edge — side panels (voice, hotkeys) appear to its LEFT.
-        flexDirection: 'row-reverse',
+        // Panels expand to the right of the main toolbar column.
+        flexDirection: 'row',
       }}
     >
       <div style={{
@@ -220,7 +231,13 @@ export default function FloatingToolbar() {
         flexDirection: 'column',
         gap: 4,
         boxShadow: '0 6px 24px rgba(0,0,0,0.55)',
-      }}>
+        maxHeight: 'calc(100vh - 16px)',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        scrollbarWidth: 'none',
+      }}
+      className="floating-toolbar-inner"
+    >
         {/* Drag handle */}
         <div style={{
           width: 32, height: 4, borderRadius: 2,
@@ -282,9 +299,9 @@ export default function FloatingToolbar() {
         </button>
       </div>
 
-      {/* Side panels — to the LEFT of the toolbar (we use row-reverse) */}
+      {/* Side panels — to the RIGHT of the toolbar */}
       {!collapsed && (showVoice || hotkeysExpanded) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginRight: 4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginLeft: 4 }}>
           {showVoice && <VoiceTypingPanel onClose={() => setShowVoice(false)} />}
           {hotkeysExpanded && (
             <div

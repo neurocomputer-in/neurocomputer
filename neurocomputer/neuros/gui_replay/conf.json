@@ -1,0 +1,13 @@
+{
+    "name": "gui_replay",
+    "description": "Replay a recorded GUI workflow.",
+    "inputs": [
+        {"name": "workflow_name", "type": "string", "description": "Name of the workflow to replay"}
+    ],
+    "outputs": [
+        "success",
+        "steps_completed"
+    ],
+    "icon": "🔄",
+    "category": "gui_automation"
+}

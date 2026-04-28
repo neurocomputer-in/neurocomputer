@@ -132,3 +132,8 @@ body.desktop-kiosk {
      fixed kiosk container. */
   overscroll-behavior: none;
 }
+
+/* Hide scrollbar in the floating toolbar on WebKit/Blink */
+.floating-toolbar-inner::-webkit-scrollbar { display: none; }
+
+@keyframes termCaret { 50% { opacity: 0; } }

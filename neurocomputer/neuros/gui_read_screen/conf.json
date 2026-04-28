@@ -1,0 +1,13 @@
+{
+    "name": "gui_read_screen",
+    "description": "Describe the contents of the screen and extract all text.",
+    "inputs": [
+        {"name": "question", "type": "string", "description": "Optional: Specific question to ask about the screen", "optional": true}
+    ],
+    "outputs": [
+        "description",
+        "text_content"
+    ],
+    "icon": "📖",
+    "category": "gui_automation"
+}

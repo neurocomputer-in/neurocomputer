@@ -1,0 +1,16 @@
+{
+    "name": "gui_automate",
+    "description": "Execute a multi-step GUI task based on natural language.",
+    "inputs": [
+        {"name": "task", "type": "string", "description": "The natural language instruction for the task"},
+        {"name": "max_steps", "type": "number", "description": "Max steps to try", "optional": true, "default": 20}
+    ],
+    "outputs": [
+        "result",
+        "steps_taken"
+    ],
+    "model": "gpt-4o",
+    "temperature": 0.2,
+    "icon": "🤖",
+    "category": "gui_automation"
+}
