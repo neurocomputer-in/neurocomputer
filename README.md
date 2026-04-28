@@ -1,124 +1,44 @@
 # Neurocomputer
 
-Neurocomputer is an agentic software ecosystem built around a modular unit called a **neuro**.
-A neuro can represent model logic, memory logic, context shaping, prompt composition, skills, workflows, tools, and agents.
+> Programmable intelligence as composable engineering.
+>
+> Neurocomputer is an agentic OS for authoring, running, and visualizing AI systems built from a single modular unit — the **neuro**.
 
-The goal is to treat AI system design like composable engineering, not one giant prompt.
+A neuro can be a model, a memory, a context, a prompt, a skill, a workflow, a tool-loop, or an agent. Compose them into agents, group agents into projects, group projects into agencies. One runtime, many surfaces: voice, web, mobile, IDE.
 
-## Ecosystem
+## The Trinity
 
-This repository is organized as a multi-interface ecosystem:
+Neurocomputer is one third of a three-name system co-developed with [NeuroLang](./neurolang/):
 
-- **`neurocomputer/`**: core runtime, neuro framework, backend API, tests, scripts
-- **`neuro_web/`**: desktop web interface (Next.js)
-- **`neuro_mobile/`**: Android remote interface (Kotlin/Compose)
-- **`experimental/`**: experimental interfaces and prototypes
-- **`docs/`**: architecture and product docs (includes `docs/website/`)
+| | What | Where |
+|---|---|---|
+| **NeuroLang** | The Python library — typed primitives, plans-as-values, composition | [`./neurolang/`](./neurolang/) (vendored) |
+| **NeuroNet** | The live runtime — agents, memory, plans-in-flight, effects | inside any process running NeuroLang code |
+| **Neurocomputer** | The IDE + execution environment — fused, like a Lisp Machine | this repo |
 
-## Interfaces
+NeuroLang is the **language**. NeuroNet is the **runtime**. Neurocomputer is the **environment**.
 
-The same neuro runtime can be operated from multiple surfaces:
+## What you get
 
-- **Backend API runtime**: `python neurocomputer/server.py` (default port `7000`)
-- **Web app**: `neuro_web/` desktop client for conversations, projects, and agent orchestration
-- **Mobile app**: `neuro_mobile/` Android remote client
-- **Neurogramming IDE**: a graph-first coding interface where neuros are inspected, composed, and edited as reusable blocks
+- **Voice agent** — STT/TTS loop over LiveKit, runs as a system service
+- **3D Neuro IDE** — graph-native authoring of neuros (`@react-three/fiber`)
+- **Multi-agent meeting rooms** — agents converse with a mediator, alternating turns
+- **Scheduler** — cron-style triggers via `schedule_*` neuros + APScheduler
+- **`agent.talk` primitive** — direct agent-to-agent messages with depth guard
+- **Profiles** — swap behavior packs (`general`, `code_dev`, `neuro_dev`, `neurolang_dev`)
+- **Mobile remote** — Android client for the same runtime
+- **Neuro authoring** — `conf.json` + `code.py` + optional `prompt.txt` per unit, validated and hot-loadable
+- **NeuroLang authoring agent (`nl_dev`)** — describe a flow in natural language, get a runnable Python neuro
 
-## Neurogramming IDE (LEGO for coding)
-
-Neurogramming is the coding model in this repo: build software from composable neuros, connect them into workflows, then iterate safely.
-
-The IDE direction is:
-
-- **3D/graph-native neuro visualization** (node-and-edge mental model)
-- **Source-aware editing** for each neuro (`conf.json`, `code.py`, `prompt.txt`)
-- **Kind-based modularity** (skill, memory, model, context, prompt, agent, code, etc.)
-- **Safe save pipeline** through validation + snapshots
-
-Quick IDE backend:
-
-```bash
-python3 neurocomputer/scripts/ide_server.py
-```
-
-Then in web UI:
-
-```bash
-cd neuro_web
-NEXT_PUBLIC_IDE_URL=http://127.0.0.1:8000 npm run dev
-```
-
-Open `http://localhost:3000/graph`.
-
-## The Neuro Framework
-
-### What is a neuro?
-
-A neuro is a modular runtime unit. At minimum, a neuro is declared by config and executable logic:
-
-- `conf.json`: contract, description, metadata
-- `code.py`: implementation
-- `prompt.txt`: optional prompt layer for LLM-driven neuros
-
-Most neuros live in `neurocomputer/neuros/` using a taxonomy.
-
-### Core primitives
-
-The framework is intentionally split into orthogonal primitives:
-
-- **Model neuro**: provider/model abstraction and model invocation
-  - `neurocomputer/core/model_neuro.py`
-- **Memory neuro**: memory storage, retrieval, and consolidation flows
-  - `neurocomputer/core/memory.py`
-  - `neurocomputer/core/memory_graph.py`
-- **Context neuro**: context packaging and I/O contracts
-  - `neurocomputer/core/context_neuro.py`
-- **Prompt neuro**: prompt blocks and composition patterns
-  - `neurocomputer/core/prompt_neuro.py`
-- **Skill neuro**: discrete actionable capabilities under `neurocomputer/neuros/skill/`
-- **Workflow neuro**: DAG/sequential/parallel orchestration
-  - `neurocomputer/core/flows/dag_flow.py`
-  - `neurocomputer/core/flows/sequential_flow.py`
-  - `neurocomputer/core/flows/parallel_flow.py`
-- **Tool-loop neuro**: in-reply tool calling and continuation
-  - `neurocomputer/core/tool_loop_neuro.py`
-- **Agent neuro**: role-specialized orchestration as composable agents
-  - `neurocomputer/core/agent_neuro.py`
-
-### Runtime orchestration
-
-The orchestration path is centered around:
-
-- `neurocomputer/core/brain.py`: routing, profile application, session orchestration
-- `neurocomputer/core/neuro_factory.py`: neuro discovery, registry, execution
-- `neurocomputer/server.py`: API surface + runtime glue
-
-## Repository layout
-
-Top-level layout (intentionally kept to 5 main folders):
-
-```text
-.
-├── neurocomputer/   # core runtime + framework
-├── neuro_web/       # web interface
-├── neuro_mobile/    # android interface
-├── experimental/    # experiments
-└── docs/            # architecture + product docs
-```
-
-## Quick start
-
-### 1) Setup Python runtime
+## Quickstart
 
 ```bash
 git clone git@github.com:neurocomputer-in/neurocomputer.git
 cd neurocomputer
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r neurocomputer/requirements.txt
+pip install -e ./neurolang   # vendored framework
 ```
-
-### 2) Configure environment
 
 Create `.env` in repo root:
 
@@ -131,6 +51,134 @@ LIVEKIT_API_KEY=...
 LIVEKIT_API_SECRET=...
 ```
 
+Run backend, then web:
+
+```bash
+python neurocomputer/server.py             # http://127.0.0.1:7000
+cd neuro_web && npm install && npm run dev # http://localhost:3000
+```
+
+Mobile:
+
+```bash
+cd neuro_mobile && ./gradlew assembleDebug
+```
+
+---
+
+## For developers
+
+### Hierarchy
+
+The runtime is layered. Each level groups the next.
+
+```text
+Agency  ──▶  Project  ──▶  Agent  ──▶  Neuro
+```
+
+- **Agency** — top-level workspace (`Neuro HQ`, `Upwork`, `Web`). Color, emoji, set of agents, default project.
+  - `core/agency.py`, `core/agency_configs.py`
+- **Project** — a unit of work inside an agency. Default project ships with every agency.
+  - `core/project.py`, `core/project_configs.py`, `core/defaults.py`
+- **Agent** — role-specialized orchestrator (`neuro`, `nl_dev`, `opencode`, `openclaw`, `upwork`). Owns a router, planner, replier, profile.
+  - `core/agent.py`, `core/agent_configs.py`, `core/agent_manager.py`
+- **Neuro** — atomic capability. Discovered from `neurocomputer/neuros/`.
+  - `core/neuro_factory.py`, `core/base_neuro.py`
+
+### Neuro framework
+
+The framework is split into orthogonal primitives, each backed by a base type and a folder of concrete neuros:
+
+| Primitive | Purpose | Code |
+|---|---|---|
+| **Model** | provider/model abstraction, invocation | `core/model_neuro.py`, `core/llm_registry.py` |
+| **Memory** | storage, retrieval, consolidation | `core/memory.py`, `core/memory_graph.py` |
+| **Context** | typed packaging + I/O contracts | `core/context_neuro.py` |
+| **Prompt** | prompt blocks + composition | `core/prompt_neuro.py` |
+| **Skill** | discrete actionable capability | `neuros/skill/`, `core/instruction_neuro.py` |
+| **Workflow** | DAG / sequential / parallel orchestration | `core/flows/{dag,sequential,parallel}_flow.py` |
+| **Tool-loop** | in-reply tool calling and continuation | `core/tool_loop_neuro.py` |
+| **Agent** | role-specialized orchestration | `core/agent_neuro.py` |
+
+Routing, profile application, and session orchestration live in `core/brain.py`. The API surface is `neurocomputer/server.py`.
+
+### Profiles
+
+A profile is a behavior pack — model choice, system prompt, defaults — applied at the agent level. Shipped:
+
+| Profile | Use |
+|---|---|
+| `general` | default conversational agent |
+| `code_dev` | code-aware development |
+| `neuro_dev` | authoring neuros inside Neurocomputer |
+| `neurolang_dev` | authoring NeuroLang flows (paired with `nl_dev` agent) |
+
+Switch via `POST /api/profile/switch`. Inspect with `GET /api/profile/active` and `GET /api/profile/list`.
+
+### Multi-agent
+
+**Meeting Rooms** — multiple agents share a transcript with a mediator picking the next speaker round-robin.
+- `core/rooms.py`, `core/rooms_db.py`, neuros: `room_create`, `room_post`, `room_close`, `room_mediator`
+- UI: `neuro_web/components/rooms/RoomPanel.tsx` — `/api/rooms`
+
+**`agent.talk(target, msg)`** — abstract primitive for direct agent-to-agent messages. Depth-guarded (`MAX=4`) to prevent infinite loops.
+- `core/talk.py`, neuros: `agent_talk`, `agent_list`
+
+**Schedules** — cron-style triggers persisted to `schedules.db` via APScheduler.
+- `core/scheduler.py`, `core/schedules_db.py`, `core/trigger_parse.py`
+- Neuros: `schedule_run`, `schedule_cancel`, `schedule_list` — `/api/schedules`
+
+### NeuroLang integration
+
+NeuroLang is vendored at [`./neurolang/`](./neurolang/) (Phase 1.9, 172 tests passing). Install with `pip install -e ./neurolang`.
+
+The `nl_dev` agent wraps NeuroLang's `compile_source` / `propose_plan` / `decompile_summary` through seven `nl_*` neuros:
+
+- `nl_planner`, `nl_propose`, `nl_compile`, `nl_save`, `nl_run`, `nl_summary`, `nl_reply`
+
+Compiled flows land in `~/.neurolang/neuros/`. See [`neurolang/README.md`](./neurolang/README.md) for the language itself.
+
+### Authoring a neuro
+
+Add a folder under `neurocomputer/neuros/<name>/` with:
+
+1. `conf.json` — contract, description, metadata, kind
+2. `code.py` — implementation (subclass of the appropriate base)
+3. `prompt.txt` — optional, for LLM-driven neuros
+
+Validate and run through the IDE backend or `core/neuro_factory.py`. Tests live in `neurocomputer/tests/`.
+
+```bash
+python3 neurocomputer/scripts/ide_server.py        # IDE backend, port 8000
+cd neuro_web && NEXT_PUBLIC_IDE_URL=http://127.0.0.1:8000 npm run dev
+# open http://localhost:3000/graph
+```
+
+### Repository layout
+
+```text
+.
+├── neurocomputer/      # Python core: server, framework, neuros, profiles, tests
+├── neuro_web/          # Next.js + R3F desktop client
+├── neuro_mobile/       # Android (Kotlin/Compose) remote
+├── neurolang/          # vendored NeuroLang library
+├── experimental/       # prototypes
+├── docs/               # architecture + product docs
+└── STATUS.md           # current phase, last shipped, next up
+```
+
+### Dev workflow
+
+```bash
+cd neurocomputer
+pytest                                                    # core tests
+python neurocomputer/server.py                            # backend (7000)
+python neurocomputer/scripts/ide_server.py                # IDE backend (8000)
+cd neuro_web && npm run dev                               # web (3000)
+cd neuro_web && npx playwright test                       # e2e
+cd neuro_mobile && ./gradlew assembleDebug                # mobile
+```
+
 Optional local LiveKit:
 
 ```bash
@@ -138,47 +186,23 @@ cp neurocomputer/livekit.yaml.example livekit.yaml
 livekit-server --config livekit.yaml
 ```
 
-### 3) Run backend
+### Documentation
 
-```bash
-python neurocomputer/server.py
-```
+| Doc | What |
+|---|---|
+| [`STATUS.md`](./STATUS.md) | start here — current phase, last shipped, next up |
+| [`docs/NeuroFramework.md`](./docs/NeuroFramework.md) | framework overview |
+| [`docs/MULTI_AGENCY_ARCHITECTURE.md`](./docs/MULTI_AGENCY_ARCHITECTURE.md) | the 4-layer hierarchy |
+| [`docs/MEMORY_ARCHITECTURE.md`](./docs/MEMORY_ARCHITECTURE.md) | memory model + graph |
+| [`docs/AGENT_MEETING_ROOMS.md`](./docs/AGENT_MEETING_ROOMS.md) | rooms design |
+| [`docs/superpowers/specs/`](./docs/superpowers/specs/) | per-shipped-feature specs |
+| [`neurolang/docs/`](./neurolang/docs/) | NeuroLang language docs |
+| [`neurocomputer/scripts/README_ide.md`](./neurocomputer/scripts/README_ide.md) | IDE backend |
 
-Backend default: `http://127.0.0.1:7000`
+## Status
 
-### 4) Run web interface
+Pre-alpha. APIs unstable. Personal-assistant scope: long-lived single-user, not multi-tenant.
 
-```bash
-cd neuro_web
-npm install
-npm run dev
-```
+## License
 
-### 5) Build mobile interface
-
-```bash
-cd neuro_mobile
-./gradlew assembleDebug
-```
-
-## Neuro authoring workflow
-
-Create a new neuro by adding a folder under `neurocomputer/neuros/` and defining:
-
-1. `conf.json`
-2. `code.py`
-3. optional `prompt.txt`
-
-Then validate and test through:
-
-- IDE API endpoints in `neurocomputer/scripts/ide_server.py`
-- runtime execution through `neurocomputer/core/neuro_factory.py`
-- test suite in `neurocomputer/tests/`
-
-## Key docs
-
-- `docs/MULTI_AGENCY_ARCHITECTURE.md`
-- `docs/MEMORY_ARCHITECTURE.md`
-- `docs/AGENT_MEETING_ROOMS.md`
-- `neurocomputer/scripts/README_ide.md`
-
+See [LICENSE](./LICENSE) where present, otherwise treat as all-rights-reserved pending publication.
