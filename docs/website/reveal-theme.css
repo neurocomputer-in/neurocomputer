@@ -39,10 +39,10 @@
     line-height: 1.1;
     margin-bottom: 0.5em;
 }
-.reveal h1 { font-size: 3.6em; }
-.reveal h2 { font-size: 2.4em; }
-.reveal h3 { font-size: 1.7em; }
-.reveal h4 { font-size: 1.2em; color: var(--r-accent); }
+.reveal h1 { font-size: 2.4em; }
+.reveal h2 { font-size: 1.6em; }
+.reveal h3 { font-size: 1.2em; }
+.reveal h4 { font-size: 0.95em; color: var(--r-accent); }
 
 .reveal h1 .highlight,
 .reveal h2 .highlight {
@@ -54,8 +54,8 @@
 
 .reveal p {
     color: var(--r-text-2);
-    font-size: 0.95em;
-    line-height: 1.7;
+    font-size: 0.78em;
+    line-height: 1.55;
 }
 .reveal p strong { color: var(--r-text-1); font-weight: 600; }
 .reveal em { color: var(--r-text-1); font-style: italic; }
@@ -152,30 +152,32 @@
 
 /* glass card inside slide */
 .reveal .gcard {
-    padding: 1em 1.2em;
+    padding: 0.7em 0.9em;
     background: var(--r-surface);
     border: 1px solid var(--r-border);
-    border-radius: 12px;
+    border-radius: 10px;
     backdrop-filter: blur(10px);
 }
+.reveal .gcard h4 { margin-bottom: 0.3em; }
+.reveal .gcard p  { margin: 0; }
 
 /* grid helpers */
 .reveal .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.2em;
+    gap: 0.8em;
     align-items: start;
 }
 .reveal .grid-3 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 1em;
+    gap: 0.7em;
     align-items: stretch;
 }
 .reveal .grid-4 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 0.8em;
+    gap: 0.6em;
 }
 
 /* big-stat */
@@ -242,34 +244,62 @@
 
 /* hero slide */
 .reveal .hero-slide h1 {
-    font-size: 4.2em;
+    font-size: 2.6em;
     line-height: 1.05;
 }
 .reveal .hero-slide .sub {
     color: var(--r-text-2);
-    font-size: 1em;
-    max-width: 800px;
-    margin-top: 1em;
+    font-size: 0.78em;
+    max-width: 640px;
+    margin-top: 0.6em;
     font-weight: 300;
-    line-height: 1.6;
+    line-height: 1.55;
 }
 
 /* quote */
 .reveal .pull {
     border-left: 3px solid var(--r-accent);
-    padding: 0.5em 1em;
+    padding: 0.4em 0.9em;
     background: rgba(0,229,160,0.04);
     font-family: 'Outfit', sans-serif;
     font-style: italic;
-    font-size: 0.95em;
+    font-size: 0.82em;
     color: var(--r-text-1);
-    line-height: 1.5;
+    line-height: 1.45;
     border-radius: 0 8px 8px 0;
     margin: 0.5em 0;
 }
 
 /* fragment fade */
 .reveal .fragment.highlight-accent.visible { color: var(--r-accent); }
+
+/* ── Responsive: small viewports (phones / narrow windows) ── */
+@media (max-width: 700px) {
+    .reveal h1 { font-size: 1.7em; }
+    .reveal h2 { font-size: 1.3em; }
+    .reveal h3 { font-size: 1.05em; }
+    .reveal .hero-slide h1 { font-size: 1.9em; }
+    .reveal .hero-slide .sub { font-size: 0.7em; margin-top: 0.4em; }
+    .reveal .tag { font-size: 0.4em; letter-spacing: 1.5px; padding: 3px 9px; }
+    .reveal .grid-2,
+    .reveal .grid-3,
+    .reveal .grid-4 { grid-template-columns: 1fr; gap: 0.5em; }
+    .reveal .bigstat { font-size: 1.5em; }
+    .reveal pre code { font-size: 0.5em; }
+    .reveal p { font-size: 0.72em; }
+    .reveal .pull { font-size: 0.72em; }
+    .reveal .gcard { padding: 0.5em 0.7em; }
+    .reveal .slide-footer { font-size: 0.4em; bottom: 12px; left: 16px; }
+}
+
+/* ── Responsive: medium viewports (tablets portrait) ── */
+@media (min-width: 701px) and (max-width: 1024px) {
+    .reveal h1 { font-size: 2em; }
+    .reveal h2 { font-size: 1.45em; }
+    .reveal .hero-slide h1 { font-size: 2.2em; }
+    .reveal .grid-3 { grid-template-columns: 1fr 1fr; }
+    .reveal .grid-4 { grid-template-columns: 1fr 1fr; gap: 0.5em; }
+}
 
 /* print-pdf helper — keep dark bg */
 @media print {
