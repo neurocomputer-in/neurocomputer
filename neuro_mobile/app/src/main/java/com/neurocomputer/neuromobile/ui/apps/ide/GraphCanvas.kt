@@ -25,11 +25,14 @@ fun GraphCanvas(
     panOffset: Offset,
     onZoomChange: (Float) -> Unit,
     onPanChange: (Offset) -> Unit,
-    onNodeTap: (String) -> Unit,
+    onNodeTap: (String?) -> Unit,
     onNodeDrag: (id: String, dx: Float, dy: Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var draggingNodeId by remember { mutableStateOf<String?>(null) }
+
+    // C1: capture latest nodes without restarting gesture coroutines
+    val currentNodes by rememberUpdatedState(nodes)
 
     // Node size constants
     val nodeW = 120f
@@ -41,11 +44,20 @@ fun GraphCanvas(
         (screen.y - panOffset.y) / zoom,
     )
 
-    // Find node at screen position
+    // C1: use currentNodes so nodeAt() always sees current positions
     fun nodeAt(screen: Offset): IdeNode? {
         val c = toCanvas(screen)
-        return nodes.lastOrNull { n ->
+        return currentNodes.lastOrNull { n ->
             c.x >= n.x && c.x <= n.x + nodeW && c.y >= n.y && c.y <= n.y + nodeH
+        }
+    }
+
+    // C2: hoist Paint outside Canvas draw lambda to avoid per-frame allocation
+    val textPaint = remember {
+        android.graphics.Paint().apply {
+            color = android.graphics.Color.WHITE
+            isAntiAlias = true
+            textAlign = android.graphics.Paint.Align.CENTER
         }
     }
 
@@ -59,7 +71,8 @@ fun GraphCanvas(
                     onPanChange(panOffset + pan)
                 }
             }
-            .pointerInput(nodes) {
+            // C1: key = Unit so drag gesture coroutine never restarts mid-drag
+            .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = { pos -> draggingNodeId = nodeAt(pos)?.id },
                     onDrag = { change, drag ->
@@ -74,10 +87,11 @@ fun GraphCanvas(
                     },
                 )
             }
-            .pointerInput(nodes) {
+            // C1: key = Unit so tap gesture coroutine never restarts mid-gesture
+            .pointerInput(Unit) {
                 detectTapGestures { pos ->
-                    val hit = nodeAt(pos)
-                    onNodeTap(hit?.id ?: "")
+                    // I3: pass nullable id directly — null means "no node"
+                    onNodeTap(nodeAt(pos)?.id)
                 }
             }
     ) {
@@ -114,18 +128,13 @@ fun GraphCanvas(
                 )
             }
 
-            // Node label — use drawContext.canvas for text (native Android)
-            val paint = android.graphics.Paint().apply {
-                color = android.graphics.Color.WHITE
-                textSize = 12f * zoom
-                isAntiAlias = true
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
+            // C2: update only zoom-dependent field per node; object is reused
+            textPaint.textSize = 12f * zoom
             drawContext.canvas.nativeCanvas.drawText(
                 node.label,
                 sx + sw / 2f,
-                sy + sh / 2f + (paint.textSize / 3f),
-                paint,
+                sy + sh / 2f + (textPaint.textSize / 3f),
+                textPaint,
             )
         }
     }
@@ -140,7 +149,8 @@ private fun DrawScope.drawBezierEdge(
     val fy = (from.y + nodeH) * zoom + pan.y
     val tx = (to.x + nodeW / 2) * zoom + pan.x
     val ty = to.y * zoom + pan.y
-    val cpDy = ((ty - fy) / 2).coerceAtLeast(60f * zoom)
+    // I1: abs() so control points bow correctly when target is above source
+    val cpDy = (kotlin.math.abs(ty - fy) / 2f).coerceAtLeast(60f * zoom)
 
     val path = Path().apply {
         moveTo(fx, fy)
@@ -151,7 +161,5 @@ private fun DrawScope.drawBezierEdge(
         color = Color(0xFF6B7280),
         style = Stroke(width = 1.5f, cap = StrokeCap.Round),
     )
-
-    // Arrowhead
     drawCircle(color = Color(0xFF6B7280), radius = 4f * zoom.coerceAtLeast(0.5f), center = Offset(tx, ty))
 }

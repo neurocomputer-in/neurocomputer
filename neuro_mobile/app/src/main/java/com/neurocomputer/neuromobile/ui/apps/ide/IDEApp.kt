@@ -26,16 +26,7 @@ fun IDEApp(cid: String, modifier: Modifier = Modifier) {
     var panOffset by remember { mutableStateOf(Offset.Zero) }
 
     Box(modifier.fillMaxSize().background(Color(0xFF0a0a12))) {
-        if (state.isLoading) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color(0xFF8B5CF6))
-        } else if (state.errorMessage != null) {
-            Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(state.errorMessage ?: "Error", color = Color(0xFFFF5555))
-                Spacer(Modifier.height(8.dp))
-                TextButton(onClick = viewModel::refresh) { Text("Retry", color = Color(0xFF8B5CF6)) }
-            }
-        }
-
+        // C3: background layer — always rendered beneath overlay states
         GraphCanvas(
             nodes = state.nodes,
             edges = state.edges,
@@ -44,20 +35,31 @@ fun IDEApp(cid: String, modifier: Modifier = Modifier) {
             panOffset = panOffset,
             onZoomChange = { zoom = it },
             onPanChange = { panOffset = it },
-            onNodeTap = { id -> viewModel.selectNode(if (id.isEmpty()) null else id) },
+            // I3: id is already nullable — pass directly
+            onNodeTap = { id -> viewModel.selectNode(id) },
             onNodeDrag = viewModel::moveNode,
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Toolbar (top-right)
+        // C3: overlay states rendered on top of canvas
+        if (state.isLoading) {
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color(0xFF8B5CF6))
+        } else if (state.errorMessage != null) {
+            Column(
+                Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(state.errorMessage ?: "Error", color = Color(0xFFFF5555))
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = viewModel::refresh) { Text("Retry", color = Color(0xFF8B5CF6)) }
+            }
+        }
+
         GraphToolbar(
             onAddNode = viewModel::addNode,
             onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(5f) },
             onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.2f) },
-            onFitScreen = {
-                zoom = 1f
-                panOffset = Offset.Zero
-            },
+            onFitScreen = { zoom = 1f; panOffset = Offset.Zero },
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
         )
     }
