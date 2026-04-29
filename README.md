@@ -13,7 +13,7 @@ Three names. One system. See [`docs/TRINITY.md`](./docs/TRINITY.md) for the cano
 | | Role | What it is | Where |
 |---|---|---|---|
 | **NeuroLang** | the *language* | Typed Python primitives, plans-as-values, composition syntax. The thing you write in. | [`./neurolang/`](./neurolang/) (vendored) |
-| **NeuroNet** | the *program* | A composed network of neuros — runnable, shareable, installable. The thing you ship. | Output of NeuroLang. Lives in `~/.neurolang/neuros/`. |
+| **NeuroNet** | the *program* | A composed network of neuros — runnable, shareable, installable. The thing you ship. | Output of NeuroLang. Lives in `~/.neurolang/neuros/` (or a package registry, planned). |
 | **Neurocomputer** | the *environment* | IDE + execution environment + OS shell that hosts NeuroNets as apps. The thing you run on. | this repo |
 
 NeuroLang is the **language**. NeuroNet is the **program**. Neurocomputer is the **environment** — write in NeuroLang, ship a NeuroNet, run on Neurocomputer.

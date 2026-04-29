@@ -29,7 +29,7 @@ under Neurocomputer.
 - `LocalNeuroNet` → `LocalRuntime`
 - `Plan` (or a `Plan` + manifest wrapper) → `NeuroNet`
 
-Will be tracked in `neurolang/docs/OPEN_DECISIONS.md` (entry: *Cluster L — Trinity rename*).
+Tracked in `neurolang/docs/OPEN_DECISIONS.md` (entry: *Cluster L — Trinity rename*).
 Until that change lands, when you read `NeuroNet` in *Python imports* it
 means the old "runtime" sense; when you read it in *prose* it means the new
 "program" sense. Imports are the only place the old usage survives.
