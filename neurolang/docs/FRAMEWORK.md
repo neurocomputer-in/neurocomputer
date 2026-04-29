@@ -1,3 +1,15 @@
+> **⚠ Reframing note (2026-04-30):** Since this document was written, the
+> Trinity has been reframed. **NeuroNet is now the *program*** (the compiled,
+> runnable, shareable artifact), not the *runtime*. The runtime concept moves
+> under Neurocomputer (the environment). See
+> [`docs/TRINITY.md`](../../docs/TRINITY.md) for the canonical definition.
+> This document retains the old framing in §2 ("The Live Network") and is
+> queued for a full rewrite alongside the code rename (tracked in
+> [`OPEN_DECISIONS.md`](./OPEN_DECISIONS.md)).
+
+---
+
+
 # The NeuroLang Framework — The Trinity
 
 > **NeuroLang** (the library) · **NeuroNet** (the live network) · **Neurocomputer** (the IDE + execution environment)
