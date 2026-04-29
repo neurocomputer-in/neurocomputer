@@ -1,7 +1,7 @@
 """
 Voice Manager - Full-duplex voice calls via LiveKit AgentSession.
 
-Pipeline: Silero VAD → Sarvam STT → InfinityBrainLLM (Brain) → ElevenLabs TTS
+Pipeline: Silero VAD + EOU → Sarvam STT → Brain (sentence-pumped) → Sarvam TTS
 Sessions are tied to conversation IDs so voice shares history with text chat.
 """
 
