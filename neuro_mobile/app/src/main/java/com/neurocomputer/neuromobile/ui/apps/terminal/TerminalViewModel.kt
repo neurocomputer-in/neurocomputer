@@ -34,7 +34,10 @@ class TerminalViewModel @AssistedInject constructor(
     private val _state = MutableStateFlow(TerminalState())
     val state: StateFlow<TerminalState> = _state.asStateFlow()
 
+    private val MAX_LINES = 2000
+
     init {
+        _state.update { it.copy(connected = webSocketService.connectionState.value) }
         connectIfNeeded()
         observeMessages()
     }
@@ -47,11 +50,6 @@ class TerminalViewModel @AssistedInject constructor(
     }
 
     private fun observeMessages() {
-        viewModelScope.launch {
-            webSocketService.connectionState.collect { connected ->
-                _state.update { it.copy(connected = connected) }
-            }
-        }
         viewModelScope.launch {
             webSocketService.messages.collect { msg ->
                 when (msg) {
@@ -71,10 +69,12 @@ class TerminalViewModel @AssistedInject constructor(
     }
 
     private fun appendLine(raw: String) {
-        // Split by newlines so each logical line is a separate entry
-        val newLines = raw.split("\n").filter { it.isNotEmpty() }.map { AnsiParser.parse(it) }
+        val newLines = raw.split("\n").map { AnsiParser.parse(it) }
         if (newLines.isNotEmpty()) {
-            _state.update { it.copy(lines = it.lines + newLines) }
+            _state.update { s ->
+                val combined = s.lines + newLines
+                s.copy(lines = if (combined.size > MAX_LINES) combined.takeLast(MAX_LINES) else combined)
+            }
         }
     }
 
@@ -83,9 +83,12 @@ class TerminalViewModel @AssistedInject constructor(
     }
 
     fun sendLine() {
-        val line = _state.value.inputText
+        var line = ""
+        _state.update { s ->
+            line = s.inputText
+            s.copy(inputText = "")
+        }
         if (line.isEmpty()) return
-        _state.update { it.copy(inputText = "") }
         viewModelScope.launch {
             webSocketService.sendMessage("$line\n", cid)
         }

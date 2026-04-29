@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +29,7 @@ fun TerminalOutputView(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
     ) {
-        items(lines) { spans ->
+        items(lines, key = { it.hashCode() }) { spans ->
             val annotated = buildAnnotatedString {
                 spans.forEach { span ->
                     pushStyle(SpanStyle(
@@ -39,7 +40,7 @@ fun TerminalOutputView(
                     pop()
                 }
             }
-            Text(text = annotated, fontSize = 12.sp, lineHeight = 16.sp)
+            Text(text = annotated, fontSize = 12.sp, lineHeight = 16.sp, fontFamily = FontFamily.Monospace)
         }
     }
 }

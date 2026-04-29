@@ -14,15 +14,15 @@ object AnsiParser {
         93 to Color(0xFFffff55), 94 to Color(0xFF5555ff), 95 to Color(0xFFff55ff),
         96 to Color(0xFF55ffff), 97 to Color(0xFFffffff),
     )
+    private val ANSI_ESCAPE_RE = Regex("\u001B\\[([0-9;]*)m")
 
     fun parse(input: String): List<AnsiSpan> {
         val spans = mutableListOf<AnsiSpan>()
         var currentColor: Color? = null
         var currentBold = false
-        val regex = Regex("\u001B\\[([0-9;]*)m")
         var lastEnd = 0
 
-        for (match in regex.findAll(input)) {
+        for (match in ANSI_ESCAPE_RE.findAll(input)) {
             val textBefore = input.substring(lastEnd, match.range.first)
             if (textBefore.isNotEmpty()) spans.add(AnsiSpan(textBefore, currentColor, currentBold))
 
