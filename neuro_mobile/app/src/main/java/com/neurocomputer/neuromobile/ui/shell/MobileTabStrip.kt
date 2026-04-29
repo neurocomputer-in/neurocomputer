@@ -31,8 +31,7 @@ fun MobileTabStrip(
         modifier = modifier
             .fillMaxWidth()
             .height(36.dp)
-            .background(NeuroColors.BackgroundDark)
-            .windowInsetsPadding(WindowInsets.statusBars),
+            .background(NeuroColors.BackgroundDark),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (window == null) return@Row
