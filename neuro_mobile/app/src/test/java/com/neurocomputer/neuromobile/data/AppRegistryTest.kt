@@ -22,4 +22,7 @@ class AppRegistryTest {
 
     @Test fun `terminal app has no agentType`() =
         assertNull(APP_MAP[AppId.TERMINAL]!!.agentType)
+
+    @Test fun `APP_MAP has same size as APP_LIST`() =
+        assertEquals(APP_LIST.size, APP_MAP.size)
 }
