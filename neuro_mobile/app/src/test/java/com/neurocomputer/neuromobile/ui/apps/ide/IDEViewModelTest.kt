@@ -3,7 +3,7 @@ package com.neurocomputer.neuromobile.ui.apps.ide
 import org.junit.Assert.*
 import org.junit.Test
 
-class IdeNodeTest {
+class IDEViewModelTest {
 
     @Test fun `node equality by id`() {
         val n1 = IdeNode("a", "Label", 0f, 0f)

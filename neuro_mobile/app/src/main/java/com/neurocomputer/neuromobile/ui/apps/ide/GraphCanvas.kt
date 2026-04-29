@@ -21,12 +21,14 @@ fun GraphCanvas(
     nodes: List<IdeNode>,
     edges: List<IdeEdge>,
     selectedNodeId: String?,
+    zoom: Float,
+    panOffset: Offset,
+    onZoomChange: (Float) -> Unit,
+    onPanChange: (Offset) -> Unit,
     onNodeTap: (String) -> Unit,
     onNodeDrag: (id: String, dx: Float, dy: Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var panOffset by remember { mutableStateOf(Offset.Zero) }
-    var zoom by remember { mutableFloatStateOf(1f) }
     var draggingNodeId by remember { mutableStateOf<String?>(null) }
 
     // Node size constants
@@ -53,8 +55,8 @@ fun GraphCanvas(
             .background(Color(0xFF0a0a12))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, gestureZoom, _ ->
-                    zoom = (zoom * gestureZoom).coerceIn(0.2f, 5f)
-                    panOffset += pan
+                    onZoomChange((zoom * gestureZoom).coerceIn(0.2f, 5f))
+                    onPanChange(panOffset + pan)
                 }
             }
             .pointerInput(nodes) {
@@ -65,7 +67,7 @@ fun GraphCanvas(
                         draggingNodeId?.let { id ->
                             onNodeDrag(id, drag.x / zoom, drag.y / zoom)
                         }
-                        if (draggingNodeId == null) panOffset += drag
+                        if (draggingNodeId == null) onPanChange(panOffset + drag)
                     },
                     onDragEnd = {
                         draggingNodeId = null

@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +22,8 @@ fun IDEApp(cid: String, modifier: Modifier = Modifier) {
         creationCallback = { factory -> factory.create(cid) },
     )
     val state by viewModel.state.collectAsState()
+    var zoom by remember { mutableFloatStateOf(1f) }
+    var panOffset by remember { mutableStateOf(Offset.Zero) }
 
     Box(modifier.fillMaxSize().background(Color(0xFF0a0a12))) {
         if (state.isLoading) {
@@ -37,6 +40,10 @@ fun IDEApp(cid: String, modifier: Modifier = Modifier) {
             nodes = state.nodes,
             edges = state.edges,
             selectedNodeId = state.selectedNodeId,
+            zoom = zoom,
+            panOffset = panOffset,
+            onZoomChange = { zoom = it },
+            onPanChange = { panOffset = it },
             onNodeTap = { id -> viewModel.selectNode(if (id.isEmpty()) null else id) },
             onNodeDrag = viewModel::moveNode,
             modifier = Modifier.fillMaxSize(),
@@ -45,6 +52,12 @@ fun IDEApp(cid: String, modifier: Modifier = Modifier) {
         // Toolbar (top-right)
         GraphToolbar(
             onAddNode = viewModel::addNode,
+            onZoomIn = { zoom = (zoom * 1.25f).coerceAtMost(5f) },
+            onZoomOut = { zoom = (zoom / 1.25f).coerceAtLeast(0.2f) },
+            onFitScreen = {
+                zoom = 1f
+                panOffset = Offset.Zero
+            },
             modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
         )
     }
@@ -61,13 +74,37 @@ fun IDEApp(cid: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun GraphToolbar(onAddNode: () -> Unit, modifier: Modifier = Modifier) {
+private fun GraphToolbar(
+    onAddNode: () -> Unit,
+    onZoomIn: () -> Unit,
+    onZoomOut: () -> Unit,
+    onFitScreen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         IconButton(
             onClick = onAddNode,
             colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1e1e2e)),
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add node", tint = Color(0xFF8B5CF6))
+        }
+        IconButton(
+            onClick = onZoomIn,
+            colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1e1e2e)),
+        ) {
+            Icon(Icons.Default.ZoomIn, contentDescription = "Zoom in", tint = Color(0xFF8B5CF6))
+        }
+        IconButton(
+            onClick = onZoomOut,
+            colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1e1e2e)),
+        ) {
+            Icon(Icons.Default.ZoomOut, contentDescription = "Zoom out", tint = Color(0xFF8B5CF6))
+        }
+        IconButton(
+            onClick = onFitScreen,
+            colors = IconButtonDefaults.iconButtonColors(containerColor = Color(0xFF1e1e2e)),
+        ) {
+            Icon(Icons.Default.FitScreen, contentDescription = "Fit screen", tint = Color(0xFF8B5CF6))
         }
     }
 }
