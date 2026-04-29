@@ -25,7 +25,7 @@ from livekit.agents.types import APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS
 logger = logging.getLogger("sarvam-tts")
 
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
-SARVAM_VOICE_ID = os.getenv("SARVAM_VOICE_ID", "meera")
+SARVAM_VOICE_ID = os.getenv("SARVAM_VOICE_ID", "anushka")
 SARVAM_TTS_LANGUAGE = os.getenv("SARVAM_TTS_LANGUAGE", "en-IN")
 SARVAM_TTS_URL = "https://api.sarvam.ai/text-to-speech"
 SAMPLE_RATE = 22050

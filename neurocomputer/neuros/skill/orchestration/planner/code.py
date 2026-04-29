@@ -116,7 +116,7 @@ async def run(state, *, goal, catalogue, intent=None):
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / f"planner_prompt_{ts}.txt"
     log_file.write_text(
-        (system or "") + "\n\nCONTEXT:\n" + context,
+        (system or "") + "\n\nCONTEXT:\n" + context_str,
         encoding="utf-8",
     )
 

@@ -272,19 +272,35 @@ class VoiceManager:
 
         http_session = aiohttp.ClientSession()
 
-        session = AgentSession(
+        try:
+            turn_det = MultilingualModel()
+            logger.info("[Voice] EOU MultilingualModel loaded")
+        except Exception as e:
+            logger.warning(f"[Voice] EOU model unavailable ({e!r}), using VAD-only turn detection")
+            turn_det = None
+
+        vad = silero.VAD.load(
+            min_speech_duration=0.05,
+            min_silence_duration=0.2,
+            prefix_padding_duration=0.2,
+            activation_threshold=0.25,
+        )
+        # allow_interruptions=True lets LiveKit's built-in interrupter run.
+        # min_interruption_duration=0.5 is its default cough/ack filter — matches
+        # the 500 ms gate from the spec. Our BargeInController stays attached as
+        # a redundant safety net; if both fire interrupt() the second is a no-op.
+        session_kwargs: dict = dict(
             llm=llm_impl,
-            vad=silero.VAD.load(
-                min_speech_duration=0.05,
-                min_silence_duration=0.2,
-                prefix_padding_duration=0.2,
-                activation_threshold=0.25,
-            ),
+            vad=vad,
             stt=SarvamSTT(),
             tts=SarvamTTS(),
-            turn_detection=MultilingualModel(),
-            allow_interruptions=False,
+            allow_interruptions=True,
+            min_interruption_duration=0.5,
         )
+        if turn_det is not None:
+            session_kwargs["turn_detection"] = turn_det
+
+        session = AgentSession(**session_kwargs)
 
         # Track agent-speaking state so BargeInController can decide whether to cancel
         session._agent_speaking = False
@@ -302,29 +318,31 @@ class VoiceManager:
             except Exception:
                 pass
 
-        @session.on("user_started_speaking")
-        def _on_speak_start():
-            logger.info("[Voice] VAD: user started speaking")
-            barge_in.on_user_started_speaking()
-            asyncio.create_task(_pub_state("listening"))
+        # livekit-agents 1.5.x emits state-changed events, not the older
+        # user_started_speaking / agent_started_speaking events.
+        @session.on("user_state_changed")
+        def _on_user_state(ev):
+            new_state = getattr(ev, "new_state", None)
+            if new_state == "speaking":
+                logger.info("[Voice] VAD: user started speaking")
+                barge_in.on_user_started_speaking()
+                asyncio.create_task(_pub_state("listening"))
+            elif new_state == "listening":
+                logger.info("[Voice] VAD: user stopped speaking")
+                barge_in.on_user_stopped_speaking()
+                asyncio.create_task(_pub_state("thinking"))
 
-        @session.on("user_stopped_speaking")
-        def _on_speak_stop():
-            logger.info("[Voice] VAD: user stopped speaking")
-            barge_in.on_user_stopped_speaking()
-            asyncio.create_task(_pub_state("thinking"))
-
-        @session.on("agent_started_speaking")
-        def _on_agent_speak():
-            logger.info("[Voice] Agent started speaking")
-            session._agent_speaking = True
-            asyncio.create_task(_pub_state("speaking"))
-
-        @session.on("agent_stopped_speaking")
-        def _on_agent_stop():
-            logger.info("[Voice] Agent stopped speaking")
-            session._agent_speaking = False
-            asyncio.create_task(_pub_state("idle"))
+        @session.on("agent_state_changed")
+        def _on_agent_state(ev):
+            new_state = getattr(ev, "new_state", None)
+            if new_state == "speaking":
+                logger.info("[Voice] Agent started speaking")
+                session._agent_speaking = True
+                asyncio.create_task(_pub_state("speaking"))
+            elif new_state in ("listening", "thinking"):
+                logger.info(f"[Voice] Agent state → {new_state}")
+                session._agent_speaking = False
+                asyncio.create_task(_pub_state("idle" if new_state == "listening" else "thinking"))
 
         task = asyncio.create_task(self._run_session(session, room, agent, conversation_id))
 

@@ -140,13 +140,21 @@ class SarvamRecognizeStream(RecognizeStream):
         """Reads from the LiveKit input channel and sends PCM to Sarvam."""
         try:
             first_chunk = True
-            
+            frame_count = 0
+
             async for frame in self._input_ch:
                 if isinstance(frame, RecognizeStream._FlushSentinel):
                     continue
-                
+
+                frame_count += 1
+                if frame_count == 1 or frame_count % 50 == 0:
+                    logger.info(
+                        f"Sarvam STT: frame #{frame_count} "
+                        f"sr={frame.sample_rate} ch={frame.num_channels} samples={frame.samples_per_channel}"
+                    )
+
                 # Convert to 16kHz mono 16-bit PCM
-                pcm_data = self._process_frame(frame)                
+                pcm_data = self._process_frame(frame)
                 
                 if first_chunk:
                     # Construct a valid WAV header for the first chunk to satisfy 'audio/wav' requirement
@@ -183,44 +191,56 @@ class SarvamRecognizeStream(RecognizeStream):
             logger.error(f"Sarvam sender error: {e}")
 
     async def _receive_results(self):
-        """Receives results from WebSocket and emits SpeechEvents."""
+        """Receives results from WebSocket and emits SpeechEvents.
+
+        Sarvam streaming response shape:
+          {"type": "data", "data": {"transcript": "...", "language_code": "...",
+                                    "metrics": {"audio_duration": ...}, ...}}
+        Each "data" message is a complete, server-segmented utterance — Sarvam runs
+        its own VAD and only emits when a phrase ends, so we treat every transcript
+        as FINAL. There is no separate is_final field.
+        """
         try:
             async for message in self._ws:
                 try:
-                    data = json.loads(message)
+                    msg = json.loads(message)
                 except json.JSONDecodeError:
                     logger.warning(f"Sarvam STT: Non-JSON message: {message[:100]}")
                     continue
-                    
-                logger.debug(f"Sarvam STT received: {data}")
-                
-                # Sarvam may use different field names
+
+                logger.info(f"Sarvam STT received: {msg}")
+
+                msg_type = msg.get("type", "")
+                payload = msg.get("data") if isinstance(msg.get("data"), dict) else {}
                 transcript = (
-                    data.get("transcript", "") or 
-                    data.get("text", "") or 
-                    data.get("result", "")
-                )
-                is_final = data.get("is_final", data.get("final", False))
-                
-                if transcript:
-                    event_type = (
-                        stt.SpeechEventType.FINAL_TRANSCRIPT 
-                        if is_final 
-                        else stt.SpeechEventType.INTERIM_TRANSCRIPT
-                    )
-                    
-                    self._event_ch.send_nowait(stt.SpeechEvent(
-                        type=event_type,
-                        alternatives=[stt.SpeechData(
-                            language=self._language,
-                            text=transcript
-                        )]
-                    ))
-                    
+                    (payload or {}).get("transcript", "")
+                    or msg.get("transcript", "")
+                    or msg.get("text", "")
+                ).strip()
+                language = (payload or {}).get("language_code") or self._language
+
+                if msg_type == "error":
+                    logger.error(f"Sarvam STT error event: {msg}")
+                    continue
+                if not transcript:
+                    continue
+
+                self._event_ch.send_nowait(stt.SpeechEvent(
+                    type=stt.SpeechEventType.START_OF_SPEECH,
+                ))
+                self._event_ch.send_nowait(stt.SpeechEvent(
+                    type=stt.SpeechEventType.FINAL_TRANSCRIPT,
+                    alternatives=[stt.SpeechData(language=language, text=transcript)],
+                ))
+                self._event_ch.send_nowait(stt.SpeechEvent(
+                    type=stt.SpeechEventType.END_OF_SPEECH,
+                ))
+                logger.info(f"Sarvam STT → FINAL_TRANSCRIPT emitted: {transcript!r} ({language})")
+
         except websockets.exceptions.ConnectionClosed:
             logger.debug("Sarvam STT: WebSocket closed")
         except Exception as e:
-            logger.error(f"Sarvam receiver error: {e}")
+            logger.error(f"Sarvam receiver error: {e}", exc_info=True)
 
     def _process_frame(self, frame: rtc.AudioFrame) -> Optional[bytes]:
         """Convert frame to 16kHz mono 16-bit PCM bytes."""

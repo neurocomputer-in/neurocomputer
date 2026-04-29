@@ -183,7 +183,7 @@ class SentencePump(llm.LLMStream):
                         self._emit(agent_msg_id, buf)
                         full_response += buf
                         buf = ""
-                    if topic == "task.done":
+                    if topic == "task.done" or full_response:
                         break
 
             if full_response:
