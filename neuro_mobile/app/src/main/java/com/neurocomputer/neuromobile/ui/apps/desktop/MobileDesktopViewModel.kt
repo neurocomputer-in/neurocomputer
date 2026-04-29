@@ -1,7 +1,6 @@
 package com.neurocomputer.neuromobile.ui.apps.desktop
 
 import android.content.Context
-import android.os.PowerManager
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -42,6 +41,7 @@ class MobileDesktopViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val liveKitService: LiveKitService,
     private val backendUrlRepository: BackendUrlRepository,
+    private val httpClient: OkHttpClient,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DesktopState())
@@ -51,18 +51,13 @@ class MobileDesktopViewModel @Inject constructor(
     val serverCursorPosition = liveKitService.serverCursorPosition
     val serverScreenDimensions = liveKitService.serverScreenDimensions
 
-    private var wakeLock: PowerManager.WakeLock? = null
-
     init {
         viewModelScope.launch {
             liveKitService.state.collect { lkState ->
-                _state.update { it.copy(isConnected = lkState.connected) }
-                if (lkState.connected) {
-                    acquireWakeLock()
-                } else {
-                    releaseWakeLock()
-                    _state.update { it.copy(kioskActive = false) }
-                }
+                _state.update { it.copy(
+                    isConnected = lkState.connected,
+                    kioskActive = if (!lkState.connected) false else it.kioskActive,
+                ) }
             }
         }
     }
@@ -74,9 +69,11 @@ class MobileDesktopViewModel @Inject constructor(
                 val baseUrl = backendUrlRepository.currentUrl.value
                 val tokenUrl = "$baseUrl/livekit/token"
                 val body = withContext(Dispatchers.IO) {
-                    OkHttpClient().newCall(
-                        Request.Builder().url(tokenUrl).build()
-                    ).execute().body?.string() ?: throw Exception("No token response")
+                    httpClient.newCall(Request.Builder().url(tokenUrl).build())
+                        .execute()
+                        .use { response ->
+                            response.body?.string() ?: throw Exception("No token response")
+                        }
                 }
                 val json = JSONObject(body)
                 val token = json.getString("token")
@@ -120,22 +117,4 @@ class MobileDesktopViewModel @Inject constructor(
     fun sendMouseScroll(dx: Float, dy: Float) = liveKitService.sendMouseScroll(dx, dy)
     fun sendKeyEvent(key: String) = liveKitService.sendKeyEvent(key)
     fun getLiveKitService(): LiveKitService = liveKitService
-
-    override fun onCleared() {
-        super.onCleared()
-        releaseWakeLock()
-    }
-
-    private fun acquireWakeLock() {
-        if (wakeLock?.isHeld == true) return
-        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        @Suppress("DEPRECATION")
-        wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "neuro_mobile:desktop")
-            .also { it.acquire(4 * 60 * 60 * 1000L) } // 4 hours max
-    }
-
-    private fun releaseWakeLock() {
-        if (wakeLock?.isHeld == true) wakeLock?.release()
-        wakeLock = null
-    }
 }

@@ -1,5 +1,7 @@
 package com.neurocomputer.neuromobile.ui.apps.desktop
 
+import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,6 +31,17 @@ fun DesktopApp(modifier: Modifier = Modifier) {
     val videoTrack by viewModel.videoTrack.collectAsState()
     val serverCursor by viewModel.serverCursorPosition.collectAsState()
     val screenDims by viewModel.serverScreenDimensions.collectAsState()
+
+    val view = LocalView.current
+    DisposableEffect(state.isConnected) {
+        val window = (view.context as? Activity)?.window
+        if (state.isConnected) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     Box(modifier.fillMaxSize().background(Color.Black)) {
         // Video stream
