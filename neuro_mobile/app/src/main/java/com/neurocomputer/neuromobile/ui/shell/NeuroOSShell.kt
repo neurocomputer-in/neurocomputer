@@ -10,14 +10,18 @@ import com.neurocomputer.neuromobile.data.APP_MAP
 import com.neurocomputer.neuromobile.data.model.TabType
 import com.neurocomputer.neuromobile.data.model.WindowState
 import com.neurocomputer.neuromobile.data.model.WindowTab
+import com.neurocomputer.neuromobile.ui.apps.desktop.MobileDesktopViewModel
 
 @Composable
 fun NeuroOSShell(
     osViewModel: OsViewModel = hiltViewModel(),
     iconsViewModel: IconsViewModel = hiltViewModel(),
+    desktopViewModel: MobileDesktopViewModel = hiltViewModel(),
 ) {
     val osState by osViewModel.state.collectAsState()
     val iconsState by iconsViewModel.state.collectAsState()
+    val desktopState by desktopViewModel.state.collectAsState()
+    val kioskActive = desktopState.kioskActive
 
     var switcherOpen by remember { mutableStateOf(false) }
     var pickerWindowId by remember { mutableStateOf<String?>(null) }
@@ -44,16 +48,19 @@ fun NeuroOSShell(
         } else {
             activeWindow?.let { win ->
                 Column(Modifier.fillMaxSize()) {
-                    MobileTabStrip(
-                        window = win,
-                        onTabClick = { tabId -> osViewModel.setActiveTab(win.id, tabId) },
-                        onNewTab = { pickerWindowId = win.id },
-                        onSwitcherOpen = { switcherOpen = true },
-                    )
+                    if (!kioskActive) {
+                        MobileTabStrip(
+                            window = win,
+                            onTabClick = { tabId -> osViewModel.setActiveTab(win.id, tabId) },
+                            onNewTab = { pickerWindowId = win.id },
+                            onSwitcherOpen = { switcherOpen = true },
+                        )
+                    }
                     WindowHost(
                         window = win,
                         onSwipeUp = { switcherOpen = true },
                         modifier = Modifier.weight(1f),
+                        showChevron = !kioskActive,
                     )
                 }
             }

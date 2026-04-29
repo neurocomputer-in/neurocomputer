@@ -11,6 +11,7 @@ fun WindowHost(
     window: WindowState,
     onSwipeUp: () -> Unit,
     modifier: Modifier = Modifier,
+    showChevron: Boolean = true,
 ) {
     val activeTab = window.tabs.find { it.id == window.activeTabId }
         ?: window.tabs.firstOrNull() ?: return
@@ -19,11 +20,13 @@ fun WindowHost(
         key(activeTab.id) {
             AppContent(tab = activeTab, modifier = Modifier.fillMaxSize())
         }
-        ChevronHandle(
-            onSwipeUp = onSwipeUp,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-        )
+        if (showChevron) {
+            ChevronHandle(
+                onSwipeUp = onSwipeUp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+            )
+        }
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import com.neurocomputer.neuromobile.data.model.TabType
 import com.neurocomputer.neuromobile.data.model.WindowTab
 import com.neurocomputer.neuromobile.ui.apps.chat.ChatApp
+import com.neurocomputer.neuromobile.ui.apps.desktop.DesktopApp
 import com.neurocomputer.neuromobile.ui.apps.terminal.TerminalApp
 
 @Composable
@@ -22,7 +23,7 @@ fun AppContent(tab: WindowTab, modifier: Modifier = Modifier) {
         )
         TabType.TERMINAL -> TerminalApp(cid = tab.cid, modifier = modifier)
         TabType.IDE      -> PlaceholderScreen("IDE ${tab.cid}", Color(0xFF0a0a12), modifier)
-        TabType.DESKTOP  -> PlaceholderScreen("Desktop stream", Color.Black, modifier)
+        TabType.DESKTOP  -> DesktopApp(modifier = modifier)
     }
 }
 
