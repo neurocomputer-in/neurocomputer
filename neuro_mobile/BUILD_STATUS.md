@@ -13,57 +13,57 @@ Pure Compose, 18 apps, two-level windows-with-tabs, same persistence schema as w
 
 ---
 
-## Phase 1 — Data Layer + App Registry
+## Phase 1 — Data Layer + App Registry ✅
 
 Foundation that everything else depends on.
 
-- [ ] `data/model/AppId.kt` — AppId enum (18 apps)
-- [ ] `data/model/TabType.kt` — TabType enum (CHAT/TERMINAL/IDE/DESKTOP)
-- [ ] `data/model/WindowTab.kt` — WindowTab data class
-- [ ] `data/model/WindowState.kt` — WindowState data class
-- [ ] `data/AppRegistry.kt` — APP_LIST, APP_MAP (mirrors appRegistry.ts)
-- [ ] `data/persistence/OsStateSerializer.kt` — kotlinx.serialization JSON
-- [ ] `data/persistence/IconsStateSerializer.kt`
+- [x] `data/model/AppId.kt` — AppId enum (18 apps)
+- [x] `data/model/TabType.kt` — TabType enum (CHAT/TERMINAL/IDE/DESKTOP)
+- [x] `data/model/WindowTab.kt` — WindowTab data class
+- [x] `data/model/WindowState.kt` — WindowState data class
+- [x] `data/AppRegistry.kt` — APP_LIST, APP_MAP (mirrors appRegistry.ts)
+- [x] `data/persistence/OsStateSerializer.kt` — kotlinx.serialization JSON
+- [x] `data/persistence/IconsStateSerializer.kt`
 
 ---
 
-## Phase 2 — OS Shell ViewModels
+## Phase 2 — OS Shell ViewModels ✅
 
 State layer, no UI yet.
 
-- [ ] `ui/shell/OsState.kt` — OsState, all actions
-- [ ] `ui/shell/OsViewModel.kt` — window/tab ops + DataStore persistence
-- [ ] `ui/shell/IconsViewModel.kt` — icon order + dock pins + DataStore
-- [ ] `ui/apps/desktop/MobileDesktopViewModel.kt` — desktop stream state (replaces scattered state)
+- [x] `ui/shell/OsState.kt` — OsState, all actions
+- [x] `ui/shell/OsViewModel.kt` — window/tab ops + DataStore persistence
+- [x] `ui/shell/IconsViewModel.kt` — icon order + dock pins + DataStore
+- [x] `ui/apps/desktop/MobileDesktopViewModel.kt` — desktop stream state (replaces scattered state)
 
 ---
 
-## Phase 3 — OS Shell UI
+## Phase 3 — OS Shell UI ✅
 
 The shell itself: home screen, tab strip, switcher.
 
-- [ ] `ui/shell/NeuroOSShell.kt` — root composable, BackHandler chain
-- [ ] `ui/shell/HomeScreen.kt` — 4-col icon grid + drag-reorder
-- [ ] `ui/shell/MobileTabStrip.kt` — 36dp top bar, scrollable tabs, workspace chip
-- [ ] `ui/shell/WindowHost.kt` — fullscreen active tab content
-- [ ] `ui/shell/AppContent.kt` — when(tab.type) router
-- [ ] `ui/shell/MobileDock.kt` — bottom bar (home screen only)
-- [ ] `ui/shell/AppSwitcher.kt` — fullscreen card stack overlay
-- [ ] `ui/shell/AppPicker.kt` — ModalBottomSheet, all 18 apps
-- [ ] `ui/shell/ChevronHandle.kt` — swipe-up handle for AppSwitcher
-- [ ] `ui/shell/TabOverviewSheet.kt` — ModalBottomSheet tab grid
-- [ ] Wire `MainActivity.kt` → `NeuroOSShell`
+- [x] `ui/shell/NeuroOSShell.kt` — root composable, BackHandler chain
+- [x] `ui/shell/HomeScreen.kt` — 4-col icon grid + drag-reorder
+- [x] `ui/shell/MobileTabStrip.kt` — 36dp top bar, scrollable tabs, workspace chip
+- [x] `ui/shell/WindowHost.kt` — fullscreen active tab content
+- [x] `ui/shell/AppContent.kt` — when(tab.type) router
+- [x] `ui/shell/MobileDock.kt` — bottom bar (home screen only)
+- [x] `ui/shell/AppSwitcher.kt` — fullscreen card stack overlay
+- [x] `ui/shell/AppPicker.kt` — ModalBottomSheet, all 18 apps
+- [x] `ui/shell/ChevronHandle.kt` — swipe-up handle for AppSwitcher
+- [x] `ui/shell/TabOverviewSheet.kt` — ModalBottomSheet tab grid
+- [x] Wire `MainActivity.kt` → `NeuroOSShell`
 
 ---
 
-## Phase 4 — ChatApp
+## Phase 4 — ChatApp ✅
 
 Replaces ConversationScreen. All chat-type agents use this.
 
-- [ ] `ui/apps/chat/ChatViewModel.kt` — per-cid, messages + WS + voice
-- [ ] `ui/apps/chat/ChatMessageList.kt` — LazyColumn, MarkdownText
-- [ ] `ui/apps/chat/ChatInputBar.kt` — TextField + send + voice + OCR
-- [ ] `ui/apps/chat/ChatApp.kt` — assembles above + AgentDropdown + SideDrawer + VoicePanel
+- [x] `ui/apps/chat/ChatViewModel.kt` — per-cid, messages + WS + voice
+- [x] `ui/apps/chat/ChatMessageList.kt` — LazyColumn, MarkdownText
+- [x] `ui/apps/chat/ChatInputBar.kt` — TextField + send + voice + OCR
+- [x] `ui/apps/chat/ChatApp.kt` — assembles above + AgentDropdown + SideDrawer + VoicePanel
 
 ---
 
