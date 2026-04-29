@@ -2,6 +2,7 @@ package com.neurocomputer.neuromobile.di
 
 import android.content.Context
 import com.neurocomputer.neuromobile.data.persistence.OsPersistence
+import com.neurocomputer.neuromobile.data.persistence.OsPersistencePort
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -13,5 +14,5 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object PersistenceModule {
     @Provides @Singleton
-    fun provideOsPersistence(@ApplicationContext ctx: Context) = OsPersistence(ctx)
+    fun provideOsPersistence(@ApplicationContext ctx: Context): OsPersistencePort = OsPersistence(ctx)
 }
