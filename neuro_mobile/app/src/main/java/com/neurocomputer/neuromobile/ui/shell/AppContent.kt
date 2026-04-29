@@ -9,11 +9,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.neurocomputer.neuromobile.data.model.TabType
 import com.neurocomputer.neuromobile.data.model.WindowTab
+import com.neurocomputer.neuromobile.ui.apps.chat.ChatApp
 
 @Composable
 fun AppContent(tab: WindowTab, modifier: Modifier = Modifier) {
     when (tab.type) {
-        TabType.CHAT     -> PlaceholderScreen("${tab.title} (chat)", Color(0xFF0d0d14), modifier)
+        TabType.CHAT     -> ChatApp(
+            cid = tab.cid,
+            agentId = tab.appId.name.lowercase(),
+            modifier = modifier,
+        )
         TabType.TERMINAL -> PlaceholderScreen("Terminal ${tab.cid}", Color(0xFF0d1117), modifier)
         TabType.IDE      -> PlaceholderScreen("IDE ${tab.cid}", Color(0xFF0a0a12), modifier)
         TabType.DESKTOP  -> PlaceholderScreen("Desktop stream", Color.Black, modifier)
