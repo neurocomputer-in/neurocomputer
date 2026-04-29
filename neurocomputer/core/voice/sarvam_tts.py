@@ -45,7 +45,7 @@ class SarvamTTS(tts.TTS):
         api_key: str = SARVAM_API_KEY,
         voice_id: str = SARVAM_VOICE_ID,
         language: str = SARVAM_TTS_LANGUAGE,
-        model: str = "bulbul:v1",
+        model: str = "bulbul:v2",
     ):
         super().__init__(
             capabilities=tts.TTSCapabilities(streaming=False),
@@ -131,17 +131,24 @@ class _SarvamChunkedStream(tts.ChunkedStream):
             output_emitter.push(_silence_pcm())
 
 
+class _WavFormatMismatch(Exception):
+    pass
+
+
 def _wav_to_pcm(wav_bytes: bytes) -> bytes:
-    """Strip WAV header and return raw 16-bit PCM mono at SAMPLE_RATE."""
+    """Strip WAV header and return raw 16-bit PCM mono at SAMPLE_RATE.
+
+    Raises _WavFormatMismatch if the WAV doesn't match the expected
+    (mono, 16-bit, 22050 Hz) so the caller can emit silence instead of
+    pushing corrupt audio frames downstream.
+    """
     with wave.open(io.BytesIO(wav_bytes), "rb") as w:
         ch = w.getnchannels()
         sw = w.getsampwidth()
         sr = w.getframerate()
         frames = w.readframes(w.getnframes())
-    if ch == 1 and sw == 2 and sr == SAMPLE_RATE:
-        return frames
-    logger.warning(
-        "Sarvam TTS sample-rate mismatch: ch=%d sw=%d sr=%d; expected mono/16-bit/%dHz",
-        ch, sw, sr, SAMPLE_RATE,
-    )
+    if ch != 1 or sw != 2 or sr != SAMPLE_RATE:
+        raise _WavFormatMismatch(
+            f"Sarvam returned ch={ch} sw={sw} sr={sr}; expected (1, 2, {SAMPLE_RATE})"
+        )
     return frames

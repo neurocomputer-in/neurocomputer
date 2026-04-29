@@ -57,6 +57,32 @@ async def test_synthesize_yields_pcm_frames():
 
 
 @pytest.mark.asyncio
+async def test_synthesize_handles_wav_format_mismatch():
+    """WAV at wrong sample rate → silence frame, no crash."""
+    fake_wav = _fake_wav_bytes(sample_rate=16000)  # 16 kHz != 22050
+    fake_b64 = base64.b64encode(fake_wav).decode("ascii")
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json = MagicMock(return_value={"audios": [fake_b64]})
+    mock_resp.raise_for_status = MagicMock()
+
+    mock_client = MagicMock()
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    mock_client.post = AsyncMock(return_value=mock_resp)
+
+    with patch("core.voice.sarvam_tts.httpx.AsyncClient", return_value=mock_client):
+        tts_plugin = SarvamTTS(api_key="fake")
+        stream = tts_plugin.synthesize("Hello mismatch.")
+        frames = []
+        async for synth in stream:
+            frames.append(synth)
+        # Must yield at least one silence frame, not crash
+        assert len(frames) >= 1
+
+
+@pytest.mark.asyncio
 async def test_synthesize_handles_5xx_gracefully():
     mock_resp = MagicMock()
     mock_resp.status_code = 500
