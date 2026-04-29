@@ -38,4 +38,11 @@ class OsStateSerializerTest {
         )
         assertEquals(original, original.toJson().toPersistedIconsState())
     }
+
+    @Test fun `IconsState serializes dockPins as mobileDock JSON key`() {
+        val state = PersistedIconsState(mobileOrder = listOf("NEURO"), dockPins = listOf("TERMINAL"))
+        val json = state.toJson()
+        assertTrue("JSON should contain mobileDock key", json.contains("\"mobileDock\""))
+        assertFalse("JSON should not contain dockPins key", json.contains("\"dockPins\""))
+    }
 }
