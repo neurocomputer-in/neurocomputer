@@ -11,7 +11,7 @@ import logging
 import json
 import uuid
 from typing import Optional, Dict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import aiohttp
 from datetime import timedelta
@@ -28,8 +28,6 @@ from livekit.plugins import silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from core.brain import Brain
-from core.pubsub import hub
-from core.db import db
 from core.sarvam_stt import SarvamSTT
 from core.voice.sentence_pump import SentencePumpLLM
 from core.voice.barge_in import BargeInController
@@ -37,9 +35,6 @@ from core.voice.sarvam_tts import SarvamTTS
 from core import tmux_manager
 
 logger = logging.getLogger("voice-manager")
-
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
-ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "***REDACTED***")
 
 
 @dataclass
