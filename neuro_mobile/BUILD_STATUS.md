@@ -110,6 +110,8 @@ Rebuilt from existing overlays. Clean composition.
 
 ## Phase 9 — QA Checklist
 
+**Install APK:** `adb install app/build/outputs/apk/debug/app-debug.apk`
+
 - [ ] Splash → HomeScreen with 18 app icons
 - [ ] Drag-reorder icons, restart, order persists
 - [ ] Launch chat agent → window opens with tab strip
