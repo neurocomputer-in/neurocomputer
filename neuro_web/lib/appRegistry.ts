@@ -15,6 +15,9 @@ export interface AppDef {
   agentType?: AgentType;
   tabKind: 'chat' | 'terminal' | 'neuroide' | 'desktop';
   pinned: boolean;
+  /** Optional public path to a real logo image. When set, UI components should
+   *  render this instead of the lucide `icon` glyph. */
+  iconImage?: string;
 }
 
 export const APP_LIST: AppDef[] = [
@@ -23,6 +26,7 @@ export const APP_LIST: AppDef[] = [
     name: 'Neuro',
     description: 'General AI assistant',
     icon: 'brain',
+    iconImage: '/agents/neuro.png',
     color: '#8B5CF6',
     agentType: AgentType.NEURO,
     tabKind: 'chat',
@@ -33,6 +37,7 @@ export const APP_LIST: AppDef[] = [
     name: 'OpenClaw',
     description: 'Web automation & scraping',
     icon: 'globe',
+    iconImage: '/agents/openclaw.png',
     color: '#f97316',
     agentType: AgentType.OPENCLAW,
     tabKind: 'chat',
@@ -43,6 +48,7 @@ export const APP_LIST: AppDef[] = [
     name: 'OpenCode',
     description: 'Code assistant',
     icon: 'code',
+    iconImage: '/agents/opencode.png',
     color: '#3b82f6',
     agentType: AgentType.OPENCODE,
     tabKind: 'chat',
@@ -53,6 +59,7 @@ export const APP_LIST: AppDef[] = [
     name: 'NeuroUpwork',
     description: 'Upwork automation',
     icon: 'briefcase',
+    iconImage: '/agents/upwork.png',
     color: '#14b8a6',
     agentType: AgentType.NEUROUPWORK,
     tabKind: 'chat',
@@ -91,6 +98,7 @@ export const APP_LIST: AppDef[] = [
     name: 'Desktop',
     description: 'Stream and control your desktop',
     icon: 'tv',
+    iconImage: '/agents/neuro.png',
     color: '#1d4ed8',
     tabKind: 'desktop',
     pinned: true,

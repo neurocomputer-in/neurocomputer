@@ -1,19 +1,8 @@
 'use client';
 import { Drawer } from 'vaul';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
 import { APP_LIST, AppDef } from '@/lib/appRegistry';
 import { useIsMobile } from '@/hooks/useIsMobile';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 interface Props {
   onPick: (appId: string, tabKind: string) => void;
@@ -29,7 +18,6 @@ function AppGrid({ onPick }: { onPick: (app: AppDef) => void }) {
       padding: '8px 4px',
     }}>
       {APP_LIST.map(app => {
-        const Icon = ICON_MAP[app.icon] || Globe;
         return (
           <button
             key={app.id}
@@ -44,10 +32,11 @@ function AppGrid({ onPick }: { onPick: (app: AppDef) => void }) {
           >
             <div style={{
               width: 36, height: 36, borderRadius: 8,
-              background: app.color,
+              background: app.iconImage ? 'transparent' : app.color,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
             }}>
-              <Icon size={18} color="#fff" strokeWidth={1.6} />
+              {app.iconImage ? <AppIconView app={app} fill /> : <AppIconView app={app} size={20} />}
             </div>
             <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', textAlign: 'center', lineHeight: 1.2, maxWidth: 52, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {app.name}

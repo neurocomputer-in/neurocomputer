@@ -1,20 +1,9 @@
 'use client';
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import { APP_MAP, AppDef } from '@/lib/appRegistry';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 const ICONS_ROW_H = 52;
 const HANDLE_H = 14;
@@ -36,7 +25,6 @@ function DockIcon({ appId, onLaunch }: { appId: string; onLaunch: (app: AppDef) 
   const iconRef = useRef<HTMLDivElement>(null);
 
   if (!app) return null;
-  const LucideIcon = ICON_MAP[app.icon] || Globe;
 
   return (
     <div
@@ -59,14 +47,15 @@ function DockIcon({ appId, onLaunch }: { appId: string; onLaunch: (app: AppDef) 
         ref={iconRef}
         style={{
           width: 38, height: 38, borderRadius: 11,
-          background: `linear-gradient(145deg, ${app.color}ee 0%, ${app.color}88 100%)`,
+          background: app.iconImage ? 'transparent' : `linear-gradient(145deg, ${app.color}ee 0%, ${app.color}88 100%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: `0 2px 6px ${app.color}44`,
+          overflow: 'hidden',
           cursor: 'pointer',
           transition: 'transform 0.1s',
         }}
       >
-        <LucideIcon size={18} color="#fff" strokeWidth={1.8} />
+        {app.iconImage ? <AppIconView app={app} fill /> : <AppIconView app={app} size={22} />}
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ from typing import Optional, Dict
 from dataclasses import dataclass, field
 
 import aiohttp
+from datetime import timedelta
 
 from livekit import rtc, api
 from livekit.agents import (
@@ -350,6 +351,8 @@ class VoiceManager:
     def __init__(self):
         self._sessions: Dict[str, VoiceSession] = {}
         self._url = os.getenv("LIVEKIT_URL", "")
+        # Agent connects locally to avoid cloudflared tunnel (no UDP/WebRTC support)
+        self._agent_url = os.getenv("LIVEKIT_LOCAL_URL", "ws://localhost:7880")
         self._api_key = os.getenv("LIVEKIT_API_KEY", "")
         self._api_secret = os.getenv("LIVEKIT_API_SECRET", "")
 
@@ -358,13 +361,16 @@ class VoiceManager:
     ) -> str:
         token = api.AccessToken(self._api_key, self._api_secret)
         token.with_identity(identity)
+        token.with_ttl(timedelta(hours=24))
         token.with_grants(
             api.VideoGrants(
                 room_join=True,
                 room=room_name,
                 can_publish=True,
                 can_subscribe=True,
+                can_publish_data=True,
                 agent=is_agent,
+                can_update_own_metadata=is_agent,
             )
         )
         return token.to_jwt()
@@ -422,7 +428,7 @@ class VoiceManager:
         agent_token = self._generate_token(
             room_name, f"voice-agent-{conversation_id}", is_agent=True
         )
-        await room.connect(self._url, agent_token)
+        await room.connect(self._agent_url, agent_token)
         logger.info(f"[Voice] Agent connected to room {room_name}, participants: {len(room.remote_participants)}")
 
         brain = Brain()

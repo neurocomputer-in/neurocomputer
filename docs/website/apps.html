@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apps — Neurocomputer</title>
+    <meta name="description" content="The Neurocomputer apps ecosystem: Neuro core agent, OpenClaw browser operator, OpenCode developer companion, NeuroUpwork workflow agent, NL Dev language authoring agent, 3D IDE.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="framework.html">Framework</a>
+                <a href="neurolang.html">NeuroLang</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="research.html">Research</a>
+                <a href="apps.html" class="active">Apps</a>
+                <a href="slides.html">Slides</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="page-hero">
+            <span class="section-tag">Ecosystem</span>
+            <h1>The <span class="highlight">apps.</span><br>Specialised agents on a shared runtime.</h1>
+            <p>At the practical layer, Neurocomputer behaves like an OS. Agents are highly specialised <em>apps</em> with their own runtimes — but they all share neuros, memory, profiles, and the brain. Switch between them in chat, voice, or the dropdown.</p>
+        </section>
+
+        <div class="subnav">
+            <a href="#agents">Agents</a>
+            <a href="#nl-dev">NL Dev</a>
+            <a href="#ide">3D IDE</a>
+            <a href="#voice">Voice</a>
+            <a href="#mobile">Mobile</a>
+            <a href="#agencies">Agencies</a>
+        </div>
+
+        <!-- Agents -->
+        <section class="section" id="agents">
+            <span class="section-tag">Specialised Agents</span>
+            <h2 class="section-title">Five agents. One runtime.</h2>
+            <p class="section-desc">Each agent owns a router, planner, replier, and profile. They share the neuro library — Upwork's <code>poc_builder</code> can call OpenCode's <code>code_file_diff</code>, and NL Dev's <code>nl_compile</code> is just another neuro to the others.</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-top:var(--sp-5);">
+                <div class="app-tile">
+                    <img src="assets/neuro.png" alt="Neuro" class="ico">
+                    <div>
+                        <div class="role">/// Core Runtime</div>
+                        <h3>Neuro</h3>
+                        <p>The general-purpose core agent. Reasons about intent, plans tasks natively via DAGs, and routes execution. Default agent in the Neuro HQ agency. Profile: <code>general</code>.</p>
+                    </div>
+                </div>
+                <div class="app-tile">
+                    <img src="assets/neuro.png" alt="NL Dev" class="ico" style="filter:hue-rotate(180deg);">
+                    <div>
+                        <div class="role">/// NeuroLang</div>
+                        <h3>NL Dev</h3>
+                        <p>Authors NeuroLang flows in natural language. Wraps NeuroLang's <code>compile_source</code> / <code>propose_plan</code> / <code>decompile_summary</code> through seven <code>nl_*</code> neuros. Profile: <code>neurolang_dev</code>.</p>
+                    </div>
+                </div>
+                <div class="app-tile">
+                    <img src="assets/openclaw.png" alt="OpenClaw" class="ico">
+                    <div>
+                        <div class="role">/// Browser App</div>
+                        <h3>OpenClaw</h3>
+                        <p>The browser operator app. Connects to a local gateway to physically browse the web, interacting with DOM elements and managing automated workflows. Member of the Web Agency.</p>
+                    </div>
+                </div>
+                <div class="app-tile">
+                    <img src="assets/opencode.png" alt="OpenCode" class="ico">
+                    <div>
+                        <div class="role">/// Developer App</div>
+                        <h3>OpenCode</h3>
+                        <p>The developer's companion. Reads entire repositories natively, generates complex code diffs, patches systems, runs deep technical analysis as a background task. <code>code_*</code> neuro family.</p>
+                    </div>
+                </div>
+                <div class="app-tile">
+                    <img src="assets/upwork.png" alt="NeuroUpwork" class="ico">
+                    <div>
+                        <div class="role">/// Workflow App</div>
+                        <h3>NeuroUpwork</h3>
+                        <p>The workflow application. Hunts job listings, assigns numerical and entropy-based fit scores, generates precise proposals and proof-of-concept plans. Member of the Upwork Agency.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NL Dev -->
+        <section class="section" id="nl-dev">
+            <span class="section-tag">NL Dev — NeuroLang Authoring Agent</span>
+            <h2 class="section-title">Describe a flow. Get a runnable neuro.</h2>
+            <p class="section-desc">Tell <code>nl_dev</code> what you want — "fetch arxiv papers and email me a summary every morning" — and the agent compiles your prompt into a typed NeuroLang neuro, saves it, and runs it.</p>
+
+            <div class="prim-grid" style="margin-top:var(--sp-5);">
+                <div class="prim"><div class="name">nl_planner</div><div class="desc">Routes the user's intent through the NL Dev pipeline.</div></div>
+                <div class="prim"><div class="name">nl_propose</div><div class="desc">Wraps NeuroLang's <code>propose_plan</code> — drafts the flow.</div></div>
+                <div class="prim"><div class="name">nl_compile</div><div class="desc">Wraps <code>compile_source</code> — produces typed Python.</div></div>
+                <div class="prim"><div class="name">nl_save</div><div class="desc">Persists to <code>~/.neurolang/neuros/</code>.</div></div>
+                <div class="prim"><div class="name">nl_run</div><div class="desc">Executes the compiled flow with given args.</div></div>
+                <div class="prim"><div class="name">nl_summary</div><div class="desc">Wraps <code>decompile_summary</code> — natural-language back.</div></div>
+                <div class="prim"><div class="name">nl_reply</div><div class="desc">Surfaces results in conversational form.</div></div>
+            </div>
+
+            <div class="quote">
+                Compiled flows land in <code>~/.neurolang/neuros/</code>. They are full neuros — discoverable by other agents, reusable across projects, persistent.
+            </div>
+        </section>
+
+        <!-- 3D IDE -->
+        <section class="section" id="ide">
+            <span class="section-tag">3D Neuro IDE</span>
+            <h2 class="section-title">Author neuros as graph blocks.</h2>
+            <p class="section-desc">A graph-first coding interface where neuros are inspected, composed, and edited as reusable blocks. LEGO for coding.</p>
+
+            <div class="card-grid" style="margin-top:var(--sp-5);">
+                <div class="glass-card">
+                    <h3>Graph-native visualization</h3>
+                    <p>Built on <code>@react-three/fiber</code>. Nodes coloured by namespace — <code>nl: cyan</code>, <code>skill: green</code>, <code>memory: purple</code>, <code>agent: orange</code>. Drag to rearrange.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Source-aware editing</h3>
+                    <p>Each neuro surfaces its <code>conf.json</code>, <code>code.py</code>, and <code>prompt.txt</code> in tabs. Edit, validate, save. Changes hot-load on the next call.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Kind-based modularity</h3>
+                    <p>Filter the graph by kind: skill, memory, model, context, prompt, agent, code. See your toolbox at a glance.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Safe save pipeline</h3>
+                    <p>Validation → snapshot → save → reload registry. If validation fails, the previous version stays live. No broken state.</p>
+                </div>
+            </div>
+
+            <pre style="margin-top:var(--sp-5);"><code><span style="color:var(--text-3);"># Boot the IDE backend</span>
+python3 neurocomputer/scripts/ide_server.py        <span style="color:var(--text-3);"># port 8000</span>
+
+<span style="color:var(--text-3);"># Then in the web UI</span>
+cd neuro_web
+NEXT_PUBLIC_IDE_URL=http://127.0.0.1:8000 npm run dev
+<span style="color:var(--text-3);"># open http://localhost:3000/graph</span></code></pre>
+        </section>
+
+        <!-- Voice -->
+        <section class="section" id="voice">
+            <span class="section-tag">Voice</span>
+            <h2 class="section-title">Speak. Listen. Continue.</h2>
+            <p class="section-desc">Voice runs as a system service over LiveKit. Sub-second latency end-to-end. The voice agent shares the same brain — it's just another surface.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Hold to dictate</h3>
+                    <p>The mobile app's microphone button transcribes in real time as you speak. The transcription populates the input field. Release to send.</p>
+                    <h3 style="margin-top:var(--sp-5);">Always-listening voice agent</h3>
+                    <p>Run <code>run_voice_agent.sh</code> as a systemd service. Silero VAD detects speech; Sarvam streaming STT transcribes; brain reasons; ElevenLabs TTS replies. All over a single LiveKit connection.</p>
+                </div>
+                <div class="visual">Microphone
+    ↓
+Silero VAD                  (voice activity)
+    ↓
+Sarvam Streaming STT        (transcription)
+    ↓
+Brain                       (LLM + skills)
+    ↓
+ElevenLabs TTS              (synthesis)
+    ↓
+Speaker
+
+Single LiveKit transport.
+Sub-second round trip.</div>
+            </div>
+        </section>
+
+        <!-- Mobile -->
+        <section class="section" id="mobile">
+            <span class="section-tag">Mobile Remote</span>
+            <h2 class="section-title">Android client, full control.</h2>
+            <p class="section-desc">Built with Jetpack Compose. Chat, voice, agent switching, full remote desktop, multi-monitor switching. Pinch to zoom up to 10× on the streamed desktop.</p>
+
+            <div class="card-grid">
+                <div class="glass-card">
+                    <h3>Agent selector</h3>
+                    <p>Tap the agent pill in the header to switch between Neuro, NL Dev, OpenClaw, OpenCode, NeuroUpwork. Each agent has its own conversation context.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Remote desktop mode</h3>
+                    <p>Fullscreen landscape. Desktop screen streamed in real time via WebRTC. Right sidebar: mic, mouse mode, monitor switch, exit. Left toolbar: voice typing, keyboard, scroll/click/focus modes.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Touch gestures</h3>
+                    <p>Single-finger drag → mouse. Tap → click. Double tap → double click. Two-finger drag → scroll. Two-finger tap → right click. Pinch → zoom.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Voice typing</h3>
+                    <p>Hold the microphone in any text field to dictate. Real-time transcription. Works across all chat surfaces.</p>
+                </div>
+            </div>
+
+            <pre style="margin-top:var(--sp-5);"><code>cd neuro_mobile
+./gradlew assembleDebug
+<span style="color:var(--text-3);"># Install the APK on your device</span>
+<span style="color:var(--text-3);"># Settings → server URL → http://&lt;your-machine-ip&gt;:7000</span></code></pre>
+        </section>
+
+        <!-- Agencies -->
+        <section class="section" id="agencies">
+            <span class="section-tag">Agencies</span>
+            <h2 class="section-title">Workspaces with their own dashboards.</h2>
+            <p class="section-desc">An agency is a team of agents working toward a shared mission, with its own colour, emoji, set of agents, and default project. Three ship today.</p>
+
+            <div class="card-grid" style="margin-top:var(--sp-5);">
+                <div class="glass-card" style="border-left:3px solid #8B5CF6;">
+                    <div class="card-header">
+                        <span class="card-badge">🧠 Neuro HQ</span>
+                    </div>
+                    <h3>General workspace</h3>
+                    <p>Chat, code, automate. Default agency. Houses <code>neuro</code>, <code>opencode</code>, and <code>nl_dev</code>. Default agent: <code>neuro</code>. Default project: <code>default</code>.</p>
+                </div>
+                <div class="glass-card" style="border-left:3px solid #14B8A6;">
+                    <div class="card-header">
+                        <span class="card-badge">💼 Upwork Agency</span>
+                    </div>
+                    <h3>Job hunting + freelance</h3>
+                    <p>Job hunting, proposals, freelance automation. Houses <code>neuro</code> and <code>neuroupwork</code>. Crawls listings, scores fit, drafts proposals, builds proofs-of-concept.</p>
+                </div>
+                <div class="glass-card" style="border-left:3px solid #F97316;">
+                    <div class="card-header">
+                        <span class="card-badge">🦀 Web Agency</span>
+                    </div>
+                    <h3>Browser ops + scraping</h3>
+                    <p>Web automation, scraping, browser tasks. Houses <code>neuro</code> and <code>openclaw</code>. Default agent: <code>openclaw</code>.</p>
+                </div>
+            </div>
+
+            <p style="color:var(--text-2);font-weight:300;line-height:1.8;margin-top:var(--sp-5);">More agencies — Documentation, Presentations, Claude Code Manager — are documented in the architecture spec. Adding a new agency is a config edit: pick a name, set agents, define default project. The runtime takes it from there.</p>
+
+            <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-5);flex-wrap:wrap;">
+                <a href="architecture.html#hierarchy" class="btn btn-accent">→ Architecture</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" class="btn btn-ghost" target="_blank">GitHub</a>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>Programmable intelligence as composable engineering.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">© 2026 Neurocomputer. Open source.</div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.section, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

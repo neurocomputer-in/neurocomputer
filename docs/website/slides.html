@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slides — Neurocomputer</title>
+    <meta name="description" content="Presentation decks for Neurocomputer — pitch and technical talks, in-browser HTML slides.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="framework.html">Framework</a>
+                <a href="neurolang.html">NeuroLang</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="research.html">Research</a>
+                <a href="apps.html">Apps</a>
+                <a href="slides.html" class="active">Slides</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="page-hero">
+            <span class="section-tag">Decks</span>
+            <h1>Slides.<br><span class="highlight">Pitch · Technical.</span></h1>
+            <p>Two browser-rendered decks, themed in dark glass. Press <code>F</code> for fullscreen, <code>S</code> for speaker view, <code>?</code> for shortcuts. Export to PDF by appending <code>?print-pdf</code> and using browser print.</p>
+        </section>
+
+        <section class="section">
+            <div class="card-grid">
+                <a href="slides-pitch.html" class="glass-card" style="text-decoration:none; cursor:pointer; display:block;">
+                    <div class="card-header"><span class="card-badge">Pitch</span></div>
+                    <h3>Pitch deck</h3>
+                    <p>Why Neurocomputer exists. The trinity. The neuro. The pathway to AGI. Twelve slides, fifteen minutes. Designed for a room of investors or curious technologists.</p>
+                    <p style="margin-top:var(--sp-3); color:var(--accent); font-size:var(--fs-sm);">Open deck →</p>
+                </a>
+                <a href="slides-tech.html" class="glass-card" style="text-decoration:none; cursor:pointer; display:block;">
+                    <div class="card-header"><span class="card-badge">Technical</span></div>
+                    <h3>Technical talk</h3>
+                    <p>Inside the runtime. Hierarchy, brain, flow engine, memory layers, multi-agent primitives, voice pipeline, NeuroLang foundations. Twenty-plus slides for a forty-minute slot.</p>
+                    <p style="margin-top:var(--sp-3); color:var(--accent); font-size:var(--fs-sm);">Open deck →</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="section">
+            <span class="section-tag">Controls</span>
+            <h2 class="section-title">Keyboard shortcuts.</h2>
+            <p class="section-desc">All standard reveal.js bindings. Decks remember position via the URL fragment.</p>
+
+            <div class="compare-wrap">
+                <table>
+                    <tr><th>Key</th><th>Action</th></tr>
+                    <tr><td><code>→</code> / <code>Space</code></td><td>Next slide</td></tr>
+                    <tr><td><code>←</code></td><td>Previous slide</td></tr>
+                    <tr><td><code>↑</code> / <code>↓</code></td><td>Navigate vertical sections</td></tr>
+                    <tr><td><code>F</code></td><td>Fullscreen</td></tr>
+                    <tr><td><code>S</code></td><td>Speaker notes view</td></tr>
+                    <tr><td><code>O</code> / <code>Esc</code></td><td>Slide overview</td></tr>
+                    <tr><td><code>B</code></td><td>Black-out screen (pause)</td></tr>
+                    <tr><td><code>?</code></td><td>Show all shortcuts</td></tr>
+                    <tr><td>append <code>?print-pdf</code></td><td>Print-friendly view → save as PDF</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>Programmable intelligence as composable engineering.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="slides.html">Slides</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">© 2026 Neurocomputer. Open source.</div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.section, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

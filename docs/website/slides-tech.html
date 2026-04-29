@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Talk — Neurocomputer</title>
+    <meta name="description" content="Neurocomputer technical deck — framework internals, hierarchy, brain, memory, multi-agent, NeuroLang foundations.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/theme/black.css">
+    <link rel="stylesheet" href="reveal-theme.css">
+</head>
+<body>
+
+<div class="reveal">
+    <div class="slides">
+
+        <!-- 1. Title -->
+        <section class="hero-slide">
+            <span class="tag">● Technical · Pre-alpha</span>
+            <h1>Inside <span class="highlight">Neurocomputer.</span></h1>
+            <p class="sub">A walk through the runtime — the neuro substrate, the hierarchy, the brain, the flow engine, the five-layer memory, the multi-agent primitives, and the NeuroLang foundations they all stand on.</p>
+            <div class="slide-footer">Neurocomputer · Technical Deck</div>
+        </section>
+
+        <!-- 2. Repo layout -->
+        <section>
+            <span class="tag">/// Repository layout</span>
+            <h2>One repo. Five top-level folders.</h2>
+            <pre><code>neurocomputer/
+├── neurocomputer/      # Python core: server, framework, neuros, profiles, tests
+├── neuro_web/          # Next.js + R3F desktop client
+├── neuro_mobile/       # Android (Kotlin/Compose) remote
+├── neurolang/          # vendored NeuroLang library (Phase 1.9)
+├── experimental/       # prototypes
+├── docs/               # architecture + product + website
+└── STATUS.md           # current phase, last shipped, next up</code></pre>
+            <p style="margin-top:0.8em; font-size:0.7em;">Backend: <code>localhost:7000</code>. IDE backend: <code>localhost:8000</code>. Web: <code>localhost:3000</code>. LiveKit: <code>localhost:7880</code>.</p>
+            <div class="slide-footer">Technical · 2</div>
+        </section>
+
+        <!-- 3. The neuro -->
+        <section>
+            <span class="tag">/// The atomic unit</span>
+            <h2>A neuro = conf + code + prompt.</h2>
+            <div class="grid-2">
+                <div>
+                    <p>Three files in a folder. The factory hot-discovers them.</p>
+                    <ul>
+                        <li><code>conf.json</code> — name, kind, inputs/outputs, model</li>
+                        <li><code>code.py</code> — <code>async def run(state, **kwargs)</code></li>
+                        <li><code>prompt.txt</code> — optional, for LLM-driven neuros</li>
+                    </ul>
+                    <p style="margin-top:0.5em;">Each run gets <code>state["__llm"]</code> (BaseBrain), <code>state["__prompt"]</code>, and a streaming callback. Stdout captured + forwarded as <code>node.log</code> events.</p>
+                </div>
+                <pre><code>{
+  "name":   "extract_book",
+  "kind":   "skill.web",
+  "effect": "tool",
+  "inputs": { "url": "str" },
+  "output": "dict",
+  "model":  "openai/gpt-4o",
+  "temperature": 0.2
+}</code></pre>
+            </div>
+            <div class="slide-footer">Technical · 3</div>
+        </section>
+
+        <!-- 4. Ten kinds -->
+        <section>
+            <span class="tag">/// Ten kinds</span>
+            <h2>The taxonomy.</h2>
+            <div class="grid-2">
+                <div>
+                    <ul style="font-size:0.85em;">
+                        <li><strong>Model</strong> — provider/model abstraction</li>
+                        <li><strong>Prompt</strong> — typed prompt blocks/composers</li>
+                        <li><strong>Instruction</strong> — rules, policy, tone</li>
+                        <li><strong>Context</strong> — memory + prompt assembly</li>
+                        <li><strong>Memory</strong> — store/recall/consolidate</li>
+                    </ul>
+                </div>
+                <div>
+                    <ul style="font-size:0.85em;">
+                        <li><strong>Skill</strong> — concrete capabilities</li>
+                        <li><strong>Workflow</strong> — sequential/DAG/parallel/loop</li>
+                        <li><strong>Agent</strong> — role-specialised orchestration</li>
+                        <li><strong>Code</strong> — read/write/diff/patch/scan</li>
+                        <li><strong>Library</strong> — registry / namespace</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pull">Vocabulary, grammar, semantics, runtime, standard library — the framework is language-like by construction.</div>
+            <div class="slide-footer">Technical · 4</div>
+        </section>
+
+        <!-- 5. Hierarchy -->
+        <section>
+            <span class="tag">/// Hierarchy</span>
+            <h2>Agency → Project → Agent → Neuro.</h2>
+            <pre><code>Agency  ──▶  Project  ──▶  Agent  ──▶  Neuro
+   │             │            │          │
+   │             │            │          └─ atomic; conf+code+prompt
+   │             │            └─ router + planner + replier + profile
+   │             └─ unit of work; default project per agency
+   └─ workspace; color, emoji, set of agents</code></pre>
+            <p style="font-size:0.75em; margin-top:0.6em;">Shipped agencies: <code>default (Neuro HQ)</code>, <code>upwork</code>, <code>webclaw</code>. Shipped agents: <code>neuro</code>, <code>nl_dev</code>, <code>opencode</code>, <code>openclaw</code>, <code>upwork</code>.</p>
+            <div class="slide-footer">Technical · 5</div>
+        </section>
+
+        <!-- 6. Brain ReAct -->
+        <section>
+            <span class="tag">/// Brain</span>
+            <h2>Reason + Act, end-to-end.</h2>
+            <div class="grid-2">
+                <div>
+                    <p><strong>Smart Router</strong> — one LLM call asks: direct reply or skill needed?</p>
+                    <p><strong>Planner</strong> — for multi-step requests, builds a DAG of skill calls.</p>
+                    <p><strong>Executor</strong> — walks the graph node by node, retries on failure, streams progress.</p>
+                </div>
+                <div class="ascii">User Input
+    │
+    ▼
+ Router ─── "just chat?" ──── Direct Reply
+    │
+    ▼ skill needed
+ Planner ─── builds DAG
+    │
+    ▼
+ Executor ─── A → B → C
+    │
+    ▼
+ Reply ─── final answer</div>
+            </div>
+            <div class="slide-footer">Technical · 6</div>
+        </section>
+
+        <!-- 7. DAG example -->
+        <section>
+            <span class="tag">/// Planning</span>
+            <h2>Plans are typed DAGs.</h2>
+            <pre><code>User: "Find my latest screenshot and describe what's on screen"
+
+DAG built by planner:
+  Node 1: list_files(dir="~/Screenshots", sort="newest")
+  Node 2: read_file(path=Node1.output[0])
+  Node 3: describe_image(image=Node2.output)
+  Node 4: reply(text=Node3.output)
+
+Executor runs node-by-node. Each output feeds the next.
+Errors → retries → fallback.</code></pre>
+            <p style="font-size:0.7em;">In NeuroLang the same plan is a first-class value: <code>plan.serialize()</code>, <code>plan.replay()</code>, <code>plan.diff(other)</code>, <code>plan.hash()</code>.</p>
+            <div class="slide-footer">Technical · 7</div>
+        </section>
+
+        <!-- 8. Flow types -->
+        <section>
+            <span class="tag">/// Flow engine</span>
+            <h2>Sequential. Parallel. DAG. Tool-loop.</h2>
+            <div class="grid-4" style="margin-top:1em;">
+                <div class="gcard">
+                    <h4>Sequential</h4>
+                    <p><code>A | B | C</code>. Output of A feeds B, output of B feeds C.</p>
+                </div>
+                <div class="gcard">
+                    <h4>Parallel</h4>
+                    <p><code>A &amp; B</code>. Both run concurrently via <code>asyncio.gather</code>.</p>
+                </div>
+                <div class="gcard">
+                    <h4>DAG</h4>
+                    <p>Multi-path with conditions, parallel branches, human-gates, sub-graphs.</p>
+                </div>
+                <div class="gcard">
+                    <h4>Tool-loop</h4>
+                    <p>Iterative: call tool, observe, continue. Bounded, depth-guarded.</p>
+                </div>
+            </div>
+            <p style="font-size:0.7em;">Categorical morphism composition under the hood — associativity, identity hold.</p>
+            <div class="slide-footer">Technical · 8</div>
+        </section>
+
+        <!-- 9. Memory layers -->
+        <section>
+            <span class="tag">/// Memory</span>
+            <h2>Five layers. Bounded. Lossless.</h2>
+            <table>
+                <tr><th>Layer</th><th>Content</th><th>Token cost</th><th>Trigger</th></tr>
+                <tr><td><strong>L0 Identity</strong></td><td>Agent + user identity (hand-authored)</td><td>~50</td><td>always</td></tr>
+                <tr><td><strong>L1 Critical</strong></td><td>AAAK-compressed top facts</td><td>~120</td><td>always</td></tr>
+                <tr><td><strong>L2 Taxonomy</strong></td><td>Categories — names + 1-line defs</td><td>~200</td><td>always (as index)</td></tr>
+                <tr><td><strong>L3 Facts</strong></td><td>Temporal KG + embeddings</td><td>dynamic</td><td>topic relevance</td></tr>
+                <tr><td><strong>L4 Drawers</strong></td><td>Verbatim source (conversations/*.json)</td><td>dynamic</td><td>explicit deep-dive</td></tr>
+            </table>
+            <p style="font-size:0.7em; margin-top:0.5em;">L0+L1+L2 ≈ 370 tokens always loaded. L3 on match. L4 on deep-dive only.</p>
+            <div class="slide-footer">Technical · 9</div>
+        </section>
+
+        <!-- 10. Memory librarian -->
+        <section>
+            <span class="tag">/// Memory librarian</span>
+            <h2>LLM-maintained taxonomy.</h2>
+            <div class="grid-2">
+                <div>
+                    <p>The taxonomy isn't hardcoded — a local Gemma4 E4B librarian creates, merges, and renames categories as the corpus grows.</p>
+                    <ul style="font-size:0.8em;">
+                        <li><code>memory_extract</code> — msgs → fact JSON (every 15 turns)</li>
+                        <li><code>memory_categorize</code> — route to category, propose new</li>
+                        <li><code>memory_supersede</code> — close old <code>valid_to</code> on contradiction</li>
+                        <li><code>memory_consolidate</code> — weekly merge / split / rename</li>
+                        <li><code>memory_l1_refresh</code> — nightly AAAK regeneration</li>
+                    </ul>
+                </div>
+                <div class="gcard">
+                    <h4>Substrate</h4>
+                    <p>Typed property graph in SQLite. Uniform <code>nodes</code> table with <code>kind</code> tag. N-ary typed <code>edges</code>. Temporal validity (<code>valid_from</code>, <code>valid_to</code>) on both. Hypergraph-ready.</p>
+                    <p>Retrieval: Personalised PageRank from seed nodes + vector hybrid. Recency × confidence weights. Top-M packed into the context budget.</p>
+                </div>
+            </div>
+            <div class="slide-footer">Technical · 10</div>
+        </section>
+
+        <!-- 11. Multi-agent: rooms -->
+        <section>
+            <span class="tag">/// Multi-Agent: Rooms</span>
+            <h2>Mediated meeting rooms.</h2>
+            <div class="grid-2">
+                <div>
+                    <p>Multiple agents share a transcript. A <code>room_mediator</code> picks the next speaker round-robin.</p>
+                    <ul style="font-size:0.8em;">
+                        <li><code>room_create</code>, <code>room_post</code>, <code>room_close</code>, <code>room_mediator</code></li>
+                        <li>Backend: <code>core/rooms.py</code>, <code>core/rooms_db.py</code></li>
+                        <li>Endpoint: <code>/api/rooms</code></li>
+                        <li>UI: <code>RoomPanel.tsx</code></li>
+                    </ul>
+                </div>
+                <div class="ascii">┌─────────────────────────────┐
+│  ROOM (room_id)             │
+│  ┌────┐ ┌────┐ ┌────┐      │
+│  │ A  │ │ B  │ │ C  │      │
+│  └─┬──┘ └─┬──┘ └─┬──┘      │
+│    └──────┼──────┘          │
+│           ▼                  │
+│   room_mediator              │
+│   • routes msgs              │
+│   • picks next speaker       │
+│           │                  │
+│           ▼                  │
+│   ROOM STATE                 │
+│   transcript, KV             │
+└─────────────────────────────┘</div>
+            </div>
+            <div class="slide-footer">Technical · 11</div>
+        </section>
+
+        <!-- 12. agent.talk -->
+        <section>
+            <span class="tag">/// Multi-Agent: Talk</span>
+            <h2><code>agent.talk(target, msg)</code></h2>
+            <div class="grid-2">
+                <div>
+                    <p>Direct typed messages between agents. The substrate beneath rooms.</p>
+                    <p><strong>Depth-guarded</strong> — <code>MAX=4</code> via <code>TalkDepthExceeded</code>. Prevents infinite loops.</p>
+                    <p>Two neuros: <code>agent_talk</code>, <code>agent_list</code>. Path: <code>core/talk.py</code>.</p>
+                    <p>The seed of categorical mailbox protocols where deadlock and starvation are analysable from types.</p>
+                </div>
+                <pre><code>talk(target="opencode",
+     msg="refactor module X")
+  │
+  ▼ depth=1
+opencode replies, calls
+talk("upwork", "find related job")
+  │
+  ▼ depth=2
+upwork.talk("neuro", "summary?")
+  │
+  ▼ depth=3
+neuro.talk(...)
+  │
+  ▼ depth=4 → TalkDepthExceeded
+            (loop guarded)</code></pre>
+            </div>
+            <div class="slide-footer">Technical · 12</div>
+        </section>
+
+        <!-- 13. Schedules -->
+        <section>
+            <span class="tag">/// Multi-Agent: Schedules</span>
+            <h2>Time as a first-class effect.</h2>
+            <div class="grid-2">
+                <div>
+                    <p>Cron-style triggers persisted to <code>schedules.db</code> via APScheduler.</p>
+                    <ul style="font-size:0.85em;">
+                        <li><code>schedule_run</code> — create a trigger</li>
+                        <li><code>schedule_list</code> — inspect</li>
+                        <li><code>schedule_cancel</code> — remove</li>
+                    </ul>
+                    <p style="font-size:0.85em;">"Every morning at 8 send me the summary" — parsed by <code>core/trigger_parse.py</code>, fired by <code>core/scheduler.py</code>, persisted in <code>core/schedules_db.py</code>.</p>
+                </div>
+                <pre><code># Persistence
+core/schedules_db.py    # SQLite store
+core/scheduler.py       # APScheduler glue
+core/trigger_parse.py   # NL → cron
+
+# API
+GET    /api/schedules
+POST   /api/schedules
+DELETE /api/schedules/{id}</code></pre>
+            </div>
+            <div class="slide-footer">Technical · 13</div>
+        </section>
+
+        <!-- 14. Voice pipeline -->
+        <section>
+            <span class="tag">/// Voice</span>
+            <h2>Sub-second voice round-trip.</h2>
+            <div class="ascii" style="font-size:0.7em;">Microphone
+    ↓
+Silero VAD                 (voice activity detection)
+    ↓
+Sarvam Streaming STT       (speech-to-text)
+    ↓
+Brain                      (LLM reasoning + skill execution)
+    ↓
+ElevenLabs TTS             (text-to-speech)
+    ↓
+Speaker
+
+All audio over LiveKit — same transport as desktop video.
+Single connection, low latency.</div>
+            <p style="font-size:0.7em; margin-top:0.5em;">In NeuroLang terms: <code>effect="voice"</code>. The standard library wires LiveKit, Twilio/Plivo, ElevenLabs, OpenAI TTS, Whisper, Deepgram, Sarvam — adapters, not magic.</p>
+            <div class="slide-footer">Technical · 14</div>
+        </section>
+
+        <!-- 15. Profiles -->
+        <section>
+            <span class="tag">/// Profiles</span>
+            <h2>Behaviour packs you can swap.</h2>
+            <table>
+                <tr><th>Profile</th><th>Use</th><th>Paired Agent</th></tr>
+                <tr><td><code>general</code></td><td>Default conversational agent</td><td><code>neuro</code></td></tr>
+                <tr><td><code>code_dev</code></td><td>Code editing focus</td><td><code>opencode</code></td></tr>
+                <tr><td><code>neuro_dev</code></td><td>Authoring neuros (meta)</td><td><code>neuro</code></td></tr>
+                <tr><td><code>neurolang_dev</code></td><td>Authoring NeuroLang flows</td><td><code>nl_dev</code></td></tr>
+            </table>
+            <pre><code>POST /api/profile/switch  { "profile": "neurolang_dev" }
+GET  /api/profile/active
+GET  /api/profile/list</code></pre>
+            <div class="slide-footer">Technical · 15</div>
+        </section>
+
+        <!-- 16. NeuroLang trinity -->
+        <section>
+            <span class="tag">/// NeuroLang</span>
+            <h2>Library. Runtime. Environment.</h2>
+            <div class="grid-3" style="margin-top:1em;">
+                <div class="gcard">
+                    <h4>NeuroLang</h4>
+                    <p>The Python library. Typed primitives, plans-as-values, composition operators. Vendored at <code>./neurolang/</code>.</p>
+                </div>
+                <div class="gcard">
+                    <h4>NeuroNet</h4>
+                    <p>The live runtime. Agents, memory, plans-in-flight. <code>net.topology()</code>, <code>net.snapshot()</code>, <code>net.render()</code>.</p>
+                </div>
+                <div class="gcard">
+                    <h4>Neurocomputer</h4>
+                    <p>The IDE + runtime fused. <em>This repo</em> is the flagship implementation.</p>
+                </div>
+            </div>
+            <div class="slide-footer">Technical · 16</div>
+        </section>
+
+        <!-- 17. Primitives -->
+        <section>
+            <span class="tag">/// NeuroLang primitives</span>
+            <h2>What general-purpose languages don't have.</h2>
+            <table>
+                <tr><th>Primitive</th><th>Role</th></tr>
+                <tr><td><code>Neuro</code></td><td>Typed unit (identity + behaviour + optional prompt)</td></tr>
+                <tr><td><code>Flow</code></td><td>Composition: <code>|</code>, <code>&amp;</code>, <code>+</code>, DAG, loop</td></tr>
+                <tr><td><code>Plan</code></td><td>First-class — inspect, modify, replay, diff, hash</td></tr>
+                <tr><td><code>Memory</code></td><td>Scoped — discrete / differentiable / HD / episodic / semantic / procedural</td></tr>
+                <tr><td><code>Effect</code></td><td>pure / llm / tool / human / time / voice — tracked in types</td></tr>
+                <tr><td><code>Budget</code></td><td>Latency + cost — statically warned, runtime enforced</td></tr>
+                <tr><td><code>Recovery</code></td><td>fallback / retry / escalate as language primitives</td></tr>
+                <tr><td><code>Mailbox</code></td><td>Message-passing; no shared mutable state</td></tr>
+                <tr><td><code>Agent</code></td><td>Long-lived neuro w/ mailbox + memory + role</td></tr>
+            </table>
+            <div class="slide-footer">Technical · 17</div>
+        </section>
+
+        <!-- 18. Code example -->
+        <section>
+            <span class="tag">/// Authoring</span>
+            <h2>A flow reads like a sentence.</h2>
+            <pre><code>from neurolang import neuro, Flow, Memory, Budget
+from neurolang.stdlib import web, reason, memory_neuros
+
+@neuro(effect="tool")
+def extract_book_metadata(url: str) -> dict:
+    """Scrape book title, author, summary from URL."""
+    ...
+
+@neuro(effect="llm", budget=Budget(cost_usd=0.02))
+def summarize(emails: list[Email]) -> str: ...
+
+research_flow: Flow = (
+    web.search | extract_book_metadata
+    | reason.summarize | memory_neuros.store
+)
+
+research_flow.render(format="mermaid")
+research_flow.cost_estimate()
+research_flow.effect_signature()
+
+plan = research_flow.plan(query="category theory")
+result = plan.run(memory=Memory.discrete())
+plan.serialize(); plan.replay()</code></pre>
+            <div class="slide-footer">Technical · 18</div>
+        </section>
+
+        <!-- 19. Three-tower -->
+        <section>
+            <span class="tag">/// Foundations</span>
+            <h2>The three-tower identification.</h2>
+            <table>
+                <tr><th>Natural Language</th><th>Category Theory</th><th>Computation / Tensor</th></tr>
+                <tr><td>Noun</td><td>Object (dim 0)</td><td>Tensor index</td></tr>
+                <tr><td>Verb</td><td>Morphism (dim 1)</td><td>Linear map</td></tr>
+                <tr><td>Adverb</td><td>Natural transformation (dim 2)</td><td>Higher-order op</td></tr>
+                <tr><td>Sentence</td><td>Composed arrow</td><td>Computation graph</td></tr>
+                <tr><td>Translation</td><td>Equivalence of categories</td><td>Reparameterisation</td></tr>
+                <tr><td>Grammar</td><td>Category of types (Lambek)</td><td>Type system</td></tr>
+            </table>
+            <div class="pull">Three apparently distinct domains turn out to be the same mathematical structure. Establishing this is the work of sixty years; exploiting it is the work of NeuroLang.</div>
+            <div class="slide-footer">Technical · 19</div>
+        </section>
+
+        <!-- 20. Dimensional ladder -->
+        <section>
+            <span class="tag">/// Dimensional ladder</span>
+            <h2>Every primitive at a definite dimension.</h2>
+            <table>
+                <tr><th>Dim</th><th>NeuroLang primitive</th><th>NN counterpart</th></tr>
+                <tr><td>0</td><td>Values, tensors, HD vectors, memory cells</td><td>Weights, activations, embeddings</td></tr>
+                <tr><td>1</td><td>Functions, differentiable maps, effects</td><td>Layers, activations</td></tr>
+                <tr><td>2</td><td>Plans, flows, memory scopes (functorial)</td><td>Multi-head attention, residuals</td></tr>
+                <tr><td>3</td><td>Plan transformations, optimisation passes</td><td>Architecture search, distillation</td></tr>
+                <tr><td>∞</td><td>Meta-neuros, self-modifying compiler</td><td>Self-modifying architectures</td></tr>
+            </table>
+            <p style="font-size:0.7em;"><em>Design rule:</em> a primitive may be added at dimension <em>n</em> only if it cannot be expressed cleanly at dimension <em>n−1</em> without loss of structure.</p>
+            <div class="slide-footer">Technical · 20</div>
+        </section>
+
+        <!-- 21. Adjunction -->
+        <section>
+            <span class="tag">/// The compiler</span>
+            <h2>NL ↔ Code as an adjunction.</h2>
+            <pre><code>              left-adjoint:  L : NL → Formal     (compile)
+                                ⊣
+              right-adjoint: R : Formal → NL     (summarise)</code></pre>
+            <ul style="font-size:0.8em;">
+                <li><strong>Unit</strong> η : 1<sub>NL</sub> ⇒ R∘L — every NL prompt round-trips. Cache stores η.</li>
+                <li><strong>Counit</strong> ε : L∘R ⇒ 1<sub>Formal</sub> — every program round-trips. Cache stores ε.</li>
+                <li><strong>Triangle identities</strong> — self-consistency enforceable.</li>
+            </ul>
+            <div class="pull">Caching is not a performance optimisation. It is the unit and counit data of the adjunction, made into storage. Verifiable, principled invalidation when the model changes.</div>
+            <div class="slide-footer">Technical · 21</div>
+        </section>
+
+        <!-- 22. Sandbox / deployment -->
+        <section>
+            <span class="tag">/// Deployment</span>
+            <h2>Secure sandbox by default.</h2>
+            <div class="grid-2">
+                <div>
+                    <p>Designed to run inside a private, isolated machine — a dedicated workstation, VM, or container, separate from your personal host OS.</p>
+                    <p>Autonomous agents need access to your screen, files, and inputs. By isolating this, you control exactly what they touch.</p>
+                    <p>Single-user, long-lived. Personal-assistant scope. No multi-tenancy.</p>
+                </div>
+                <div class="ascii">┌─────────────────────────┐
+│   Phone (client)        │
+│  ┌───────────────────┐  │
+│  │  Mobile App       │  │
+│  └────────┬──────────┘  │
+└───────────┼─────────────┘
+            │ WebRTC (LiveKit)
+┌───────────┼─────────────┐
+│  Isolated │ Agent OS    │
+│  ┌────────▼──────────┐  │
+│  │  Brain + Agents   │  │
+│  │  Desktop Control  │  │
+│  └───────────────────┘  │
+│  Files stay here        │
+└─────────────────────────┘</div>
+            </div>
+            <div class="slide-footer">Technical · 22</div>
+        </section>
+
+        <!-- 23. API -->
+        <section>
+            <span class="tag">/// API surface</span>
+            <h2>FastAPI on port 7000.</h2>
+            <table>
+                <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+                <tr><td><code>POST</code></td><td><code>/chat</code></td><td>Send a message to the active agent</td></tr>
+                <tr><td><code>GET · POST</code></td><td><code>/agents · /agents/{type}</code></td><td>List · switch agents</td></tr>
+                <tr><td><code>GET · POST</code></td><td><code>/api/profile/list · /switch</code></td><td>Profiles</td></tr>
+                <tr><td><code>GET · POST</code></td><td><code>/api/rooms</code></td><td>Meeting rooms</td></tr>
+                <tr><td><code>GET · POST</code></td><td><code>/api/schedules</code></td><td>Triggers</td></tr>
+                <tr><td><code>POST</code></td><td><code>/stream/start</code></td><td>Desktop streaming</td></tr>
+                <tr><td><code>GET</code></td><td><code>/voice/token</code></td><td>LiveKit voice token</td></tr>
+                <tr><td><code>POST</code></td><td><code>/mouse/* · /keyboard/send</code></td><td>Input control</td></tr>
+            </table>
+            <div class="slide-footer">Technical · 23</div>
+        </section>
+
+        <!-- 24. Status / next -->
+        <section>
+            <span class="tag">/// Status</span>
+            <h2>Where we are. Where we go.</h2>
+            <div class="grid-2">
+                <div class="gcard">
+                    <h4>Shipped</h4>
+                    <ul style="font-size:0.85em;">
+                        <li>NeuroLang Phase 1.9 — 17 stdlib + agent.delegate</li>
+                        <li>172 NeuroLang tests passing</li>
+                        <li>Multi-agent: rooms, talk, schedules</li>
+                        <li>3D Neuro IDE backend</li>
+                        <li>Voice agent + desktop streaming</li>
+                        <li>Mobile remote (Android)</li>
+                    </ul>
+                </div>
+                <div class="gcard">
+                    <h4>Next</h4>
+                    <ul style="font-size:0.85em;">
+                        <li>Phase 2 NL compiler (cached adjunction)</li>
+                        <li>JAX backend — differentiable flows</li>
+                        <li>Hyperdimensional substrate</li>
+                        <li>Episodic + semantic memory layers</li>
+                        <li>Web 3D IDE polish</li>
+                        <li>VSCode extension</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="slide-footer">Technical · 24</div>
+        </section>
+
+        <!-- 25. Q&A / Links -->
+        <section class="hero-slide">
+            <h1>Questions?<br><span class="highlight">Build with us.</span></h1>
+            <div class="grid-3" style="margin-top:2em;">
+                <div class="gcard"><h4>Code</h4><p><a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">github.com/neurocomputer-in</a></p></div>
+                <div class="gcard"><h4>Docs</h4><p><a href="../docs.html">neurocomputer.in/docs</a></p></div>
+                <div class="gcard"><h4>Research</h4><p><a href="../research.html">neurocomputer.in/research</a></p></div>
+            </div>
+            <div class="slide-footer">Technical · 25 / 25</div>
+        </section>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/plugin/highlight/highlight.js"></script>
+<script>
+    Reveal.initialize({
+        hash: true,
+        slideNumber: 'c/t',
+        controls: true,
+        progress: true,
+        transition: 'fade',
+        backgroundTransition: 'fade',
+        center: false,
+        width: 1280,
+        height: 800,
+        margin: 0.06,
+        plugins: [ RevealNotes, RevealHighlight ]
+    });
+</script>
+
+</body>
+</html>

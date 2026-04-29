@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research — Neurocomputer</title>
+    <meta name="description" content="The categorical foundations of NeuroLang. Three-tower identification — grammar, category theory, tensor networks. Dimensional ladder. The compiler as adjunction.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="framework.html">Framework</a>
+                <a href="neurolang.html">NeuroLang</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="research.html" class="active">Research</a>
+                <a href="apps.html">Apps</a>
+                <a href="slides.html">Slides</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="page-hero">
+            <span class="section-tag">Foundations</span>
+            <h1>Mathematics meets <span class="highlight">intelligence.</span></h1>
+            <p>NeuroLang is not a wrapper. It is the systematic exploitation of a sixty-year-old mathematical insight — that grammar, computation, and tensor networks share a common structure — for the design of a programming framework. The categorical research is the language's bones.</p>
+
+            <div class="research-hero">
+                <div class="rh"><div class="num">3</div><div class="lab">Identified Towers</div></div>
+                <div class="rh"><div class="num">∞</div><div class="lab">Dimensional Ladder</div></div>
+                <div class="rh"><div class="num">η · ε</div><div class="lab">Adjunction (NL ↔ Code)</div></div>
+            </div>
+        </section>
+
+        <div class="subnav">
+            <a href="#thesis">Thesis</a>
+            <a href="#trinity">Three-Tower</a>
+            <a href="#dimensions">Dimensional Ladder</a>
+            <a href="#string-tensor">Strings = Tensors</a>
+            <a href="#adjunction">Adjunction</a>
+            <a href="#memory-cat">Memory</a>
+            <a href="#logic">Logic</a>
+            <a href="#agency-ai">Agency AI</a>
+            <a href="#references">References</a>
+        </div>
+
+        <!-- Thesis -->
+        <section class="section" id="thesis">
+            <span class="section-tag">Thesis</span>
+            <h2 class="section-title">A NeuroLang program is four things at once.</h2>
+            <p class="section-desc">Symbolic. Neural. Categorical. Linguistic. Same object, different views — because the higher-categorical formalism and the tensor-network formalism are mathematically identified.</p>
+
+            <div class="card-grid" style="margin-top:var(--sp-5);">
+                <div class="glass-card">
+                    <h3>Symbolic</h3>
+                    <p>Typed, inspectable, composable, deterministic where it matters. mypy-checked phantom types. Effects in types. Plans as values.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Neural</h3>
+                    <p>Differentiable, integrable, learnable end-to-end. Where flows are differentiable, JAX wires them through.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Categorical</h3>
+                    <p>Higher-dimensional, structurally sound, composable at every level. Lambek, Curry-Howard-Lambek, Coecke et al. — the formalism is established.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Linguistic</h3>
+                    <p>Addressable in natural language (Hindi, English, …) with a cached bidirectional compiler realised as the unit and counit of an adjunction.</p>
+                </div>
+            </div>
+
+            <div class="quote">
+                A framework whose primitives are typed at definite categorical dimensions, whose composition operators are the canonical monoidal-categorical operations, whose effects are tracked as morphism kinds, and whose natural-language authoring surface is realised as the unit/counit of an adjunction with the formal layer, will dominate the design of agentic systems for the next two decades.
+            </div>
+        </section>
+
+        <!-- Three-Tower -->
+        <section class="section" id="trinity">
+            <span class="section-tag">Three-Tower Identification</span>
+            <h2 class="section-title">Grammar. Category theory. Tensor networks.</h2>
+            <p class="section-desc">Three apparently distinct domains turn out to be the same mathematical structure. Establishing this is the work of sixty years; exploiting it is the work of NeuroLang.</p>
+
+            <div class="compare-wrap" style="margin-top:var(--sp-5);">
+                <table class="tower-table">
+                    <tr>
+                        <th>Natural Language</th>
+                        <th>Category Theory</th>
+                        <th>Computation / Tensor Network</th>
+                    </tr>
+                    <tr><td>Noun</td><td>Object (dim 0)</td><td>Tensor index / vector slot</td></tr>
+                    <tr><td>Verb</td><td>Morphism (dim 1)</td><td>Linear map / tensor contraction</td></tr>
+                    <tr><td>Adverb</td><td>Natural transformation (dim 2)</td><td>Higher-order tensor operation</td></tr>
+                    <tr><td>Sentence</td><td>Composed arrow / commutative diagram</td><td>Computation graph</td></tr>
+                    <tr><td>Paragraph</td><td>Diagram in a category</td><td>Module of computation</td></tr>
+                    <tr><td>Translation</td><td>Equivalence of categories</td><td>Reparameterisation</td></tr>
+                    <tr><td>Grammar itself</td><td>Category of grammatical types (Lambek)</td><td>Type system of the network</td></tr>
+                </table>
+            </div>
+
+            <div class="quote">
+                <strong>Meta-theorem (three-tower).</strong> The category of grammatical compositions in a residuated monoid (Lambek), the category of types in a Curry-Howard system, and the category of pre-tensor-networks under monoidal composition (Penrose / Joyal-Street) are equivalent up to coherence.
+            </div>
+        </section>
+
+        <!-- Dimensional Ladder -->
+        <section class="section" id="dimensions">
+            <span class="section-tag">Dimensional Ladder</span>
+            <h2 class="section-title">Every primitive lives at a dimension.</h2>
+            <p class="section-desc">A primitive may not be introduced unless its dimension is justified. The ladder runs from Dim 0 (substrate) to Dim ∞ (reflection).</p>
+
+            <div class="dim-ladder" style="margin-top:var(--sp-5);">
+                <div class="dim">
+                    <div class="level">Dim 0</div>
+                    <div class="what"><strong>Substrate.</strong> Values, tensors, hyperdimensional vectors (Kanerva-style 10⁴-dim with binding/bundling), memory cells, atomic propositions.</div>
+                    <div class="nn"><strong>NN counterpart:</strong> Weights, activations, embeddings, attention scores.</div>
+                </div>
+                <div class="dim">
+                    <div class="level">Dim 1</div>
+                    <div class="what"><strong>Arrows.</strong> Functions, differentiable maps, state transitions, Boolean and fuzzy implications. Effects (<code>pure</code>, <code>llm</code>, <code>tool</code>, <code>human</code>, <code>time</code>) — each effect is an arrow in a sub-category.</div>
+                    <div class="nn"><strong>NN counterpart:</strong> Individual layers (Linear, Conv, Attention head), activation functions.</div>
+                </div>
+                <div class="dim">
+                    <div class="level">Dim 2</div>
+                    <div class="what"><strong>Functors and Naturals.</strong> Higher-order functions, generics, monads. Adverbial modifiers. Plans-as-values. Memory scopes (functorial constraints). Compositional flows.</div>
+                    <div class="nn"><strong>NN counterpart:</strong> Multi-head attention (functor over heads), residual connections (η : Id ⇒ F), layer normalisation.</div>
+                </div>
+                <div class="dim">
+                    <div class="level">Dim 3</div>
+                    <div class="what"><strong>2-Categories.</strong> Plan transformations. Protocol transformations between agents. Effect handlers that reinterpret effects. Optimisation passes — gradient-based or symbolic refactoring of programs as 2-arrows.</div>
+                    <div class="nn"><strong>NN counterpart:</strong> Architecture search (NAS), pruning, knowledge distillation.</div>
+                </div>
+                <div class="dim">
+                    <div class="level">Dim ∞</div>
+                    <div class="what"><strong>Reflection.</strong> Meta-neuros that read, transform, and emit other neuros. The compiler itself as a NeuroLang program. Learning loops that modify the language's own primitives.</div>
+                    <div class="nn"><strong>NN counterpart:</strong> Self-modifying architectures, learned optimisers, neural architecture search.</div>
+                </div>
+            </div>
+
+            <div class="quote">
+                Design rule: A primitive may be added at dimension <em>n</em> only if it cannot be expressed cleanly at dimension <em>n−1</em> without loss of structure.
+            </div>
+        </section>
+
+        <!-- String = Tensor -->
+        <section class="section" id="string-tensor">
+            <span class="section-tag">String Diagrams = Tensor Networks</span>
+            <h2 class="section-title">No translation. No two systems. One object.</h2>
+            <p class="section-desc">The fundamental lemma — established by Penrose (1971) and formalised by Joyal-Street (1991): a morphism in a monoidal category, drawn as a string diagram, is the same mathematical object as a tensor network.</p>
+
+            <div class="split">
+                <div>
+                    <h3>What this gives you</h3>
+                    <p>When you compose neuros into a flow, the diagram you construct is <em>literally</em> a tensor network. When the system trains, gradients flow through that network. When you inspect, the same network is rendered as a categorical diagram.</p>
+                    <p>This is what makes a NeuroLang program a neural network in disguise — but a neural network with <strong>typed structure</strong>, <strong>categorical guarantees</strong>, and <strong>symbolic inspectability</strong> that contemporary ML systems lack.</p>
+                </div>
+                <div class="visual">       A             B
+       │             │
+       ▼             ▼
+   ┌───────┐    ┌───────┐
+   │ neuro │    │ neuro │
+   └───┬───┘    └───┬───┘
+       │             │
+       └──────┬──────┘
+              ▼
+          ┌───────┐
+          │ neuro │
+          └───┬───┘
+              ▼
+              C
+
+   String diagram = tensor network
+   (Penrose 1971, Joyal-Street 1991)</div>
+            </div>
+        </section>
+
+        <!-- Adjunction -->
+        <section class="section" id="adjunction">
+            <span class="section-tag">The Compiler</span>
+            <h2 class="section-title">An adjoint pair of functors.</h2>
+            <p class="section-desc">The natural-language authoring surface is realised mathematically as a pair of functors between two categories. Caching is no longer a performance optimisation — it is the unit and counit data of the adjunction, made into storage.</p>
+
+            <pre><code>              left-adjoint:  L : NL → Formal     <span style="color:var(--text-3);">(compile)</span>
+                                ⊣
+              right-adjoint: R : Formal → NL     <span style="color:var(--text-3);">(summarise)</span></code></pre>
+
+            <div class="card-grid" style="margin-top:var(--sp-4);">
+                <div class="glass-card">
+                    <h3>Unit η : 1<sub>NL</sub> ⇒ R∘L</h3>
+                    <p>Every NL prompt round-trips through formal compilation back to a normalised NL summary. The cache stores η per prompt.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Counit ε : L∘R ⇒ 1<sub>Formal</sub></h3>
+                    <p>Every formal program round-trips through summarisation back to an executable program. The cache stores ε per program.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Triangle identities</h3>
+                    <p>Compile-then-summarise is identity-up-to-cache. Summarise-then-compile is identity-up-to-cache. Self-consistency is enforceable.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Principled invalidation</h3>
+                    <p>When the LLM model changes, the cache is invalidated — but only the parts whose adjunction-coherence breaks. Verifiable. Far stronger than "rebuild on new model."</p>
+                </div>
+            </div>
+
+            <div class="quote">
+                This is not a metaphor. It is the precise mathematical contract that the LLM compiler must satisfy.
+            </div>
+        </section>
+
+        <!-- Memory categorical -->
+        <section class="section" id="memory-cat">
+            <span class="section-tag">Memory Hierarchy</span>
+            <h2 class="section-title">Memory is itself a categorical structure.</h2>
+            <p class="section-desc">Each memory layer is a functor into the substrate. They compose: a single read may pass through compressed → semantic → episodic before yielding a vector. Each transition is a typed arrow with cost and effect annotations.</p>
+
+            <div class="compare-wrap" style="margin-top:var(--sp-5);">
+                <table>
+                    <tr><th>Layer</th><th>Kind</th><th>Properties</th></tr>
+                    <tr><td><strong>Discrete</strong></td><td>Key-value, exact</td><td>Determinism, fast lookup, brittle</td></tr>
+                    <tr><td><strong>Differentiable</strong></td><td>Soft-attention store</td><td>Gradient flow through recall</td></tr>
+                    <tr><td><strong>Compressed</strong></td><td>Sparse / low-rank / quantised</td><td>Capacity vs precision trade</td></tr>
+                    <tr><td><strong>Hyperdimensional</strong></td><td>High-dim vectors with binding/bundling</td><td>Compositional, fault-tolerant, semantic</td></tr>
+                    <tr><td><strong>Episodic</strong></td><td>Time-indexed</td><td>Sequence of experiences, retrievable by recency or relevance</td></tr>
+                    <tr><td><strong>Semantic</strong></td><td>Concept-indexed</td><td>Long-term abstracted knowledge</td></tr>
+                    <tr><td><strong>Procedural</strong></td><td>Skill-as-flow</td><td>Memory that executes</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- Logic -->
+        <section class="section" id="logic">
+            <span class="section-tag">Logic Layer</span>
+            <h2 class="section-title">Decomposable. Multi-valued.</h2>
+            <p class="section-desc">NeuroLang doesn't commit to one logic. It admits a hierarchy. Every logical expression decomposes uniquely (up to canonical isomorphism) into a tree of primitive operators.</p>
+
+            <div class="compare-wrap">
+                <table>
+                    <tr><th>Logic</th><th>Truth values</th><th>Use</th></tr>
+                    <tr><td>Boolean</td><td>{true, false}</td><td>Hard constraints, deterministic flow</td></tr>
+                    <tr><td>Fuzzy</td><td>[0, 1]</td><td>Soft constraints, partial matches</td></tr>
+                    <tr><td>Probabilistic</td><td>distributions</td><td>Bayesian inference, uncertainty propagation</td></tr>
+                    <tr><td>Modal</td><td>possible-world indexed</td><td>Counterfactuals, planning</td></tr>
+                    <tr><td>Higher-order</td><td>predicates of predicates</td><td>Meta-reasoning</td></tr>
+                    <tr><td>Linear</td><td>resource-aware</td><td>Effect tracking, single-use credentials</td></tr>
+                </table>
+            </div>
+
+            <p style="color:var(--text-2);font-weight:300;line-height:1.8;margin-top:var(--sp-4);">A consequence: <strong>the symbolic and the neural meet in the logic layer.</strong> A fuzzy logical formula is differentiable. A probabilistic formula admits gradient-based posterior inference. A Boolean formula is the deterministic limit of these. The user writes one expression; the runtime chooses the appropriate semantics.</p>
+        </section>
+
+        <!-- Agency AI -->
+        <section class="section" id="agency-ai">
+            <span class="section-tag">Agency AI</span>
+            <h2 class="section-title">The pathway to AGI.</h2>
+            <p class="section-desc">Computing is undergoing a fundamental shift. We are advancing through clearly defined epochs, moving beyond monolithic models into hierarchical intelligence.</p>
+
+            <div class="dim-ladder" style="margin-top:var(--sp-5);">
+                <div class="dim"><div class="level">1</div><div class="what" style="grid-column:span 2;"><strong>Software.</strong> Hardcoded logic and explicit, rigid rules.</div></div>
+                <div class="dim"><div class="level">2</div><div class="what" style="grid-column:span 2;"><strong>Statistical ML.</strong> Probabilistic pattern recognition and classification.</div></div>
+                <div class="dim"><div class="level">3</div><div class="what" style="grid-column:span 2;"><strong>Generative Models.</strong> Transformers predicting structured outputs and tokens.</div></div>
+                <div class="dim"><div class="level">4</div><div class="what" style="grid-column:span 2;"><strong>Reasoning Models.</strong> Systems that maintain state, plan, and execute Chain-of-Thought.</div></div>
+                <div class="dim"><div class="level">5</div><div class="what" style="grid-column:span 2;"><strong>Agentic Systems.</strong> Autonomous loops that observe, reason, and act across domains.</div></div>
+                <div class="dim"><div class="level">6</div><div class="what" style="grid-column:span 2;"><strong>Agency AI (the Neuro Vision).</strong> Hierarchical, modular agencies of shared agents. Abstract, modifiable, capable of infinite scaling.</div></div>
+            </div>
+        </section>
+
+        <!-- References -->
+        <section class="section" id="references">
+            <span class="section-tag">Selected References</span>
+            <h2 class="section-title">Foundations on which the framework rests.</h2>
+            <p class="section-desc">Every claim above traces back to established work in category theory, linguistics, type theory, and categorical foundations of machine learning.</p>
+
+            <div class="prim-grid">
+                <div class="prim"><div class="name">Lambek (1958)</div><div class="desc">Grammatical types form a residuated monoid; parsing is composition in this category.</div></div>
+                <div class="prim"><div class="name">Curry-Howard (1934, 1969)</div><div class="desc">Proofs ≅ programs; types ≅ propositions.</div></div>
+                <div class="prim"><div class="name">Penrose (1971)</div><div class="desc">String diagrams for tensor algebra are isomorphic to monoidal-category diagrams.</div></div>
+                <div class="prim"><div class="name">Joyal-Street (1991)</div><div class="desc">Formalised string-diagrammatic calculus for monoidal categories.</div></div>
+                <div class="prim"><div class="name">Coecke, Sadrzadeh, Clark (2008+)</div><div class="desc">DisCoCat — distributional compositional categorical semantics.</div></div>
+                <div class="prim"><div class="name">Atiyah-Lurie cobordism hypothesis</div><div class="desc">TQFT is an n-functor between cobordism categories. Physics is higher-categorical.</div></div>
+                <div class="prim"><div class="name">Cruttwell, Gavranović et al. (2022)</div><div class="desc">Categorical foundations of gradient-based learning. Backprop is a functor.</div></div>
+                <div class="prim"><div class="name">Mac Lane (1971), Lurie (2009)</div><div class="desc">Higher categories as a foundation for compositional structure.</div></div>
+            </div>
+
+            <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-6);flex-wrap:wrap;">
+                <a href="https://github.com/neurocomputer-in/neurolang/blob/main/docs/RESEARCH.md" target="_blank" class="btn btn-accent">→ Full RESEARCH.md</a>
+                <a href="https://github.com/neurocomputer-in/neurolang/blob/main/docs/PAPER_NEUROLANG_FOUNDATIONS.md" target="_blank" class="btn btn-ghost">Paper draft</a>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>Programmable intelligence as composable engineering.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">© 2026 Neurocomputer. Open source.</div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.section, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

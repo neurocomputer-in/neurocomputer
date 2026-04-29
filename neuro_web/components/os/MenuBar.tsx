@@ -70,13 +70,6 @@ export default function MenuBar() {
           {sidebarOpen ? <PanelLeftClose size={13} color="#d0d6e0" /> : <PanelLeft size={13} color="#d0d6e0" />}
         </motion.div>
 
-        {/* N button */}
-        <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
-          onClick={() => dispatch(toggleLauncher())}
-          style={{ width: 22, height: 22, borderRadius: 5, background: '#5e6ad2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0, ...noAppRegion }}>
-          N
-        </motion.div>
-
         {/* Workspace chip */}
         <div style={{ position: 'relative', flexShrink: 0, ...noAppRegion }}>
           <button

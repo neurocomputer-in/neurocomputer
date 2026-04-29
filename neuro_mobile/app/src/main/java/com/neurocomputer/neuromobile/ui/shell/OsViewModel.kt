@@ -6,10 +6,21 @@ import com.neurocomputer.neuromobile.data.model.*
 import com.neurocomputer.neuromobile.data.persistence.OsPersistencePort
 import com.neurocomputer.neuromobile.data.persistence.PersistedIconsState
 import com.neurocomputer.neuromobile.data.persistence.PersistedOsState
+import com.neurocomputer.neuromobile.data.repository.BackendUrlRepository
+import com.neurocomputer.neuromobile.data.repository.WorkspaceRepository
+import com.neurocomputer.neuromobile.data.service.WebSocketService
+import com.neurocomputer.neuromobile.domain.model.Project
+import com.neurocomputer.neuromobile.domain.model.Workspace
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class OsState(
@@ -18,18 +29,35 @@ data class OsState(
     val nextZIndex: Int = 1,
     val closedCids: Set<String> = emptySet(),
     val launcherOpen: Boolean = false,
+    // Workspace / project context
+    val workspaces: List<Workspace> = emptyList(),
+    val currentWorkspaceId: String = "default",
+    val projects: List<Project> = emptyList(),
+    // null means "All Projects" (no filter); otherwise a project id.
+    val currentProjectId: String? = null,
 )
 
 @HiltViewModel
 class OsViewModel @Inject constructor(
     private val persistence: OsPersistencePort,
+    private val workspaceRepository: WorkspaceRepository,
+    private val wsService: WebSocketService,
+    private val backendUrlRepository: BackendUrlRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(OsState())
     val state: StateFlow<OsState> = _state.asStateFlow()
 
-    private var currentWs: String = "global"
-    private var currentProj: String = "global"
+    private val _wsConnected = MutableStateFlow(false)
+    val wsConnected: StateFlow<Boolean> = _wsConnected.asStateFlow()
+
+    private val pingClient = OkHttpClient.Builder()
+        .connectTimeout(3, TimeUnit.SECONDS)
+        .readTimeout(3, TimeUnit.SECONDS)
+        .build()
+
+    private var currentWs: String = "default"
+    private var currentProj: String = "all"
 
     init {
         @OptIn(FlowPreview::class)
@@ -39,11 +67,54 @@ class OsViewModel @Inject constructor(
                 .debounce(500)
                 .collect { s -> persist(s) }
         }
+        viewModelScope.launch { loadWorkspaces() }
+        viewModelScope.launch { loadProjects(currentWs) }
+        viewModelScope.launch { pingLoop() }
+    }
+
+    private suspend fun pingLoop() {
+        while (true) {
+            val base = backendUrlRepository.currentUrl.value.trimEnd('/')
+            val ok = withContext(Dispatchers.IO) {
+                try {
+                    val req = Request.Builder().url("$base/health").build()
+                    pingClient.newCall(req).execute().use { it.isSuccessful }
+                } catch (_: Exception) { false }
+            }
+            _wsConnected.value = ok
+            delay(5_000)
+        }
     }
 
     fun setContext(ws: String, proj: String) {
         currentWs = ws; currentProj = proj
         viewModelScope.launch { restore() }
+    }
+
+    fun selectWorkspace(workspaceId: String) {
+        if (workspaceId == _state.value.currentWorkspaceId) return
+        _state.update { it.copy(currentWorkspaceId = workspaceId, currentProjectId = null) }
+        currentWs = workspaceId
+        currentProj = "all"
+        viewModelScope.launch { loadProjects(workspaceId) }
+        viewModelScope.launch { restore() }
+    }
+
+    fun selectProject(projectId: String?) {
+        if (projectId == _state.value.currentProjectId) return
+        _state.update { it.copy(currentProjectId = projectId) }
+        currentProj = projectId ?: "all"
+        viewModelScope.launch { restore() }
+    }
+
+    private suspend fun loadWorkspaces() {
+        val ws = workspaceRepository.listWorkspaces()
+        _state.update { it.copy(workspaces = ws) }
+    }
+
+    private suspend fun loadProjects(workspaceId: String) {
+        val p = workspaceRepository.listProjects(workspaceId)
+        _state.update { it.copy(projects = p) }
     }
 
     fun openWindow(window: WindowState) {

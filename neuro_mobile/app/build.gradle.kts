@@ -75,6 +75,10 @@ android {
 }
 
 dependencies {
+    // Vendored xterm-class terminal (termux upstream, JNI stripped)
+    implementation(project(":terminal-emulator"))
+    implementation(project(":terminal-view"))
+
     // Core Android
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")

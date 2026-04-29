@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroLang — Neurocomputer</title>
+    <meta name="description" content="NeuroLang is a Python framework for AI-native agentic coding. Typed primitives, plans-as-values, effects-in-types, bidirectional NL ↔ code with cached adjunction.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="framework.html">Framework</a>
+                <a href="neurolang.html" class="active">NeuroLang</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="research.html">Research</a>
+                <a href="apps.html">Apps</a>
+                <a href="slides.html">Slides</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="page-hero">
+            <span class="section-tag">The Language</span>
+            <h1>NeuroLang.<br><span class="highlight">Write what you mean.</span></h1>
+            <p>NeuroLang is a Python framework for AI-native agentic coding. Write agents in natural language; the library compiles your prompts into typed, composable, inspectable Python programs. Plans are first-class values. Memory has scope. Effects have types. Budgets are enforced. Recovery is a language primitive.</p>
+        </section>
+
+        <div class="subnav">
+            <a href="#trinity">Trinity</a>
+            <a href="#shape">The Shape</a>
+            <a href="#example">Example</a>
+            <a href="#stdlib">Stdlib</a>
+            <a href="#agentic">Agentic Discovery</a>
+            <a href="#lifecycle">Neuro Lifecycle</a>
+            <a href="#voice">Voice</a>
+            <a href="#compare">Comparison</a>
+            <a href="#phases">Phases</a>
+            <a href="#install">Install</a>
+        </div>
+
+        <!-- Trinity -->
+        <section class="section" id="trinity">
+            <span class="section-tag">The Trinity</span>
+            <h2 class="section-title">NeuroLang. NeuroNet. Neurocomputer.</h2>
+            <p class="section-desc">One system, three names. NeuroLang is the language. NeuroNet is the runtime. Neurocomputer is the environment — fused, like a Lisp Machine.</p>
+
+            <div class="trinity-row">
+                <div class="trinity-card">
+                    <div class="label">Library</div>
+                    <h3>NeuroLang</h3>
+                    <p>The Python library. Typed primitives, the <code>@neuro</code> decorator, composition operators. <code>pip install neurolang</code> (vendored at <code>./neurolang/</code> in this repo).</p>
+                </div>
+                <div class="trinity-card">
+                    <div class="label">Runtime</div>
+                    <h3>NeuroNet</h3>
+                    <p>The live network of running neuros, agents with mailboxes, memory, and plans-in-flight. <code>net.topology()</code>, <code>net.snapshot()</code>, <code>net.render()</code>. Inspectable from any process.</p>
+                </div>
+                <div class="trinity-card">
+                    <div class="label">Environment</div>
+                    <h3>Neurocomputer</h3>
+                    <p>The IDE + runtime. Author, compile, execute, visualise. Voice in. 3D graph editing. Multi-agent rooms. The flagship implementation of the trinity.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Shape -->
+        <section class="section" id="shape">
+            <span class="section-tag">The Shape</span>
+            <h2 class="section-title">Primitives general-purpose languages don't have.</h2>
+            <p class="section-desc">NeuroLang surfaces what most languages bury — deliberation, cost, memory scope, effects, recovery — as first-class primitives.</p>
+
+            <div class="prim-grid">
+                <div class="prim"><div class="name">Neuro</div><div class="desc">Typed, composable unit (identity + behaviour + optional prompt surface). The atom.</div></div>
+                <div class="prim"><div class="name">Flow</div><div class="desc">Composition. <code>|</code> sequential, <code>&amp;</code> / <code>+</code> parallel, DAG, loop. Categorical morphism composition.</div></div>
+                <div class="prim"><div class="name">Plan</div><div class="desc">First-class value. Inspect, modify, replay, diff, hash. Survives the run for audit.</div></div>
+                <div class="prim"><div class="name">Memory</div><div class="desc">Scoped read/write. Discrete, differentiable, hyperdimensional, episodic, semantic, procedural.</div></div>
+                <div class="prim"><div class="name">Context</div><div class="desc">Typed memory + prompt assembly slice, declared per neuro.</div></div>
+                <div class="prim"><div class="name">Effect</div><div class="desc"><code>pure</code> / <code>llm</code> / <code>tool</code> / <code>human</code> / <code>time</code> / <code>voice</code>. Tracked by the runtime.</div></div>
+                <div class="prim"><div class="name">Budget</div><div class="desc">Latency + cost bounds. Statically warned. Runtime enforced.</div></div>
+                <div class="prim"><div class="name">Recovery</div><div class="desc"><code>fallback</code>, <code>retry</code>, <code>escalate</code> as language primitives. Composable.</div></div>
+                <div class="prim"><div class="name">Mailbox</div><div class="desc">Multi-agent message-passing. No shared mutable state. Erlang-style isolation.</div></div>
+                <div class="prim"><div class="name">Agent</div><div class="desc">Long-lived neuro with mailbox, memory, role, identity. A 2-categorical object.</div></div>
+            </div>
+        </section>
+
+        <!-- Example -->
+        <section class="section" id="example">
+            <span class="section-tag">The Authoring Feel</span>
+            <h2 class="section-title">A flow reads like a sentence.</h2>
+            <p class="section-desc">Define neuros with declared effect and budget. Compose them with operators. Inspect the resulting flow. Run it. Replay it.</p>
+
+            <pre><code><span style="color:var(--text-3);">from</span> neurolang <span style="color:var(--text-3);">import</span> neuro, Flow, Memory, Budget
+<span style="color:var(--text-3);">from</span> neurolang.stdlib <span style="color:var(--text-3);">import</span> web, reason, memory_neuros
+
+<span style="color:var(--accent-2);">@neuro</span>(effect=<span style="color:var(--accent);">"tool"</span>)
+<span style="color:var(--text-3);">def</span> extract_book_metadata(url: <span style="color:var(--text-3);">str</span>) -> <span style="color:var(--text-3);">dict</span>:
+    <span style="color:var(--accent);">"""Scrape title, author, summary from URL."""</span>
+    ...
+
+<span style="color:var(--accent-2);">@neuro</span>(effect=<span style="color:var(--accent);">"llm"</span>, budget=Budget(cost_usd=0.02))
+<span style="color:var(--text-3);">def</span> summarize(emails: <span style="color:var(--text-3);">list</span>[Email]) -> <span style="color:var(--text-3);">str</span>:
+    <span style="color:var(--accent);">"""Produce a short paragraph summary."""</span>
+    ...
+
+<span style="color:var(--text-3);"># A flow reads like a sentence</span>
+research_flow: Flow = (
+    web.search                     <span style="color:var(--text-3);"># find candidate URLs</span>
+    | extract_book_metadata        <span style="color:var(--text-3);"># extract per URL</span>
+    | reason.summarize             <span style="color:var(--text-3);"># condense findings</span>
+    | memory_neuros.store          <span style="color:var(--text-3);"># save for later</span>
+)
+
+<span style="color:var(--text-3);"># Inspect</span>
+research_flow.render(format=<span style="color:var(--accent);">"mermaid"</span>)
+research_flow.cost_estimate()
+research_flow.effect_signature()
+
+<span style="color:var(--text-3);"># Run</span>
+plan = research_flow.plan(query=<span style="color:var(--accent);">"category theory"</span>)
+result = plan.run(memory=Memory.discrete())
+
+<span style="color:var(--text-3);"># Replay (deterministic)</span>
+plan.serialize()  <span style="color:var(--text-3);"># → plan.json</span>
+plan.replay()
+</code></pre>
+
+            <div class="quote">
+                A flow composed of differentiable primitives is itself differentiable, automatically and provably. A flow containing a non-differentiable primitive cannot be inserted into a gradient-based learning loop without an explicit handler.
+            </div>
+        </section>
+
+        <!-- Stdlib -->
+        <section class="section" id="stdlib">
+            <span class="section-tag">Standard Library</span>
+            <h2 class="section-title">High-quality neuros for the common surface.</h2>
+            <p class="section-desc">Ships with neuros for web, voice, email, calendar, files, reasoning, code, memory, models, flows, and agents. They are not magic — they are well-typed neuros built from the same primitives as user neuros.</p>
+
+            <div class="compare-wrap" style="margin-top:var(--sp-5);">
+                <table>
+                    <tr>
+                        <th class="feature">Domain</th>
+                        <th>Standard neuros</th>
+                    </tr>
+                    <tr><td>Web</td><td><code>skill.web.scrape</code>, <code>skill.web.search</code>, <code>skill.web.fetch_html</code></td></tr>
+                    <tr><td>Voice</td><td><code>skill.voice.call</code>, <code>skill.voice.message</code>, <code>skill.voice.transcribe</code>, <code>skill.voice.synthesize</code></td></tr>
+                    <tr><td>Email</td><td><code>skill.email.read</code>, <code>skill.email.send</code>, <code>skill.email.draft</code></td></tr>
+                    <tr><td>Calendar</td><td><code>skill.calendar.read</code>, <code>skill.calendar.create</code>, <code>skill.calendar.find_slot</code></td></tr>
+                    <tr><td>Files</td><td><code>skill.files.read</code>, <code>skill.files.write</code>, <code>skill.files.search</code></td></tr>
+                    <tr><td>Reasoning</td><td><code>skill.reason.brainstorm</code>, <code>deep_research</code>, <code>classify</code>, <code>summarize</code></td></tr>
+                    <tr><td>Code</td><td><code>skill.code.read</code>, <code>diff</code>, <code>write</code>, <code>test</code></td></tr>
+                    <tr><td>Memory</td><td><code>memory.store</code>, <code>memory.recall</code>, <code>memory.search</code></td></tr>
+                    <tr><td>Models</td><td><code>model.llm.openai</code>, <code>model.llm.anthropic</code>, <code>model.llm.local</code>, <code>model.embed.*</code></td></tr>
+                    <tr><td>Flows</td><td><code>flow.dag</code>, <code>flow.parallel</code>, <code>flow.loop</code>, <code>flow.race</code></td></tr>
+                    <tr><td>Agents</td><td><code>agent.delegate</code>, <code>agent.escalate</code>, <code>agent.handoff</code></td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- Agentic Discovery -->
+        <section class="section" id="agentic">
+            <span class="section-tag">Agentic Discovery</span>
+            <h2 class="section-title">AI proposes a composition of typed primitives.</h2>
+            <p class="section-desc">Not "let an LLM hallucinate code" — the AI sees the entire toolbox and composes intelligently. Every registered neuro carries its own docs, types, effects, and budget. The AI's prompt always has the live catalogue.</p>
+
+            <pre><code><span style="color:var(--text-3);">USER:</span> "I need to write my thesis on microplastics in marine life.
+       Help me build a research workflow."
+
+<span style="color:var(--text-3);">AI:</span> [searches registered neuros]
+
+  Found these relevant neuros:
+   • skill.reason.deep_research  (multi-source synthesis)
+   • skill.web.scrape            (extract from URLs)
+   • skill.web.search            (semantic + keyword)
+   • skill.code.read             (read citation BibTeX)
+   • skill.reason.summarize      (compress long text)
+   • skill.reason.brainstorm     (divergent ideation)
+   • memory.store                (save findings)
+   • agent.delegate              (sub-agents per chapter)
+
+  Proposed flow:
+
+    brainstorm_outline
+      | for_each_section (
+          web.search | web.scrape | reason.summarize | memory.store
+        )
+      | reason.deep_research
+      | code.write_bibliography
+
+  Estimated cost: $1.20–$3.40
+  Estimated time: ~20 min for first draft outline.
+
+  Want me to:
+   (a) Generate as Python and run it now
+   (b) Save as a reusable 'thesis_research' neuro
+   (c) Modify the flow first
+</code></pre>
+
+            <p style="color:var(--text-2);font-weight:300;line-height:1.8;margin-top:var(--sp-4);">This is what natural-language coding actually means.</p>
+        </section>
+
+        <!-- Lifecycle -->
+        <section class="section" id="lifecycle">
+            <span class="section-tag">Lifecycle</span>
+            <h2 class="section-title">Temporary or permanent.</h2>
+            <p class="section-desc">When the AI generates a neuro, it can choose: ephemeral, session-scoped, project-scoped, or persistent. Defaults make the right choice for you.</p>
+
+            <div class="compare-wrap">
+                <table>
+                    <tr>
+                        <th class="feature">Kind</th>
+                        <th>Lifecycle</th>
+                        <th>Use case</th>
+                    </tr>
+                    <tr><td><strong>Persistent</strong></td><td>Saved to <code>~/.neurolang/neuros/</code>; loaded every run</td><td>A neuro you want to reuse forever</td></tr>
+                    <tr><td><strong>Project-scoped</strong></td><td>Lives in the project repo; checked into git</td><td>A neuro tied to one app or thesis</td></tr>
+                    <tr><td><strong>Session-scoped</strong></td><td>In-memory only; flushed when the process ends</td><td>AI generates for a single complex task</td></tr>
+                    <tr><td><strong>Ephemeral</strong></td><td>Built mid-flow, lives only for that flow's execution</td><td>One-off transformations</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- Voice -->
+        <section class="section" id="voice">
+            <span class="section-tag">Voice</span>
+            <h2 class="section-title">Voice is just an effect.</h2>
+            <p class="section-desc">Every neuro can opt into a voice surface with <code>effect="voice"</code>. The standard library wires LiveKit, Twilio/Plivo, ElevenLabs, OpenAI TTS, Whisper, Deepgram, Sarvam — adapters, not magic.</p>
+
+            <pre><code><span style="color:var(--accent-2);">@neuro</span>(effect=<span style="color:var(--accent);">"voice"</span>)
+<span style="color:var(--text-3);">def</span> voice_call(number: <span style="color:var(--text-3);">str</span>, prompt: <span style="color:var(--text-3);">str</span>) -> CallResult:
+    <span style="color:var(--accent);">"""Initiate a voice call and conduct the conversation per `prompt`."""</span>
+    ...
+
+<span style="color:var(--text-3);"># A voice flow is just a flow</span>
+incoming_call = receive_call | transcribe | classify_intent | dispatch_agent
+</code></pre>
+
+            <p style="color:var(--text-2);font-weight:300;line-height:1.8;margin-top:var(--sp-4);">The IDE shows voice neuros with a cyan highlight; runtime view shows live waveforms in NeuroNet.</p>
+        </section>
+
+        <!-- Comparison -->
+        <section class="section" id="compare">
+            <span class="section-tag">Comparison</span>
+            <h2 class="section-title">vs LangChain · DSPy · Pydantic AI.</h2>
+            <p class="section-desc">We don't pick a fight with all three at once. We complement Pydantic AI's typing rigour, extend DSPy's compositional ideas, and replace LangChain's untyped chains with a categorically grounded equivalent.</p>
+
+            <div class="compare-wrap" style="margin-top:var(--sp-5);">
+                <table>
+                    <tr>
+                        <th class="feature">Capability</th>
+                        <th>LangChain</th>
+                        <th>DSPy</th>
+                        <th>Pydantic AI</th>
+                        <th class="us">NeuroLang</th>
+                    </tr>
+                    <tr><td>Compositional programs</td><td>untyped</td><td>partial</td><td>partial</td><td class="us">categorical</td></tr>
+                    <tr><td>NL authoring surface</td><td>—</td><td>partial (signatures)</td><td>—</td><td class="us">bidirectional cached</td></tr>
+                    <tr><td>Plans as first-class values</td><td>—</td><td>—</td><td>—</td><td class="us">✓</td></tr>
+                    <tr><td>Effects in types</td><td>—</td><td>—</td><td>partial</td><td class="us">✓</td></tr>
+                    <tr><td>Budget annotations</td><td>—</td><td>—</td><td>—</td><td class="us">✓</td></tr>
+                    <tr><td>Recovery as primitive</td><td>library</td><td>library</td><td>library</td><td class="us">language-level</td></tr>
+                    <tr><td>Memory hierarchy with scoping</td><td>flat</td><td>flat</td><td>flat</td><td class="us">✓ (Phase 2+)</td></tr>
+                    <tr><td>Hyperdimensional substrate</td><td>—</td><td>—</td><td>—</td><td class="us">✓ (Phase 2+)</td></tr>
+                    <tr><td>End-to-end differentiable flows</td><td>—</td><td>partial</td><td>—</td><td class="us">✓ (Phase 2+)</td></tr>
+                    <tr><td>Multi-language NL input</td><td>—</td><td>—</td><td>—</td><td class="us">✓</td></tr>
+                    <tr><td>3D IDE / categorical visualisation</td><td>—</td><td>—</td><td>—</td><td class="us">✓ (Phase 3+)</td></tr>
+                    <tr><td>Self-hosting compiler</td><td>—</td><td>partial</td><td>—</td><td class="us">✓ (Phase 4+)</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- Phases -->
+        <section class="section" id="phases">
+            <span class="section-tag">Construction Path</span>
+            <h2 class="section-title">Library first. NL compiler next. IDE after.</h2>
+            <p class="section-desc">Aggressive but achievable. Phase 1 is shipping. Phase 2 starts when reviewer trust is earned.</p>
+
+            <div class="timeline">
+                <div class="tl-item done">
+                    <div class="phase">Phase 1.9 — Shipped</div>
+                    <h4>Library MVP</h4>
+                    <p><code>Neuro</code>, <code>Flow</code>, <code>Plan</code>, <code>Memory</code>, <code>Context</code>, <code>Prompt</code>, <code>Effect</code>, <code>Budget</code>, <code>Recovery</code> as Python classes. <code>@neuro</code> decorator. Sequential / parallel composition. Discrete memory backend. 17 stdlib neuros + <code>agent.delegate</code>. <strong>172 tests passing.</strong></p>
+                </div>
+                <div class="tl-item">
+                    <div class="phase">Phase 2 — In progress</div>
+                    <h4>NL Compiler + Differentiability</h4>
+                    <p>LLM-based bidirectional compiler with cache. Schema-constrained decoding. Multi-language NL (English + Hindi). VSCode plugin. JAX backend for differentiable flows. Soft-attention memory. Hyperdimensional substrate.</p>
+                </div>
+                <div class="tl-item">
+                    <div class="phase">Phase 3 — Planned</div>
+                    <h4>3D IDE + Memory Hierarchy</h4>
+                    <p>WebGL string-diagram rendering. Voice input → flow generation. Drag manipulation → Python source mutation. Episodic + semantic + procedural memory. Decomposable logic library.</p>
+                </div>
+                <div class="tl-item">
+                    <div class="phase">Phase 4 — Vision</div>
+                    <h4>Self-hosting + ecosystem</h4>
+                    <p>The compiler is itself a NeuroLang program. Standard neuro library expands. Community contribution model. Plugin / theme ecosystem for the IDE.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Install -->
+        <section class="section" id="install">
+            <span class="section-tag">Install</span>
+            <h2 class="section-title">Vendored. Ready.</h2>
+            <p class="section-desc">NeuroLang ships inside the Neurocomputer repo at <code>./neurolang/</code>. Editable install picks it up automatically.</p>
+
+            <pre><code>git clone git@github.com:neurocomputer-in/neurocomputer.git
+cd neurocomputer
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r neurocomputer/requirements.txt
+pip install -e ./neurolang   <span style="color:var(--text-3);"># vendored framework</span>
+
+<span style="color:var(--text-3);"># Use the nl_dev agent to author flows in natural language</span>
+python neurocomputer/server.py             <span style="color:var(--text-3);"># http://127.0.0.1:7000</span>
+cd neuro_web && npm run dev                <span style="color:var(--text-3);"># http://localhost:3000</span>
+<span style="color:var(--text-3);"># switch to the nl_dev agent in the dropdown</span></code></pre>
+
+            <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-4);flex-wrap:wrap;">
+                <a href="architecture.html" class="btn btn-accent">→ Architecture</a>
+                <a href="research.html" class="btn btn-ghost">Categorical foundations</a>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>Programmable intelligence as composable engineering.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">© 2026 Neurocomputer. Open source.</div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.section, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

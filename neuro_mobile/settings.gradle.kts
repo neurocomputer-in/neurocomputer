@@ -17,3 +17,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "NeuroMobile"
 include(":app")
+include(":terminal-emulator")
+include(":terminal-view")

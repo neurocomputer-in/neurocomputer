@@ -1,0 +1,29 @@
+[Unit]
+Description=Neurocomputer Static Website (port 8080, behind cloudflared → neurocomputer.in)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/neurocomputer/docs/website
+
+# Kill any orphan http.server on 8080 before starting
+ExecStartPre=/bin/bash -c 'pids=$(/usr/bin/lsof -ti :8080 2>/dev/null || true); [ -n "$pids" ] && /bin/kill -9 $pids && /bin/sleep 1 || true'
+
+ExecStart=/usr/bin/python3 -m http.server 8080 --bind 127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neurocomputer-website
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/neurocomputer/docs/website
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,25 +1,14 @@
 'use client';
 import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus } from 'lucide-react';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
+import { X, Plus, Globe } from 'lucide-react';
 import { useGesture } from '@use-gesture/react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { focusWindow, closeWindow, WindowState } from '@/store/osSlice';
 import { closeTab } from '@/store/conversationSlice';
 import { APP_MAP } from '@/lib/appRegistry';
 import { useIsMobile } from '@/hooks/useIsMobile';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 const APP_GRADIENTS: Record<string, string> = {
   'chat': 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
@@ -40,7 +29,6 @@ function WindowCard({ win, onFocus, onCloseWin }: {
 }) {
   const activeTab = win.tabs.find(t => t.id === win.activeTabId) ?? win.tabs[0];
   const app = activeTab ? APP_MAP[activeTab.appId as keyof typeof APP_MAP] : undefined;
-  const Icon = app ? (ICON_MAP[app.icon] || Globe) : Globe;
   const color = app?.color ?? '#8B5CF6';
   const gradient = APP_GRADIENTS[activeTab?.type ?? 'chat'];
   const isMobile = useIsMobile();
@@ -89,7 +77,7 @@ function WindowCard({ win, onFocus, onCloseWin }: {
             width: 32, height: 32, borderRadius: 8,
             background: color, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Icon size={16} color="#fff" strokeWidth={1.6} />
+            {app ? <AppIconView app={app} size={16} /> : <Globe size={16} color="#fff" strokeWidth={1.6} />}
           </div>
           <div>
             <p style={{ fontSize: 13, fontWeight: 600, color: '#e0e0e0', margin: 0, lineHeight: 1.3 }}>
@@ -104,14 +92,13 @@ function WindowCard({ win, onFocus, onCloseWin }: {
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {win.tabs.slice(0, 4).map(tab => {
             const tApp = APP_MAP[tab.appId as keyof typeof APP_MAP];
-            const TIcon = tApp ? (ICON_MAP[tApp.icon] || Globe) : Globe;
             return (
               <div key={tab.id} style={{
                 padding: '2px 6px', borderRadius: 4,
                 background: 'rgba(255,255,255,0.08)',
                 display: 'flex', alignItems: 'center', gap: 3,
               }}>
-                <TIcon size={9} color={tApp?.color ?? '#888'} strokeWidth={2} />
+                {tApp ? <AppIconView app={tApp} size={9} color={tApp.color} /> : <Globe size={9} color="#888" strokeWidth={2} />}
                 <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', maxWidth: 56, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {tab.title}
                 </span>

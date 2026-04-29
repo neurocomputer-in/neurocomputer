@@ -20,6 +20,7 @@ from core.brain import Brain
 logger = logging.getLogger("chat_handler")
 
 LIVEKIT_URL = os.getenv("LIVEKIT_URL", "")
+LIVEKIT_LOCAL_URL = os.getenv("LIVEKIT_LOCAL_URL", "ws://localhost:7880")
 LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY", "")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET", "")
 
@@ -177,7 +178,7 @@ class ChatRoom:
             is_agent=True
         )
 
-        await self.agent_room.connect(LIVEKIT_URL, agent_token)
+        await self.agent_room.connect(LIVEKIT_LOCAL_URL, agent_token)
         logger.info(f"Agent connected to chat room {self.room_name}")
         self._agent_room_connected.set()
 
@@ -294,15 +295,19 @@ class ChatRoom:
         is_agent: bool = False
     ) -> str:
         """Generate a LiveKit access token."""
+        from datetime import timedelta
         token = api.AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
         token.with_identity(identity)
         token.with_name(identity)
+        token.with_ttl(timedelta(hours=24))
         token.with_grants(api.VideoGrants(
             room_join=True,
             room=self.room_name,
             can_publish=can_publish,
             can_subscribe=can_subscribe,
+            can_publish_data=True,
             agent=is_agent,
+            can_update_own_metadata=is_agent,
         ))
         return token.to_jwt()
 

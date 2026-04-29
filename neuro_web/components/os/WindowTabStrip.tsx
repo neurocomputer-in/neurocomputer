@@ -11,18 +11,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { WindowTab } from '@/types';
 import { APP_MAP } from '@/lib/appRegistry';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import { Globe } from 'lucide-react';
+import AppIconView from './AppIconView';
 
 const OVERFLOW_THRESHOLD = 3;
 const LONG_PRESS_MS = 500;
@@ -88,7 +78,6 @@ function SortableTab({ tab, isActive, onActivate, onClose, isWindowActive, onCon
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
   const app = APP_MAP[tab.appId as keyof typeof APP_MAP];
-  const LucideIcon = app ? (ICON_MAP[app.icon] || Globe) : Globe;
   const color = app?.color ?? '#888';
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRenaming = renamingTabId === tab.id;
@@ -135,7 +124,10 @@ function SortableTab({ tab, isActive, onActivate, onClose, isWindowActive, onCon
         onPointerUp={cancelLongPress}
         onPointerLeave={cancelLongPress}
       >
-        <LucideIcon size={11} color={color} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        {app
+          ? <AppIconView app={app} size={11} color={color} />
+          : <Globe size={11} color={color} strokeWidth={1.8} style={{ flexShrink: 0 }} />
+        }
         {isRenaming ? (
           <input
             autoFocus

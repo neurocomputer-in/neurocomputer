@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, FolderOpen, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -216,41 +217,37 @@ export function ProjectListPanel({ onClose }: { onClose?: () => void }) {
 
 // Desktop-only dropdown panel (mobile uses MobileControlSheet)
 export default function ProjectPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open, onClose]);
-
-  return (
+  return typeof window !== 'undefined' ? createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          ref={panelRef}
-          initial={{ opacity: 0, y: -6, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -6, scale: 0.97 }}
-          transition={{ duration: 0.14, ease: 'easeOut' }}
-          style={{
-            position: 'absolute', top: '100%', left: 0, marginTop: 4,
-            minWidth: 280, maxWidth: 320,
-            background: 'rgba(16,16,20,0.99)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 10,
-            boxShadow: '0 14px 48px rgba(0,0,0,0.7)',
-            zIndex: 500,
-            maxHeight: 480, overflowY: 'auto',
-            padding: 12,
-          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
         >
-          <ProjectListPanel onClose={onClose} />
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            onClick={e => e.stopPropagation()}
+            style={{
+              minWidth: 280, maxWidth: 340, width: '100%',
+              background: 'rgba(16,16,20,0.99)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.75)',
+              maxHeight: '80vh', overflowY: 'auto',
+              padding: 12,
+            }}
+          >
+            <ProjectListPanel onClose={onClose} />
+          </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
-  );
+    </AnimatePresence>,
+    document.body
+  ) : null;
 }

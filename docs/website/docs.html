@@ -28,8 +28,13 @@
             </a>
             <div class="nav-links">
                 <a href="index.html">Home</a>
+                <a href="framework.html">Framework</a>
+                <a href="neurolang.html">NeuroLang</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="research.html">Research</a>
+                <a href="apps.html">Apps</a>
+                <a href="slides.html">Slides</a>
                 <a href="docs.html" class="active">Docs</a>
-                <a href="blog.html">Blog</a>
                 <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
             </div>
         </nav>
@@ -57,6 +62,13 @@
                 <a href="#planner">Planner & DAG</a>
                 <a href="#skills">Skills System</a>
                 <a href="#profiles">Profiles</a>
+
+                <h4>Multi-Agent</h4>
+                <a href="#multi-agent">Rooms · Talk · Schedules</a>
+
+                <h4>NeuroLang</h4>
+                <a href="#neurolang">Integration</a>
+                <a href="neurolang.html">Language docs →</a>
 
                 <h4>API Reference</h4>
                 <a href="#api-chat">Chat</a>
@@ -100,18 +112,28 @@ LIVEKIT_API_SECRET=secret</code></pre>
                 <p>Edit <code>livekit.yaml</code> to set your machine's public IP address under the <code>rtc.use_external_ip</code> field. This is required for the mobile app to connect over the network.</p>
 
                 <h3 id="running">Running the Server</h3>
-                <pre><code># Start LiveKit in the background
+                <pre><code># Install vendored NeuroLang library
+pip install -e ./neurolang
+
+# Start LiveKit in the background (optional)
 livekit-server --config livekit.yaml &
 
 # Start the Neurocomputer server
-python server.py
-# Server is now running at http://0.0.0.0:8000</code></pre>
+python neurocomputer/server.py
+# Server is now running at http://127.0.0.1:7000
+
+# Start the IDE backend (optional, port 8000)
+python3 neurocomputer/scripts/ide_server.py
+
+# Start the web UI
+cd neuro_web && npm install && npm run dev
+# Open http://localhost:3000</code></pre>
 
                 <p>To build and install the Android app:</p>
-                <pre><code>cd neuro_mobile_app
+                <pre><code>cd neuro_mobile
 ./gradlew assembleDebug
 # Install the APK on your device
-# Set server URL in Settings → http://&lt;your-machine-ip&gt;:8000</code></pre>
+# Set server URL in Settings → http://&lt;your-machine-ip&gt;:7000</code></pre>
 
                 <!-- ═══════════════════════════════════════════ -->
                 <!-- MOBILE APPLICATION -->
@@ -121,7 +143,7 @@ python server.py
 
                 <h3 id="mobile-ui">UI Elements</h3>
                 <ul>
-                    <li><strong>Agent Selector</strong> — Tap the agent pill in the header to switch between Neuro, OpenClaw, OpenCode, and NeuroUpwork. Each agent has its own conversation context.</li>
+                    <li><strong>Agent Selector</strong> — Tap the agent pill in the header to switch between Neuro, NL Dev, OpenClaw, OpenCode, and NeuroUpwork. Each agent has its own conversation context.</li>
                     <li><strong>Chat Interface</strong> — Full conversation history with text messages, voice waveform indicators, and per-message TTS playback buttons.</li>
                     <li><strong>Voice Typing</strong> — Hold the microphone button to dictate. The transcription populates the input field in real time.</li>
                     <li><strong>Tab Bar</strong> — Supports multiple conversations per agent, each tracked independently with its own chat history.</li>
@@ -206,14 +228,32 @@ DAG:
                 </table>
 
                 <h3 id="profiles">Profiles</h3>
-                <p>Profiles control which skills are visible to the Brain at any given time:</p>
+                <p>Profiles control which skills and prompt are active at any given time. Each agent owns a default profile.</p>
                 <table>
                     <tr><th>Profile</th><th>Use Case</th></tr>
                     <tr><td><code>general</code></td><td>Default. All general-purpose skills available.</td></tr>
                     <tr><td><code>code_dev</code></td><td>Code editing and project management focus.</td></tr>
-                    <tr><td><code>neuro_dev</code></td><td>Full meta-programming — build and edit skills themselves.</td></tr>
+                    <tr><td><code>neuro_dev</code></td><td>Full meta-programming — build and edit neuros themselves.</td></tr>
+                    <tr><td><code>neurolang_dev</code></td><td>Authoring NeuroLang flows; paired with the <code>nl_dev</code> agent.</td></tr>
                 </table>
-                <p>Switch profiles in chat with <code>/profile code_dev</code> or <code>/dev on</code>.</p>
+                <p>Switch via API: <code>POST /api/profile/switch { "profile": "neurolang_dev" }</code>. Inspect with <code>/api/profile/active</code> and <code>/api/profile/list</code>.</p>
+
+                <h2 id="multi-agent">Multi-Agent</h2>
+                <p>Three primitives compose every multi-agent pattern in Neurocomputer.</p>
+
+                <h3>Meeting Rooms</h3>
+                <p>An isolated real-time collaboration space. Multiple agents share a transcript with a mediator picking the next speaker round-robin. Backed by <code>core/rooms.py</code>, <code>core/rooms_db.py</code>, and four neuros: <code>room_create</code>, <code>room_post</code>, <code>room_close</code>, <code>room_mediator</code>. UI: <code>neuro_web/components/rooms/RoomPanel.tsx</code>. Endpoint: <code>/api/rooms</code>.</p>
+
+                <h3><code>agent.talk</code></h3>
+                <p>Direct typed messages between agents. Depth-guarded (<code>MAX=4</code>) via <code>TalkDepthExceeded</code>. Two neuros: <code>agent_talk</code>, <code>agent_list</code>. The substrate beneath rooms.</p>
+
+                <h3>Schedules</h3>
+                <p>Cron-style triggers persisted to <code>schedules.db</code> via APScheduler. Three neuros: <code>schedule_run</code>, <code>schedule_cancel</code>, <code>schedule_list</code>. Endpoint: <code>/api/schedules</code>.</p>
+
+                <h2 id="neurolang">NeuroLang Integration</h2>
+                <p>NeuroLang is vendored at <code>./neurolang/</code> (Phase 1.9, 172 tests passing). Install with <code>pip install -e ./neurolang</code>.</p>
+                <p>The <code>nl_dev</code> agent wraps NeuroLang's <code>compile_source</code> / <code>propose_plan</code> / <code>decompile_summary</code> through seven <code>nl_*</code> neuros: <code>nl_planner</code>, <code>nl_propose</code>, <code>nl_compile</code>, <code>nl_save</code>, <code>nl_run</code>, <code>nl_summary</code>, <code>nl_reply</code>. Compiled flows land in <code>~/.neurolang/neuros/</code>.</p>
+                <p>See the <a href="neurolang.html" style="color:var(--accent);">NeuroLang page</a> for the language itself.</p>
 
                 <!-- ═══════════════════════════════════════════ -->
                 <!-- API REFERENCE -->
@@ -251,7 +291,7 @@ DAG:
                     <tr><td><code>POST</code></td><td><code>/keyboard/send</code></td><td>Send keystrokes and key combos</td></tr>
                 </table>
 
-                <p style="margin-top: var(--sp-7); color: var(--text-3); font-size: var(--fs-sm);">Full endpoint details are available in <a href="https://github.com/neurocomputer-in/neurocomputer/blob/main/server.py" target="_blank" style="color: var(--accent);">server.py</a>.</p>
+                <p style="margin-top: var(--sp-7); color: var(--text-3); font-size: var(--fs-sm);">Full endpoint details are available in <a href="https://github.com/neurocomputer-in/neurocomputer/blob/main/neurocomputer/server.py" target="_blank" style="color: var(--accent);">server.py</a>. Also see <a href="architecture.html#api" style="color: var(--accent);">the API summary on the architecture page</a>.</p>
 
             </main>
         </div>
@@ -261,12 +301,19 @@ DAG:
             <div class="footer-inner">
                 <div class="footer-brand">
                     <h4>Neurocomputer</h4>
-                    <p>An open-source AI-native ecosystem. Built for a new generation of workflows.</p>
+                    <p>Programmable intelligence as composable engineering.</p>
                 </div>
                 <div class="footer-cols">
                     <div class="footer-col">
-                        <h5>Product</h5>
-                        <a href="index.html">Home</a>
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
                         <a href="docs.html">Documentation</a>
                         <a href="blog.html">Blog</a>
                     </div>
@@ -278,7 +325,7 @@ DAG:
                 </div>
             </div>
             <div class="footer-bottom">
-                © 2026 Neurocomputer. Open source under MIT License.
+                © 2026 Neurocomputer. Open source.
             </div>
         </footer>
     </div>

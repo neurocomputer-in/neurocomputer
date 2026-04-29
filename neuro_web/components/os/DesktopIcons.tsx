@@ -1,20 +1,9 @@
 'use client';
 import { useRef, useCallback, useState } from 'react';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { moveDesktopIcon } from '@/store/iconsSlice';
 import { APP_LIST, AppDef } from '@/lib/appRegistry';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 const ICON_SIZE = 52;
 
@@ -33,7 +22,6 @@ function DesktopIconItem({ app, storedX, storedY, selected, onSelect, onLaunch, 
     moved: boolean;
   } | null>(null);
   const [dragOffset, setDragOffset] = useState<{ dx: number; dy: number } | null>(null);
-  const LucideIcon = ICON_MAP[app.icon] || Globe;
 
   const displayX = storedX + (dragOffset?.dx ?? 0);
   const displayY = storedY + (dragOffset?.dy ?? 0);
@@ -85,18 +73,19 @@ function DesktopIconItem({ app, storedX, storedY, selected, onSelect, onLaunch, 
     >
       <div style={{
         width: ICON_SIZE, height: ICON_SIZE, borderRadius: 13,
-        background: `linear-gradient(145deg, ${app.color}44 0%, ${app.color}22 100%)`,
+        background: app.iconImage ? 'transparent' : `linear-gradient(145deg, ${app.color}44 0%, ${app.color}22 100%)`,
         border: selected
           ? `1.5px solid ${app.color}99`
           : '1px solid rgba(255,255,255,0.09)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
         boxShadow: selected
           ? `0 0 0 2.5px ${app.color}55, 0 6px 18px rgba(0,0,0,0.5)`
           : '0 3px 10px rgba(0,0,0,0.4)',
-        backdropFilter: 'blur(6px)',
+        backdropFilter: app.iconImage ? undefined : 'blur(6px)',
         transition: 'border 0.12s, box-shadow 0.12s',
       }}>
-        <LucideIcon size={24} color={app.color} strokeWidth={1.7} />
+        {app.iconImage ? <AppIconView app={app} fill /> : <AppIconView app={app} size={24} color={app.color} />}
       </div>
       <span style={{
         fontSize: 10.5, fontWeight: 500,

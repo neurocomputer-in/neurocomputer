@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitch Deck — Neurocomputer</title>
+    <meta name="description" content="Neurocomputer pitch deck — vision, trinity, why programmable intelligence.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/theme/black.css">
+    <link rel="stylesheet" href="reveal-theme.css">
+</head>
+<body>
+
+<div class="reveal">
+    <div class="slides">
+
+        <!-- 1. Title -->
+        <section class="hero-slide" data-background-color="#050507">
+            <span class="tag">● Open source · pre-alpha</span>
+            <h1>Programmable<br><span class="highlight">Intelligence.</span></h1>
+            <p class="sub">Neurocomputer is the IDE + runtime for NeuroLang — a Python framework where every capability is a <strong>typed, composable neuro</strong>. From a single skill to a full agency, on one substrate.</p>
+            <div class="slide-footer">Neurocomputer · Pitch Deck</div>
+        </section>
+
+        <!-- 2. The pathology -->
+        <section>
+            <span class="tag">/// Status quo</span>
+            <h2>Agent frameworks today, three pathologies.</h2>
+            <div class="grid-3" style="margin-top:1.2em;">
+                <div class="gcard">
+                    <h4>No compositional reasoning</h4>
+                    <p>A flow's behaviour cannot be derived from the behaviour of its parts. Glue code is opaque.</p>
+                </div>
+                <div class="gcard">
+                    <h4>Untracked side-effects</h4>
+                    <p>Agents write to mailboxes, billing, prod code without surfacing the capability boundary.</p>
+                </div>
+                <div class="gcard">
+                    <h4>Opaque planning</h4>
+                    <p>The "decision" lives inside an LLM context window — irretrievable, irreproducible, unverifiable.</p>
+                </div>
+            </div>
+            <p style="margin-top:1em; font-size:0.7em;">These are not accidents. They are inevitable when you build agents on substrates that <em>erase</em> compositional structure.</p>
+            <div class="slide-footer">Neurocomputer · Pitch · 2 / 12</div>
+        </section>
+
+        <!-- 3. The trinity -->
+        <section>
+            <span class="tag">/// The Trinity</span>
+            <h2>Three names. <span class="highlight">One system.</span></h2>
+            <div class="grid-3" style="margin-top:1em;">
+                <div class="gcard">
+                    <h4>NeuroLang</h4>
+                    <p>The Python library. Typed primitives, composition operators, plans as values.</p>
+                </div>
+                <div class="gcard">
+                    <h4>NeuroNet</h4>
+                    <p>The live runtime. Agents with mailboxes, memory cells, plans-in-flight, effects in motion.</p>
+                </div>
+                <div class="gcard">
+                    <h4>Neurocomputer</h4>
+                    <p>The IDE + runtime fused — like a Lisp Machine. Authoring, execution, and visualisation in one continuous environment.</p>
+                </div>
+            </div>
+            <div class="pull" style="margin-top:1em;">NeuroLang is the language. NeuroNet is the runtime. Neurocomputer is the environment.</div>
+            <div class="slide-footer">Neurocomputer · Pitch · 3 / 12</div>
+        </section>
+
+        <!-- 4. The neuro -->
+        <section>
+            <span class="tag">/// The unit</span>
+            <h2>A neuro is the universal unit.</h2>
+            <div class="grid-2">
+                <div>
+                    <p>A typed, composable runtime unit. Identity, behaviour, optional language surface. The same shape covers <strong>thinking, planning, tool use, memory, model invocation, and behaviour policy</strong>.</p>
+                    <p>Drop a folder in; the runtime sees it. No restart. Hot-loadable. Validated. Versionable.</p>
+                </div>
+                <pre><code>neuros/extract_book/
+├── conf.json    # contract
+├── code.py      # behaviour
+└── prompt.txt   # optional</code></pre>
+            </div>
+            <div class="slide-footer">Neurocomputer · Pitch · 4 / 12</div>
+        </section>
+
+        <!-- 5. Authoring feel -->
+        <section>
+            <span class="tag">/// Authoring feel</span>
+            <h2>A flow reads like a sentence.</h2>
+            <pre><code>from neurolang import neuro, Flow, Memory
+from neurolang.stdlib import web, reason
+
+@neuro(effect="tool")
+def extract_book(url: str) -> dict:
+    """Scrape title, author, summary."""
+    ...
+
+research: Flow = (
+    web.search
+    | extract_book
+    | reason.summarize
+    | memory.store
+)
+
+plan = research.plan(query="category theory")
+plan.cost_estimate()    # budget rolled up
+plan.run(memory=Memory.discrete())
+plan.serialize()        # inspect, replay</code></pre>
+            <div class="slide-footer">Neurocomputer · Pitch · 5 / 12</div>
+        </section>
+
+        <!-- 6. Hierarchy -->
+        <section>
+            <span class="tag">/// Hierarchy</span>
+            <h2>Agency. Project. Agent. Neuro.</h2>
+            <div class="grid-4" style="margin-top:1em;">
+                <div class="gcard"><h4>Agency</h4><p>Workspace + team. Color, emoji, agents.</p></div>
+                <div class="gcard"><h4>Project</h4><p>Unit of work inside an agency.</p></div>
+                <div class="gcard"><h4>Agent</h4><p>Role orchestrator with router + planner + replier + profile.</p></div>
+                <div class="gcard"><h4>Neuro</h4><p>Atomic capability. Hot-loadable.</p></div>
+            </div>
+            <p style="margin-top:1em; font-size:0.75em;">Four layers. Each groups the next. Scale from one capability to a full agency without changing the model.</p>
+            <div class="slide-footer">Neurocomputer · Pitch · 6 / 12</div>
+        </section>
+
+        <!-- 7. What you get -->
+        <section>
+            <span class="tag">/// Capabilities</span>
+            <h2>A complete substrate.</h2>
+            <div class="grid-3" style="margin-top:1em;">
+                <div class="gcard"><h4>Voice</h4><p>STT/TTS over LiveKit. Sub-second round trip.</p></div>
+                <div class="gcard"><h4>3D IDE</h4><p>Graph-native authoring with R3F.</p></div>
+                <div class="gcard"><h4>Meeting Rooms</h4><p>Multi-agent transcripts with mediation.</p></div>
+                <div class="gcard"><h4>Scheduler</h4><p>Cron triggers persisted in SQLite + APScheduler.</p></div>
+                <div class="gcard"><h4>agent.talk</h4><p>Direct typed agent-to-agent messages with depth guard.</p></div>
+                <div class="gcard"><h4>Mobile</h4><p>Android remote with WebRTC desktop streaming.</p></div>
+            </div>
+            <div class="slide-footer">Neurocomputer · Pitch · 7 / 12</div>
+        </section>
+
+        <!-- 8. Multi-agent -->
+        <section>
+            <span class="tag">/// Multi-Agent</span>
+            <h2>Agents that work <span class="highlight">together.</span></h2>
+            <div class="grid-2">
+                <div>
+                    <p><strong>Meeting Rooms.</strong> Multiple agents share a transcript with a mediator picking the next speaker round-robin.</p>
+                    <p><strong><code>agent.talk</code>.</strong> Direct typed messages between agents. Depth-guarded (MAX=4) — the substrate beneath rooms.</p>
+                    <p><strong>Schedules.</strong> Cron-style triggers. "Every morning at 8 send me the summary" — handled by the runtime.</p>
+                </div>
+                <div class="ascii">┌──────────────────────────────────┐
+│  ROOM (room_id)                  │
+│  ┌──────┐ ┌──────┐ ┌────────┐  │
+│  │ NL   │ │ Open │ │ neuro  │  │
+│  │ Dev  │ │ Code │ │        │  │
+│  └──┬───┘ └──┬───┘ └───┬────┘  │
+│     └────────┼─────────┘        │
+│              ▼                    │
+│      room_mediator                │
+│      • routes msgs                │
+│      • picks next                 │
+└──────────────────────────────────┘</div>
+            </div>
+            <div class="slide-footer">Neurocomputer · Pitch · 8 / 12</div>
+        </section>
+
+        <!-- 9. Comparison -->
+        <section>
+            <span class="tag">/// Why different</span>
+            <h2>Architecture, not features.</h2>
+            <table>
+                <tr><th>Capability</th><th>LangChain</th><th>DSPy</th><th>Pydantic AI</th><th>NeuroLang</th></tr>
+                <tr><td>Plans as first-class values</td><td>—</td><td>—</td><td>—</td><td><strong>✓</strong></td></tr>
+                <tr><td>Effects in types</td><td>—</td><td>—</td><td>partial</td><td><strong>✓</strong></td></tr>
+                <tr><td>Budget annotations</td><td>—</td><td>—</td><td>—</td><td><strong>✓</strong></td></tr>
+                <tr><td>Recovery as primitive</td><td>library</td><td>library</td><td>library</td><td><strong>language-level</strong></td></tr>
+                <tr><td>Bidirectional NL ↔ code</td><td>—</td><td>partial</td><td>—</td><td><strong>cached adjunction</strong></td></tr>
+                <tr><td>Categorical / 3D viz</td><td>—</td><td>—</td><td>—</td><td><strong>✓</strong></td></tr>
+            </table>
+            <div class="slide-footer">Neurocomputer · Pitch · 9 / 12</div>
+        </section>
+
+        <!-- 10. Pathway to AGI -->
+        <section>
+            <span class="tag">/// Vision</span>
+            <h2>The pathway to <span class="highlight">AGI.</span></h2>
+            <div style="display:flex; flex-direction:column; gap:0.5em; margin-top:0.5em;">
+                <div class="gcard" style="border-left:3px solid #6b6b76;"><strong>1. Software</strong> <span style="color:var(--r-text-3);">— Hardcoded logic and rigid rules.</span></div>
+                <div class="gcard" style="border-left:3px solid #6b6b76;"><strong>2. Statistical ML</strong> <span style="color:var(--r-text-3);">— Probabilistic pattern recognition.</span></div>
+                <div class="gcard" style="border-left:3px solid #6b6b76;"><strong>3. Generative Models</strong> <span style="color:var(--r-text-3);">— Transformers predicting tokens (LLMs).</span></div>
+                <div class="gcard" style="border-left:3px solid #6b6b76;"><strong>4. Reasoning Models</strong> <span style="color:var(--r-text-3);">— Chain-of-Thought, plan, execute.</span></div>
+                <div class="gcard" style="border-left:3px solid var(--r-accent);"><strong>5. Agentic Systems</strong> <span style="color:var(--r-text-3);">— Autonomous observe-reason-act loops.</span></div>
+                <div class="gcard" style="border-left:3px solid var(--r-accent); background:rgba(0,229,160,0.08);"><strong style="color:var(--r-accent);">6. Agency AI (the Neuro Vision)</strong> <span style="color:var(--r-text-2);">— Hierarchical, modular agencies. Abstract, modifiable, infinitely scalable.</span></div>
+            </div>
+            <div class="slide-footer">Neurocomputer · Pitch · 10 / 12</div>
+        </section>
+
+        <!-- 11. Status -->
+        <section>
+            <span class="tag">/// Status</span>
+            <h2>Where we are.</h2>
+            <div class="grid-4" style="margin-top:1em;">
+                <div class="gcard" style="text-align:center;">
+                    <div class="bigstat">68+</div>
+                    <div class="bigstat-lbl">Built-in neuros</div>
+                </div>
+                <div class="gcard" style="text-align:center;">
+                    <div class="bigstat">5</div>
+                    <div class="bigstat-lbl">Specialised agents</div>
+                </div>
+                <div class="gcard" style="text-align:center;">
+                    <div class="bigstat">172</div>
+                    <div class="bigstat-lbl">NeuroLang tests passing</div>
+                </div>
+                <div class="gcard" style="text-align:center;">
+                    <div class="bigstat">∞</div>
+                    <div class="bigstat-lbl">Compositions</div>
+                </div>
+            </div>
+            <div class="grid-2" style="margin-top:1em;">
+                <div class="gcard">
+                    <h4>Shipping</h4>
+                    <ul>
+                        <li>NeuroLang Phase 1.9 — library + 17 stdlib neuros + agent.delegate</li>
+                        <li>Multi-agent: rooms, talk, schedules</li>
+                        <li>3D Neuro IDE backend wired</li>
+                        <li>Voice agent over LiveKit</li>
+                    </ul>
+                </div>
+                <div class="gcard">
+                    <h4>Next</h4>
+                    <ul>
+                        <li>Phase 2: NL compiler with cached bidirectional adjunction</li>
+                        <li>JAX backend for differentiable flows</li>
+                        <li>Hyperdimensional substrate</li>
+                        <li>Web 3D IDE (Phase 3)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="slide-footer">Neurocomputer · Pitch · 11 / 12</div>
+        </section>
+
+        <!-- 12. CTA -->
+        <section class="hero-slide">
+            <span class="tag">/// Open source</span>
+            <h1>Build something <span class="highlight">composable.</span></h1>
+            <p class="sub">Pre-alpha. APIs unstable. Bones in place. Trinity taking shape. The right Python library + the right authoring surface for agentic coding.</p>
+            <div style="margin-top:2em; display:flex; gap:1em;">
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank" style="padding:1em 2em; background:var(--r-accent); color:var(--r-bg); border-radius:999px; font-weight:600; border-bottom:none;">→ github.com/neurocomputer-in</a>
+                <a href="../index.html" style="padding:1em 2em; background:var(--r-surface); color:var(--r-text-1); border:1px solid var(--r-border); border-radius:999px; border-bottom:none;">neurocomputer.in</a>
+            </div>
+            <div class="slide-footer">Neurocomputer · Pitch · 12 / 12</div>
+        </section>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.0.5/plugin/highlight/highlight.js"></script>
+<script>
+    Reveal.initialize({
+        hash: true,
+        slideNumber: 'c/t',
+        controls: true,
+        progress: true,
+        transition: 'fade',
+        backgroundTransition: 'fade',
+        center: false,
+        width: 1280,
+        height: 800,
+        margin: 0.06,
+        plugins: [ RevealNotes, RevealHighlight ]
+    });
+</script>
+
+</body>
+</html>

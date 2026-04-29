@@ -58,6 +58,13 @@ fun DraggableToolbarOverlay(
     showAgentButton: Boolean = true,
     isRotationLocked: Boolean = false,
     onRotationLockToggle: (() -> Unit)? = null,
+    // Mouse-input mode toggles. Only rendered when a callback is wired so the
+    // toolbar can stay slim in contexts that don't have a remote desktop.
+    isTouchpadMode: Boolean = false,
+    isTabletMode: Boolean = false,
+    onToggleTouchpadMode: (() -> Unit)? = null,
+    onToggleTabletMode: (() -> Unit)? = null,
+    onDisconnect: (() -> Unit)? = null,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     var showLabels by remember { mutableStateOf(false) }
@@ -241,6 +248,42 @@ fun DraggableToolbarOverlay(
                         isActive = isRotationLocked,
                         activeColor = Color(0xFFE57373.toInt()),
                         onClick = onRotationLockToggle,
+                    )
+                }
+
+                // Touchpad mode (relative cursor — better for fine control)
+                if (onToggleTouchpadMode != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ToolbarButton(
+                        icon = Icons.Default.Mouse,
+                        label = if (showLabels) "Touchpad" else "",
+                        isActive = isTouchpadMode,
+                        activeColor = Color(0xFF8B5CF6.toInt()),
+                        onClick = onToggleTouchpadMode,
+                    )
+                }
+
+                // Tablet mode (absolute pointer — tap-to-click on the canvas)
+                if (onToggleTabletMode != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ToolbarButton(
+                        icon = Icons.Default.TabletMac,
+                        label = if (showLabels) "Tablet" else "",
+                        isActive = isTabletMode,
+                        activeColor = Color(0xFF0EA5E9.toInt()),
+                        onClick = onToggleTabletMode,
+                    )
+                }
+
+                // End the desktop session and tear down the LiveKit room
+                if (onDisconnect != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    ToolbarButton(
+                        icon = Icons.Default.Logout,
+                        label = if (showLabels) "Disconnect" else "",
+                        isActive = false,
+                        activeColor = Color(0xFFEF4444.toInt()),
+                        onClick = onDisconnect,
                     )
                 }
 

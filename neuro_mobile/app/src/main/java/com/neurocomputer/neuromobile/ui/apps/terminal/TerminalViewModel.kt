@@ -1,29 +1,45 @@
 package com.neurocomputer.neuromobile.ui.apps.terminal
 
+import android.content.Context
+import android.media.MediaRecorder
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.neurocomputer.neuromobile.data.service.WebSocketService
-import com.neurocomputer.neuromobile.data.service.WsMessage
+import com.neurocomputer.neuromobile.data.repository.BackendUrlRepository
+import com.neurocomputer.neuromobile.data.service.TerminalWsService
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
+import org.json.JSONObject
+import java.io.File
 
-data class TerminalState(
-    val lines: List<List<AnsiSpan>> = emptyList(),
-    val inputText: String = "",
-    val connected: Boolean = false,
+data class TerminalUiState(
+    val keyboardOn: Boolean = false,
+    val isRecording: Boolean = false,
+    val isTranscribing: Boolean = false,
 )
 
 @HiltViewModel(assistedFactory = TerminalViewModel.Factory::class)
 class TerminalViewModel @AssistedInject constructor(
     @Assisted val cid: String,
-    private val webSocketService: WebSocketService,
+    val terminalWs: TerminalWsService,
+    private val httpClient: OkHttpClient,
+    private val backendUrlRepository: BackendUrlRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -31,66 +47,95 @@ class TerminalViewModel @AssistedInject constructor(
         fun create(cid: String): TerminalViewModel
     }
 
-    private val _state = MutableStateFlow(TerminalState())
-    val state: StateFlow<TerminalState> = _state.asStateFlow()
+    private val _ui = MutableStateFlow(TerminalUiState())
+    val ui: StateFlow<TerminalUiState> = _ui.asStateFlow()
 
-    private val MAX_LINES = 2000
+    private var mediaRecorder: MediaRecorder? = null
+    private var audioFile: File? = null
 
     init {
-        _state.update { it.copy(connected = webSocketService.connectionState.value) }
-        connectIfNeeded()
-        observeMessages()
+        terminalWs.start()
     }
 
-    private fun connectIfNeeded() {
-        val connected = webSocketService.connectionState.value
-        if (!connected) {
-            webSocketService.connect(cid)
+    fun setKeyboardOn(on: Boolean) = _ui.update { it.copy(keyboardOn = on) }
+
+    /** Record a short voice clip; on stop, upload to /transcribe and forward the
+     *  text to the supplied callback (which writes it to the pty). */
+    fun startVoiceCapture() {
+        if (_ui.value.isRecording || _ui.value.isTranscribing) return
+        try {
+            val file = File(context.cacheDir, "term_voice_${System.currentTimeMillis()}.m4a")
+            audioFile = file
+            @Suppress("DEPRECATION")
+            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                MediaRecorder()
+            }
+            mediaRecorder!!.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            _ui.update { it.copy(isRecording = true) }
+        } catch (_: Exception) {
+            releaseRecorder()
         }
     }
 
-    private fun observeMessages() {
+    fun stopVoiceCapture(onTranscribed: (String) -> Unit) {
+        if (!_ui.value.isRecording) return
+        try { mediaRecorder?.stop() } catch (_: Exception) {}
+        releaseRecorder()
+        val file = audioFile ?: run {
+            _ui.update { it.copy(isRecording = false) }
+            return
+        }
+        audioFile = null
+        _ui.update { it.copy(isRecording = false, isTranscribing = true) }
+
         viewModelScope.launch {
-            webSocketService.messages.collect { msg ->
-                when (msg) {
-                    is WsMessage.Connected -> _state.update { it.copy(connected = true) }
-                    is WsMessage.Disconnected -> _state.update { it.copy(connected = false) }
-                    is WsMessage.Text -> appendLine(msg.text)
-                    is WsMessage.Json -> {
-                        // Terminal output may arrive as topic "terminal.output" or "output"
-                        if (msg.topic in setOf("terminal.output", "output", "pty.output")) {
-                            appendLine(msg.data)
-                        }
-                    }
-                    is WsMessage.Error -> appendLine("[error] ${msg.error}")
+            try {
+                val baseUrl = backendUrlRepository.currentUrl.value
+                val body = MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", "voice.m4a", file.asRequestBody("audio/m4a".toMediaType()))
+                    .build()
+                val responseBody = withContext(Dispatchers.IO) {
+                    httpClient.newCall(
+                        Request.Builder().url("$baseUrl/transcribe").post(body).build()
+                    ).execute().use { it.body?.string() ?: "" }
                 }
+                file.delete()
+                val text = JSONObject(responseBody).optString("text", "").trim()
+                if (text.isNotEmpty()) onTranscribed(text)
+            } catch (_: Exception) {
+                file.delete()
+            } finally {
+                _ui.update { it.copy(isTranscribing = false) }
             }
         }
     }
 
-    private fun appendLine(raw: String) {
-        val newLines = raw.split("\n").map { AnsiParser.parse(it) }
-        if (newLines.isNotEmpty()) {
-            _state.update { s ->
-                val combined = s.lines + newLines
-                s.copy(lines = if (combined.size > MAX_LINES) combined.takeLast(MAX_LINES) else combined)
-            }
-        }
+    fun cancelVoiceCapture() {
+        try { mediaRecorder?.stop() } catch (_: Exception) {}
+        releaseRecorder()
+        audioFile?.delete()
+        audioFile = null
+        _ui.update { it.copy(isRecording = false) }
     }
 
-    fun onInputChange(text: String) {
-        _state.update { it.copy(inputText = text) }
+    private fun releaseRecorder() {
+        try { mediaRecorder?.release() } catch (_: Exception) {}
+        mediaRecorder = null
     }
 
-    fun sendLine() {
-        var line = ""
-        _state.update { s ->
-            line = s.inputText
-            s.copy(inputText = "")
-        }
-        if (line.isEmpty()) return
-        viewModelScope.launch {
-            webSocketService.sendMessage("$line\n", cid)
-        }
+    override fun onCleared() {
+        super.onCleared()
+        cancelVoiceCapture()
+        terminalWs.close()
     }
 }

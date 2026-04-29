@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +26,7 @@ fun MobileTabStrip(
     onTabClick: (tabId: String) -> Unit,
     onNewTab: () -> Unit,
     onSwitcherOpen: () -> Unit,
+    onMenuOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -34,6 +36,15 @@ fun MobileTabStrip(
             .background(NeuroColors.BackgroundDark),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        IconButton(onClick = onMenuOpen, modifier = Modifier.size(36.dp)) {
+            Icon(
+                Icons.Default.Menu,
+                contentDescription = "Open menu",
+                tint = Color(0xFF9090a0),
+                modifier = Modifier.size(18.dp),
+            )
+        }
+
         if (window == null) return@Row
 
         Row(

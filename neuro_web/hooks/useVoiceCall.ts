@@ -55,7 +55,26 @@ export function useVoiceCall() {
       // Create a separate LiveKit room for voice (audio tracks)
       // The data-channel room stays connected via livekitService
       const { Room, RoomEvent, Track, createLocalAudioTrack } = await import('livekit-client');
-      const voiceRoom = new Room({ adaptiveStream: false, dynacast: false });
+      const voiceRoom = new Room({
+        adaptiveStream: false,
+        dynacast: false,
+        rtcConfig: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            // Free TURN relay — works from mobile/restrictive networks
+            {
+              urls: [
+                'turn:openrelay.metered.ca:80',
+                'turn:openrelay.metered.ca:443',
+                'turns:openrelay.metered.ca:443',
+              ],
+              username: 'openrelayproject',
+              credential: 'openrelayproject',
+            },
+          ],
+        },
+      });
 
       // Handle remote audio (agent TTS)
       voiceRoom.on(RoomEvent.TrackSubscribed, (track: any) => {

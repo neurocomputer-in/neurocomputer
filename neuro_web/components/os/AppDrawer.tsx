@@ -1,27 +1,11 @@
 'use client';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { closeLauncher } from '@/store/osSlice';
 import { APP_LIST, AppDef } from '@/lib/appRegistry';
 import { useIsMobile } from '@/hooks/useIsMobile';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
-
-function AppIcon({ app, size = 64 }: { app: AppDef; size?: number }) {
-  const LucideIcon = ICON_MAP[app.icon] || Globe;
-  return <LucideIcon size={size * 0.44} color="#fff" strokeWidth={1.6} />;
-}
+import AppIconView from './AppIconView';
 
 interface Props {
   onLaunch: (app: AppDef) => void;
@@ -145,12 +129,13 @@ function AppButton({ app, iconSize, isMobile, onClick }: {
       <div style={{
         width: iconSize, height: iconSize,
         borderRadius: '14px',
-        background: app.color,
+        background: app.iconImage ? 'transparent' : app.color,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
         boxShadow: `0 4px 14px ${app.color}55, 0 1px 3px rgba(0,0,0,0.3)`,
         flexShrink: 0,
       }}>
-        <AppIcon app={app} size={iconSize} />
+        {app.iconImage ? <AppIconView app={app} fill /> : <AppIconView app={app} size={Math.round(iconSize * 0.44)} />}
       </div>
       <span style={{
         fontSize: isMobile ? '11px' : '12px', fontWeight: 500,

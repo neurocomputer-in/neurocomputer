@@ -1,18 +1,8 @@
 'use client';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { WindowTab } from '@/types';
 import { APP_MAP } from '@/lib/appRegistry';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 interface Props {
   tabs: WindowTab[];
@@ -43,7 +33,6 @@ export default function TabOverviewPopover({ tabs, activeTabId, onActivate, onCl
         </p>
         {tabs.map(tab => {
           const app = APP_MAP[tab.appId as keyof typeof APP_MAP];
-          const Icon = app ? (ICON_MAP[app.icon] || Globe) : Globe;
           const color = app?.color ?? '#888';
           const isActive = tab.id === activeTabId;
           return (
@@ -59,7 +48,7 @@ export default function TabOverviewPopover({ tabs, activeTabId, onActivate, onCl
               onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
               onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
             >
-              <Icon size={13} color={color} strokeWidth={1.8} />
+              {app ? <AppIconView app={app} size={13} color={color} /> : <Globe size={13} color={color} strokeWidth={1.8} />}
               <span style={{ fontSize: 12, color: isActive ? '#e0e0e0' : '#888', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {tab.title}
               </span>

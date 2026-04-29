@@ -1,15 +1,18 @@
 package com.neurocomputer.neuromobile.ui.apps.chat
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
@@ -20,11 +23,13 @@ import com.neurocomputer.neuromobile.domain.model.Message
 @Composable
 fun ChatMessageList(
     messages: List<Message>,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val itemCount = messages.size + if (isLoading) 1 else 0
     val listState = rememberLazyListState()
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
     }
     LazyColumn(
         state = listState,
@@ -34,6 +39,36 @@ fun ChatMessageList(
     ) {
         items(messages, key = { it.id }) { msg ->
             ChatMessageBubble(message = msg)
+        }
+        if (isLoading) {
+            item(key = "__thinking__") { ThinkingBubble() }
+        }
+    }
+}
+
+@Composable
+private fun ThinkingBubble() {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp))
+                .background(Color(0xFF1e1e2e))
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                val transition = rememberInfiniteTransition(label = "think")
+                listOf(0, 150, 300).forEach { delayMs ->
+                    val alpha by transition.animateFloat(
+                        initialValue = 0.25f, targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(600, delayMillis = delayMs, easing = EaseInOut),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                        label = "dot$delayMs",
+                    )
+                    Box(Modifier.size(7.dp).alpha(alpha).background(Color(0xFF8B5CF6), CircleShape))
+                }
+            }
         }
     }
 }

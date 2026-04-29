@@ -2,16 +2,12 @@
 import { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Globe, Code, Briefcase, Terminal, Layers, LayoutGrid, Tv2 } from 'lucide-react';
+import { Globe, LayoutGrid } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { focusWindow, minimizeWindow, maximizeWindow, toggleLauncher } from '@/store/osSlice';
 import { APP_LIST, APP_MAP, AppDef, AppId } from '@/lib/appRegistry';
 import { useIsMobile } from '@/hooks/useIsMobile';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 function DockIcon({ app, running, hasWindows, onClick, onRightClick }: {
   app: AppDef;
@@ -20,7 +16,6 @@ function DockIcon({ app, running, hasWindows, onClick, onRightClick }: {
   onClick: () => void;
   onRightClick: (e: React.MouseEvent) => void;
 }) {
-  const LucideIcon = ICON_MAP[app.icon] || Globe;
   const [hover, setHover] = useState(false);
   const isMobile = useIsMobile();
 
@@ -69,15 +64,16 @@ function DockIcon({ app, running, hasWindows, onClick, onRightClick }: {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         style={{
           borderRadius: '10px',
-          background: app.color,
+          background: app.iconImage ? 'transparent' : app.color,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden',
           boxShadow: running
             ? `0 2px 12px ${app.color}66`
             : '0 1px 4px rgba(0,0,0,0.2)',
           opacity: running ? 1 : 0.7,
         }}
       >
-        <LucideIcon size={size * 0.45} color="#fff" strokeWidth={1.6} />
+        {app.iconImage ? <AppIconView app={app} fill /> : <AppIconView app={app} size={Math.round(size * 0.45)} />}
       </motion.div>
       {/* Running dot */}
       <div style={{

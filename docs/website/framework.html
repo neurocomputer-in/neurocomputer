@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Neuro Framework — Neurocomputer</title>
+    <meta name="description" content="The Neuro Framework: ten primitive classes (model, prompt, instruction, context, memory, skill, workflow, agent, code, library) composing into agencies, projects, and agents.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="framework.html" class="active">Framework</a>
+                <a href="neurolang.html">NeuroLang</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="research.html">Research</a>
+                <a href="apps.html">Apps</a>
+                <a href="slides.html">Slides</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="page-hero">
+            <span class="section-tag">The Framework</span>
+            <h1>The <span class="highlight">Neuro Framework.</span><br>A modular cognition substrate.</h1>
+            <p>If a capability matters for intelligent behaviour, it should be representable as a <strong>neuro</strong>. If neuros are composable and reusable, the system becomes <em>programmable intelligence</em>. If programmable intelligence is scalable, we have a credible path toward agentic OS engineering.</p>
+        </section>
+
+        <div class="subnav">
+            <a href="#unit">The Unit</a>
+            <a href="#kinds">Ten Kinds</a>
+            <a href="#hierarchy">Hierarchy</a>
+            <a href="#orchestration">Orchestration</a>
+            <a href="#multiagent">Multi-Agent</a>
+            <a href="#profiles">Profiles</a>
+            <a href="#authoring">Authoring</a>
+            <a href="#ide">3D IDE</a>
+            <a href="#turing">Universality</a>
+        </div>
+
+        <!-- ═══ The Unit ═══ -->
+        <section class="section" id="unit">
+            <span class="section-tag">The Unit</span>
+            <h2 class="section-title">A neuro is the universal unit.</h2>
+            <p class="section-desc">A neuro is a typed, composable runtime unit with identity, behaviour, and an optional language surface. The same shape covers thinking, planning, tool use, memory, model invocation, and behaviour policy.</p>
+
+            <div class="hero-grid-cta" style="margin-top:var(--sp-5);">
+                <div>
+                    <h3 style="font-family:'Outfit',sans-serif;font-size:var(--fs-xl);margin-bottom:var(--sp-3);">conf · code · prompt</h3>
+                    <p style="color:var(--text-2);font-weight:300;line-height:1.8;">A neuro folder declares its identity in <code>conf.json</code>, its behaviour in <code>code.py</code>, and an optional prompt surface in <code>prompt.txt</code>. The factory hot-discovers folders at runtime — drop one in, the runtime sees it.</p>
+                    <p style="color:var(--text-2);font-weight:300;line-height:1.8;">There is no atomic level the user must reach. Composites are first-class — a neuro can itself be a graph of neuros. The framework is <strong>fractally compositional</strong>.</p>
+                </div>
+                <div class="demo">
+neuros/extract_book/
+├── <span class="k">conf.json</span>
+│   {
+│     <span class="v">"name"</span>: <span class="k">"extract_book"</span>,
+│     <span class="v">"kind"</span>:  <span class="k">"skill.web"</span>,
+│     <span class="v">"effect"</span>: <span class="k">"tool"</span>,
+│     <span class="v">"inputs"</span>: { <span class="v">"url"</span>: <span class="k">"str"</span> },
+│     <span class="v">"output"</span>: <span class="k">"dict"</span>
+│   }
+├── <span class="k">code.py</span>      <span class="c"># async run(state)</span>
+└── <span class="k">prompt.txt</span>    <span class="c"># optional</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Ten Kinds ═══ -->
+        <section class="section" id="kinds">
+            <span class="section-tag">Ten Kinds</span>
+            <h2 class="section-title">A taxonomy with intent.</h2>
+            <p class="section-desc">Ten first-class neuro classes. Each has a base type, a folder convention, and a place in composition. Together they form the framework's vocabulary.</p>
+
+            <div class="prim-grid" style="margin-top:var(--sp-5);">
+                <div class="prim"><div class="name">Model neuro</div><div class="desc">Provider/model abstraction. Hot-swappable backends (OpenAI, Anthropic, Ollama Gemma, local). <code>core/model_neuro.py</code>, <code>core/llm_registry.py</code>.</div></div>
+                <div class="prim"><div class="name">Prompt neuro</div><div class="desc">Prompt blocks and composers as reusable modules. Typed slots; composes categorically. <code>core/prompt_neuro.py</code>.</div></div>
+                <div class="prim"><div class="name">Instruction neuro</div><div class="desc">Rules, policy, tone as explicit behavioural constraints. <code>core/instruction_neuro.py</code>.</div></div>
+                <div class="prim"><div class="name">Context neuro</div><div class="desc">Context slicing and assembly as programmable operations. Typed I/O contracts. <code>core/context_neuro.py</code>.</div></div>
+                <div class="prim"><div class="name">Memory neuro</div><div class="desc">Store, recall, extraction, categorisation, consolidation. Layered memory logic. <code>core/memory.py</code>, <code>core/memory_graph.py</code>.</div></div>
+                <div class="prim"><div class="name">Skill neuro</div><div class="desc">Concrete capabilities — system ops, integrations, domain tools. The largest namespace.</div></div>
+                <div class="prim"><div class="name">Workflow neuro</div><div class="desc">Sequential, DAG, parallel, looped orchestration. <code>core/flows/</code>.</div></div>
+                <div class="prim"><div class="name">Agent neuro</div><div class="desc">Role-specialised orchestration units built from other neuros. <code>core/agent_neuro.py</code>.</div></div>
+                <div class="prim"><div class="name">Code neuro</div><div class="desc">Read, write, diff, patch, plan, scan operations for self-modification and coding workflows.</div></div>
+                <div class="prim"><div class="name">Library neuro</div><div class="desc">Registry, taxonomy, discoverability so neuros can be reused like language primitives.</div></div>
+            </div>
+
+            <p style="margin-top:var(--sp-5);color:var(--text-2);font-weight:300;line-height:1.8;">This is why the framework is language-like. It has <strong>vocabulary</strong> (kinds and namespaces), <strong>grammar</strong> (composition operators), <strong>semantics</strong> (typed contracts), <strong>runtime</strong> (factory + brain + executor + event bus), and a <strong>standard library</strong> (built-in neuros and reusable domain libraries).</p>
+        </section>
+
+        <!-- ═══ Hierarchy ═══ -->
+        <section class="section" id="hierarchy">
+            <span class="section-tag">The Hierarchy</span>
+            <h2 class="section-title">From neuro to agency.</h2>
+            <p class="section-desc">Four layers. Each groups the next. The runtime is built so you can scale a thought from a single capability to an entire agency without changing the model.</p>
+
+            <div class="hierarchy-diag">
+                <div class="h-step">
+                    <div class="num">L1 — Agency</div>
+                    <h4>Workspace + team</h4>
+                    <p>Color, emoji, set of agents, default project. <code>core/agency.py</code>, <code>core/agency_configs.py</code>. Shipped: <em>Neuro HQ, Upwork, Web Agency.</em></p>
+                </div>
+                <div class="h-step">
+                    <div class="num">L2 — Project</div>
+                    <h4>Unit of work</h4>
+                    <p>Lives inside an agency. Default project always present. <code>core/project.py</code>, <code>core/project_configs.py</code>, <code>core/defaults.py</code>.</p>
+                </div>
+                <div class="h-step">
+                    <div class="num">L3 — Agent</div>
+                    <h4>Role orchestrator</h4>
+                    <p>Owns router, planner, replier, profile. <code>core/agent.py</code>, <code>core/agent_manager.py</code>. Shipped: <em>neuro, nl_dev, opencode, openclaw, upwork.</em></p>
+                </div>
+                <div class="h-step">
+                    <div class="num">L4 — Neuro</div>
+                    <h4>Atomic capability</h4>
+                    <p>The composable unit. Discovered by <code>core/neuro_factory.py</code>, all share <code>core/base_neuro.py</code> contract.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Orchestration ═══ -->
+        <section class="section" id="orchestration">
+            <span class="section-tag">Orchestration</span>
+            <h2 class="section-title">The Brain — Reason + Act.</h2>
+            <p class="section-desc">Every message hits the brain first. In a single LLM call, the smart router classifies: direct reply, or skill execution? Simple things stay fast. Complex things get planned and executed.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Smart Router</h3>
+                    <p>The first stage. One LLM call asks: "is this conversational, or does it need a skill?" Direct reply → respond now. Skill needed → identify and pass to the planner.</p>
+                    <h3 style="margin-top:var(--sp-5);">Planner & DAG</h3>
+                    <p>For multi-step work, the planner builds a Directed Acyclic Graph of skill calls. Each node is one neuro invocation; outputs feed into later inputs. The executor walks the graph node by node.</p>
+                </div>
+                <div class="visual">User Input
+    │
+    ▼
+ Router ─── "just chat?" ─── Direct Reply
+    │
+    ▼ needs a skill
+ Planner ─── builds DAG
+    │
+    ▼
+ Executor ─── A → B → C
+    │
+    ▼
+ Reply ─── final answer</div>
+            </div>
+
+            <div class="split reverse">
+                <div>
+                    <h3>Tool-loop neuro</h3>
+                    <p>Some tasks aren't a fixed DAG — they need iteration. The tool-loop neuro lets a neuro call tools in-reply, observe, and continue. Bounded, depth-guarded, observable.</p>
+                    <h3 style="margin-top:var(--sp-5);">Hot discovery</h3>
+                    <p>The factory rescans <code>neurocomputer/neuros/</code> at runtime. Drop in a folder, it appears. Edit code, the next call uses the new version. No restart.</p>
+                </div>
+                <div class="visual">brain.handle(msg)
+   │
+   ├── smart_router  (intent)
+   │
+   ├── planner       (DAG)
+   │
+   ├── executor      (run nodes)
+   │
+   └── reply         (final)
+
+neuro_factory.discover()
+   ├── walk neuros/
+   ├── load conf.json
+   └── attach to registry</div>
+            </div>
+        </section>
+
+        <!-- ═══ Multi-Agent ═══ -->
+        <section class="section" id="multiagent">
+            <span class="section-tag">Multi-Agent</span>
+            <h2 class="section-title">Rooms, talk, schedules.</h2>
+            <p class="section-desc">Three primitives compose every multi-agent pattern: a typed talk primitive, persistent rooms with mediation, and time-aware triggers.</p>
+
+            <div class="card-grid" style="margin-top:var(--sp-5);">
+                <div class="glass-card">
+                    <div class="card-header"><span class="card-badge">Rooms</span></div>
+                    <h3>Meeting Rooms</h3>
+                    <p>Multiple agents share a transcript. A mediator picks the next speaker round-robin. Visible in <code>RoomPanel.tsx</code>. Backed by <code>rooms_db.py</code> and four neuros: <code>room_create</code>, <code>room_post</code>, <code>room_close</code>, <code>room_mediator</code>. Endpoint: <code>/api/rooms</code>.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="card-header"><span class="card-badge">Talk</span></div>
+                    <h3><code>agent.talk(target, msg)</code></h3>
+                    <p>Direct typed messages between agents. Depth-guarded (<code>MAX=4</code>) to prevent infinite loops via <code>TalkDepthExceeded</code>. Two neuros: <code>agent_talk</code>, <code>agent_list</code>. The substrate beneath rooms; the seed of categorical mailbox protocols.</p>
+                </div>
+                <div class="glass-card">
+                    <div class="card-header"><span class="card-badge">Schedules</span></div>
+                    <h3>Cron-style triggers</h3>
+                    <p>Persisted to <code>schedules.db</code> via APScheduler. Three neuros: <code>schedule_run</code>, <code>schedule_cancel</code>, <code>schedule_list</code>. "Set a timer", "every morning at 8 send me the summary" — scheduled from chat.</p>
+                </div>
+            </div>
+
+            <p style="margin-top:var(--sp-4);"><a href="architecture.html#multiagent" style="color:var(--accent);font-size:var(--fs-sm);">Architecture deep-dive on multi-agent →</a></p>
+        </section>
+
+        <!-- ═══ Profiles ═══ -->
+        <section class="section" id="profiles">
+            <span class="section-tag">Profiles</span>
+            <h2 class="section-title">Behaviour packs you can swap.</h2>
+            <p class="section-desc">A profile is a behaviour pack — model choice, system prompt, defaults — applied at the agent level. Switch with one API call.</p>
+
+            <div class="compare-wrap" style="margin-top:var(--sp-5);">
+                <table>
+                    <tr>
+                        <th class="feature">Profile</th>
+                        <th>Use</th>
+                        <th>Paired Agent</th>
+                    </tr>
+                    <tr><td><code>general</code></td><td>Default conversational agent. All general-purpose skills available.</td><td><code>neuro</code></td></tr>
+                    <tr><td><code>code_dev</code></td><td>Code editing and project management focus.</td><td><code>opencode</code> / <code>neuro</code></td></tr>
+                    <tr><td><code>neuro_dev</code></td><td>Authoring neuros inside Neurocomputer. Meta-programming.</td><td><code>neuro</code></td></tr>
+                    <tr><td><code>neurolang_dev</code></td><td>Authoring NeuroLang flows. Wraps <code>compile_source</code>, <code>propose_plan</code>, <code>decompile_summary</code>.</td><td><code>nl_dev</code></td></tr>
+                </table>
+            </div>
+
+            <pre><code><span style="color:var(--text-3);"># Switch profile</span>
+POST /api/profile/switch  { "profile": "neurolang_dev" }
+GET  /api/profile/active
+GET  /api/profile/list</code></pre>
+        </section>
+
+        <!-- ═══ Authoring ═══ -->
+        <section class="section" id="authoring">
+            <span class="section-tag">Authoring</span>
+            <h2 class="section-title">Write a neuro in three files.</h2>
+            <p class="section-desc">Add a folder under <code>neurocomputer/neuros/&lt;name&gt;/</code>. Declare its contract. Implement its behaviour. Test it. Hot-load.</p>
+
+            <pre><code>neurocomputer/neuros/extract_book/
+├── conf.json    <span style="color:var(--text-3);"># name, kind, inputs/outputs, model</span>
+├── code.py      <span style="color:var(--text-3);"># async def run(state, **kwargs) -> dict</span>
+└── prompt.txt   <span style="color:var(--text-3);"># optional, for LLM-driven neuros</span>
+</code></pre>
+
+            <p style="color:var(--text-2);font-weight:300;line-height:1.8;">Validate and run through the IDE backend or <code>core/neuro_factory.py</code>. Tests live in <code>neurocomputer/tests/</code>.</p>
+
+            <pre><code>python3 neurocomputer/scripts/ide_server.py        <span style="color:var(--text-3);"># IDE backend, port 8000</span>
+cd neuro_web && NEXT_PUBLIC_IDE_URL=http://127.0.0.1:8000 npm run dev
+<span style="color:var(--text-3);"># open http://localhost:3000/graph</span></code></pre>
+        </section>
+
+        <!-- ═══ 3D IDE ═══ -->
+        <section class="section" id="ide">
+            <span class="section-tag">Neurogramming</span>
+            <h2 class="section-title">LEGO for coding.</h2>
+            <p class="section-desc">The 3D Neuro IDE is not an accessory — it is the interaction model. Visualise neuros as graph-native programmable units. Inspect contracts, code, and prompts together. Compose visually and textually.</p>
+
+            <div class="card-grid">
+                <div class="glass-card">
+                    <h3>Graph-native</h3>
+                    <p>Built on <code>@react-three/fiber</code>. Nodes coloured by kind: skill, memory, model, prompt, agent. Drag to rearrange. Click to drill in.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Source-aware editing</h3>
+                    <p>Each neuro surfaces its <code>conf.json</code>, <code>code.py</code>, and <code>prompt.txt</code> together. Validation runs on save. Hot-load on success.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Safe save pipeline</h3>
+                    <p>Validation → snapshot → save → reload registry. If validation fails, the previous version stays live.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Reusable across projects</h3>
+                    <p>Build a neuro once; use it across agencies, projects, and agents. The library namespace makes discovery uniform.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Universality ═══ -->
+        <section class="section" id="turing">
+            <span class="section-tag">Universality</span>
+            <h2 class="section-title">Computationally complete.</h2>
+            <p class="section-desc">The framework is computationally universal in direction. It supports state, branching, iterative execution, unbounded composition, and external I/O. General computation is expressible through neuro composition — not just prompt chaining.</p>
+
+            <div class="quote">
+                "If a capability matters for intelligent behaviour, it should be representable as a neuro. If neuros are composable and reusable, the system becomes programmable intelligence. If programmable intelligence is scalable, we have a credible path toward AGI systems engineering."
+            </div>
+
+            <div style="display:flex; gap:var(--sp-3); flex-wrap:wrap; margin-top:var(--sp-5);">
+                <a href="neurolang.html" class="btn btn-accent">→ See the language</a>
+                <a href="research.html" class="btn btn-ghost">Read the research</a>
+            </div>
+        </section>
+
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>Programmable intelligence as composable engineering.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">© 2026 Neurocomputer. Open source.</div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.section, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

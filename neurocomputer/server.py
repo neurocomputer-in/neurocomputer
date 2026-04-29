@@ -1180,12 +1180,12 @@ async def get_conversation_llm(cid: str):
 async def update_conversation_llm(cid: str, body: dict):
     conv_file = Path(__file__).parent / "conversations" / f"{cid}.json"
     if not conv_file.exists():
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    with open(conv_file) as fp:
-        data = json.load(fp)
-    if not isinstance(data, dict):
-        data = {"messages": data}
+        data = {"messages": [], "llm_settings": get_default_llm_settings()}
+    else:
+        with open(conv_file) as fp:
+            data = json.load(fp)
+        if not isinstance(data, dict):
+            data = {"messages": data}
 
     settings = data.get("llm_settings") or get_default_llm_settings()
     provider = body.get("provider")

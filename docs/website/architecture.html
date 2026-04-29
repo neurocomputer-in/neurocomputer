@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture — Neurocomputer</title>
+    <meta name="description" content="Multi-agency architecture, brain orchestration, 5-layer memory, meeting rooms, schedules, agent.talk, voice pipeline. The system anatomy of Neurocomputer.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-brand">
+                <img src="assets/neuro.png" alt="Neurocomputer">
+                Neurocomputer
+            </a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="framework.html">Framework</a>
+                <a href="neurolang.html">NeuroLang</a>
+                <a href="architecture.html" class="active">Architecture</a>
+                <a href="research.html">Research</a>
+                <a href="apps.html">Apps</a>
+                <a href="slides.html">Slides</a>
+                <a href="docs.html">Docs</a>
+                <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+            </div>
+        </nav>
+
+        <section class="page-hero">
+            <span class="section-tag">System Anatomy</span>
+            <h1><span class="highlight">Architecture.</span><br>From neuro to multi-agent.</h1>
+            <p>The runtime is layered. A typed neuro substrate at the bottom; a four-tier hierarchy on top. Brain orchestration, five-layer memory, meeting rooms, schedules, agent-to-agent talk, voice — all wired through a single shared runtime.</p>
+        </section>
+
+        <div class="subnav">
+            <a href="#hierarchy">Hierarchy</a>
+            <a href="#brain">Brain</a>
+            <a href="#flows">Flows</a>
+            <a href="#memory">Memory</a>
+            <a href="#multiagent">Multi-Agent</a>
+            <a href="#schedules">Schedules</a>
+            <a href="#voice">Voice</a>
+            <a href="#sandbox">Sandbox</a>
+            <a href="#api">API</a>
+        </div>
+
+        <!-- Hierarchy -->
+        <section class="section" id="hierarchy">
+            <span class="section-tag">Hierarchy</span>
+            <h2 class="section-title">Four layers, one substrate.</h2>
+            <p class="section-desc">Agency wraps Project wraps Agent wraps Neuro. Each layer adds scope; none change the model. The neuro at the bottom is the same atomic unit whether it's running standalone or inside a meeting room of agents.</p>
+
+            <div class="hierarchy-diag">
+                <div class="h-step">
+                    <div class="num">L1</div>
+                    <h4>Agency</h4>
+                    <p>Top-level workspace — a team. Color, emoji, set of agents, default project. Shipped: <em>Neuro HQ, Upwork, Web Agency.</em></p>
+                </div>
+                <div class="h-step">
+                    <div class="num">L2</div>
+                    <h4>Project</h4>
+                    <p>Unit of work inside an agency. Default project ships with every agency. Boundaries for memory and conversations.</p>
+                </div>
+                <div class="h-step">
+                    <div class="num">L3</div>
+                    <h4>Agent</h4>
+                    <p>Role-specialised orchestrator with router + planner + replier + profile. Shipped: <em>neuro, nl_dev, opencode, openclaw, upwork.</em></p>
+                </div>
+                <div class="h-step">
+                    <div class="num">L4</div>
+                    <h4>Neuro</h4>
+                    <p>The atomic unit. <code>conf.json</code> + <code>code.py</code> + optional <code>prompt.txt</code>. Hot-loadable.</p>
+                </div>
+            </div>
+
+            <div class="quote" style="margin-top:var(--sp-5);">
+                Loose coupling via events. Agents within an agency don't call each other directly — they communicate via shared state, workflow triggers, and the event bus. Agencies are loosely coupled; they communicate through the blackboard and shared events.
+            </div>
+        </section>
+
+        <!-- Brain -->
+        <section class="section" id="brain">
+            <span class="section-tag">Brain</span>
+            <h2 class="section-title">Reason + Act, end-to-end.</h2>
+            <p class="section-desc">The brain implements a ReAct loop. Every message is classified by the smart router. Conversational ones get answered immediately. Skill-needing ones go through the planner, executor, and reply.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Smart Router</h3>
+                    <p>One LLM call to classify intent. Direct reply, or skill execution? If a skill is needed, identify which one and pass to the planner. Simple questions get answered instantly.</p>
+                    <h3 style="margin-top:var(--sp-5);">Planner</h3>
+                    <p>For multi-step requests, the planner breaks the goal into a Directed Acyclic Graph of skill calls. Each node is one neuro invocation; outputs flow into later inputs.</p>
+                    <h3 style="margin-top:var(--sp-5);">Executor</h3>
+                    <p>Walks the graph node by node. Handles errors, retries, hooks. Captures <code>node.log</code> events. Streams progress over WebSocket.</p>
+                </div>
+                <div class="visual">User: "Find my latest screenshot
+       and describe what's on screen"
+
+DAG built by planner:
+  Node 1: list_files(
+            dir="~/Screenshots",
+            sort="newest")
+  Node 2: read_file(
+            path=Node1.output[0])
+  Node 3: describe_image(
+            image=Node2.output)
+  Node 4: reply(
+            text=Node3.output)
+
+Executor runs node-by-node.
+Each output feeds the next.
+Errors → retries → fallback.</div>
+            </div>
+        </section>
+
+        <!-- Flows -->
+        <section class="section" id="flows">
+            <span class="section-tag">Flow Engine</span>
+            <h2 class="section-title">Sequential. Parallel. DAG. Loop.</h2>
+            <p class="section-desc">The flow engine supports four composition strategies, all available as neuros. Categorical morphism composition under the hood — the laws (associativity, identity) hold.</p>
+
+            <div class="card-grid">
+                <div class="glass-card">
+                    <h3>Sequential</h3>
+                    <p><code>core/flows/sequential_flow.py</code> — <code>A | B | C</code>. The default. Output of A feeds B, output of B feeds C.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Parallel</h3>
+                    <p><code>core/flows/parallel_flow.py</code> — <code>A &amp; B</code>. Both run concurrently via <code>asyncio.gather</code>; outputs combine.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>DAG</h3>
+                    <p><code>core/flows/dag_flow.py</code> — Multi-path with conditions and parallel branches. Supports loops, human-gates, sub-graphs.</p>
+                </div>
+                <div class="glass-card">
+                    <h3>Tool-loop</h3>
+                    <p><code>core/tool_loop_neuro.py</code> — Iterative: a neuro calls tools in-reply, observes, continues. Bounded, depth-guarded.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Memory -->
+        <section class="section" id="memory">
+            <span class="section-tag">Memory</span>
+            <h2 class="section-title">Five layers. Bounded. Lossless.</h2>
+            <p class="section-desc">A graph-first substrate with a 5-layer query pattern. Cheap always-loaded footprint; deep recall on demand. LLM-maintained taxonomy — categories grow with the data, not from a hardcoded list.</p>
+
+            <div class="layer-stack" style="margin-top:var(--sp-5);">
+                <div class="layer">
+                    <div class="L">L0</div>
+                    <div>
+                        <h4>Identity</h4>
+                        <p>Core agent identity + user identity. Hand-authored. Always loaded.</p>
+                    </div>
+                    <div class="tok">~50 tok</div>
+                </div>
+                <div class="layer">
+                    <div class="L">L1</div>
+                    <div>
+                        <h4>Critical facts (AAAK)</h4>
+                        <p>Top-priority facts in compressed form. Refreshed nightly by an LLM librarian.</p>
+                    </div>
+                    <div class="tok">~120 tok</div>
+                </div>
+                <div class="layer">
+                    <div class="L">L2</div>
+                    <div>
+                        <h4>Taxonomy</h4>
+                        <p>Categories: wings / rooms / halls. Names + one-line definitions. Always-loaded as an index.</p>
+                    </div>
+                    <div class="tok">~200 tok</div>
+                </div>
+                <div class="layer">
+                    <div class="L">L3</div>
+                    <div>
+                        <h4>Facts</h4>
+                        <p>Structured facts in temporal KG + embedding. Loaded on topic relevance via PPR + vector hybrid retrieval.</p>
+                    </div>
+                    <div class="tok">dynamic</div>
+                </div>
+                <div class="layer">
+                    <div class="L">L4</div>
+                    <div>
+                        <h4>Drawers</h4>
+                        <p>Verbatim source — the existing <code>conversations/*.json</code>. Loaded on explicit deep-dive only. Never destructively summarised.</p>
+                    </div>
+                    <div class="tok">on-demand</div>
+                </div>
+            </div>
+
+            <div class="quote">
+                The 5-layer hierarchy is a query pattern, not a schema constraint. Underlying storage is a typed property graph — uniform nodes, N-ary typed edges, temporal validity. Hypergraph-ready without migration.
+            </div>
+
+            <h3 style="font-family:'Outfit',sans-serif;font-size:var(--fs-xl);margin:var(--sp-5) 0 var(--sp-3);">Memory neuros</h3>
+            <div class="prim-grid">
+                <div class="prim"><div class="name">memory_extract</div><div class="desc">Messages → durable facts JSON. Runs every 15 turns. Local Gemma4 E4B.</div></div>
+                <div class="prim"><div class="name">memory_categorize</div><div class="desc">Routes a fact to a category, or proposes a new one. Top-3 nearest-neighbour gate.</div></div>
+                <div class="prim"><div class="name">memory_recall</div><div class="desc">User-facing semantic query: "what did we decide about X?"</div></div>
+                <div class="prim"><div class="name">memory_save</div><div class="desc">Explicit "remember that Y" save.</div></div>
+                <div class="prim"><div class="name">memory_supersede</div><div class="desc">Detect contradiction; close old <code>valid_to</code>; create new edge.</div></div>
+                <div class="prim"><div class="name">memory_consolidate</div><div class="desc">Weekly merge / split / rename pass on the taxonomy.</div></div>
+                <div class="prim"><div class="name">memory_l1_refresh</div><div class="desc">Nightly regeneration of AAAK-compressed L1.</div></div>
+                <div class="prim"><div class="name">memory_browse</div><div class="desc">Show categories, wings, rooms. UI surface for the librarian.</div></div>
+            </div>
+        </section>
+
+        <!-- Multi-Agent -->
+        <section class="section" id="multiagent">
+            <span class="section-tag">Multi-Agent</span>
+            <h2 class="section-title">Rooms. Talk. Mediation.</h2>
+            <p class="section-desc">Three primitives compose every multi-agent pattern: a typed talk primitive, persistent meeting rooms with mediation, and time-aware triggers (next section).</p>
+
+            <div class="split">
+                <div>
+                    <h3>Meeting Rooms</h3>
+                    <p>An isolated real-time collaboration space. Multiple agents share a transcript. A mediator picks the next speaker round-robin. Backed by <code>core/rooms.py</code> and <code>core/rooms_db.py</code> with four neuros: <code>room_create</code>, <code>room_post</code>, <code>room_close</code>, <code>room_mediator</code>.</p>
+                    <p>UI surface: <code>neuro_web/components/rooms/RoomPanel.tsx</code>. Endpoint: <code>/api/rooms</code>.</p>
+                </div>
+                <div class="visual">┌──────────────────────────────────────┐
+│  ROOM (room_id)                       │
+│                                        │
+│  ┌─────────┐ ┌─────────┐ ┌──────────┐│
+│  │ Agent A │ │ Agent B │ │ Agent C  ││
+│  └────┬────┘ └────┬────┘ └────┬─────┘│
+│       │           │           │       │
+│       └───────────┼───────────┘       │
+│                   ▼                    │
+│         ┌─────────────────┐           │
+│         │ room_mediator    │           │
+│         │ • routes msgs    │           │
+│         │ • picks next     │           │
+│         └─────────────────┘           │
+│                   │                    │
+│         ┌─────────────────┐           │
+│         │ ROOM STATE       │           │
+│         │ transcript, KV   │           │
+│         └─────────────────┘           │
+└──────────────────────────────────────┘</div>
+            </div>
+
+            <div class="split reverse">
+                <div>
+                    <h3><code>agent.talk(target, msg)</code></h3>
+                    <p>An abstract primitive for direct typed messages between agents. Depth-guarded — <code>MAX=4</code> via <code>TalkDepthExceeded</code> — to prevent infinite loops. Two neuros: <code>agent_talk</code>, <code>agent_list</code>.</p>
+                    <p>This is the substrate beneath rooms, and the seed of categorical mailbox protocols where deadlock and starvation are analysable from types.</p>
+                </div>
+                <div class="visual">talk(target="opencode",
+     msg="refactor module X")
+  │
+  ▼ depth=1
+opencode replies, which calls
+talk("upwork", "find related job")
+  │
+  ▼ depth=2
+upwork.talk("neuro", "summary?")
+  │
+  ▼ depth=3
+neuro.talk(...)
+  │
+  ▼ depth=4 → TalkDepthExceeded
+            (loop guarded)</div>
+            </div>
+        </section>
+
+        <!-- Schedules -->
+        <section class="section" id="schedules">
+            <span class="section-tag">Time</span>
+            <h2 class="section-title">Schedules — time as a first-class effect.</h2>
+            <p class="section-desc">Cron-style triggers persisted to <code>schedules.db</code> via APScheduler. The user says "every morning at 8 send me the summary" — the runtime takes it from there.</p>
+
+            <div class="card-grid">
+                <div class="glass-card">
+                    <h3><code>schedule_run</code></h3>
+                    <p>Create a trigger. Accepts natural-language time expressions (parsed by <code>core/trigger_parse.py</code>) or cron strings.</p>
+                </div>
+                <div class="glass-card">
+                    <h3><code>schedule_list</code></h3>
+                    <p>List all active triggers. Inspect what's scheduled and when.</p>
+                </div>
+                <div class="glass-card">
+                    <h3><code>schedule_cancel</code></h3>
+                    <p>Cancel by trigger ID. Cleanly removes from DB and APScheduler.</p>
+                </div>
+            </div>
+
+            <pre><code><span style="color:var(--text-3);"># Persistence</span>
+core/schedules_db.py    <span style="color:var(--text-3"># SQLite store</span>
+core/scheduler.py       <span style="color:var(--text-3);"># APScheduler glue</span>
+core/trigger_parse.py   <span style="color:var(--text-3);"># NL → cron</span>
+
+<span style="color:var(--text-3);"># API</span>
+GET    /api/schedules
+POST   /api/schedules</code></pre>
+        </section>
+
+        <!-- Voice -->
+        <section class="section" id="voice">
+            <span class="section-tag">Voice</span>
+            <h2 class="section-title">Voice pipeline, sub-second.</h2>
+            <p class="section-desc">All audio travels through LiveKit — the same transport used for the desktop video stream. Single connection, low latency.</p>
+
+            <pre><code>Microphone
+    ↓
+Silero VAD                  <span style="color:var(--text-3);"># voice activity detection</span>
+    ↓
+Sarvam Streaming STT        <span style="color:var(--text-3);"># speech-to-text</span>
+    ↓
+Brain                       <span style="color:var(--text-3);"># LLM reasoning + skill execution</span>
+    ↓
+ElevenLabs TTS              <span style="color:var(--text-3);"># text-to-speech</span>
+    ↓
+Speaker</code></pre>
+
+            <p style="color:var(--text-2);font-weight:300;line-height:1.8;margin-top:var(--sp-3);">In NeuroLang terms, voice is just an effect: <code>effect="voice"</code>. The standard library wires LiveKit, Twilio/Plivo, ElevenLabs, OpenAI TTS, Whisper, Deepgram, Sarvam — adapters, not magic.</p>
+        </section>
+
+        <!-- Sandbox -->
+        <section class="section" id="sandbox">
+            <span class="section-tag">Deployment</span>
+            <h2 class="section-title">Secure sandbox by default.</h2>
+            <p class="section-desc">Neurocomputer is designed to run inside a private, isolated machine — a dedicated workstation, a VM, or a container separate from your personal host OS.</p>
+
+            <div class="split">
+                <div>
+                    <h3>Why isolation</h3>
+                    <p>Autonomous agents need access to your screen, files, and inputs. By isolating this to a dedicated environment, you control exactly what they can see and touch. This is the recommended deployment model.</p>
+                    <h3 style="margin-top:var(--sp-5);">Personal scope</h3>
+                    <p>The system is designed for single-user, long-lived deployment. No multi-tenancy. Memory is yours. Conversations are yours. Files are yours.</p>
+                </div>
+                <div class="visual">┌─────────────────────────┐
+│   Your Phone (Client)   │
+│  ┌───────────────────┐  │
+│  │  Neurocomputer    │  │
+│  │  Mobile App       │  │
+│  └────────┬──────────┘  │
+└───────────┼─────────────┘
+            │ WebRTC
+┌───────────┼─────────────┐
+│  Isolated │ Agent OS    │
+│  ┌────────▼──────────┐  │
+│  │  Brain + Agents   │  │
+│  │  Desktop Control  │  │
+│  └───────────────────┘  │
+│  Your files stay here   │
+└─────────────────────────┘</div>
+            </div>
+        </section>
+
+        <!-- API -->
+        <section class="section" id="api">
+            <span class="section-tag">API Surface</span>
+            <h2 class="section-title">FastAPI backend on port 7000.</h2>
+            <p class="section-desc">A focused REST + WebSocket surface. Conversations, agents, profiles, rooms, schedules, mouse, keyboard, streaming.</p>
+
+            <div class="compare-wrap">
+                <table>
+                    <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+                    <tr><td><code>POST</code></td><td><code>/chat</code></td><td>Send a message to the active agent</td></tr>
+                    <tr><td><code>GET</code></td><td><code>/agents</code></td><td>List all running agents</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/agents/{type}</code></td><td>Switch to a specific agent type</td></tr>
+                    <tr><td><code>GET</code></td><td><code>/api/profile/list</code></td><td>List all profiles</td></tr>
+                    <tr><td><code>GET</code></td><td><code>/api/profile/active</code></td><td>Get active profile</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/api/profile/switch</code></td><td>Switch profile</td></tr>
+                    <tr><td><code>GET</code> · <code>POST</code></td><td><code>/api/rooms</code></td><td>List · create a meeting room</td></tr>
+                    <tr><td><code>GET</code> · <code>POST</code></td><td><code>/api/schedules</code></td><td>List · create a scheduled trigger</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/stream/start</code></td><td>Begin desktop screen streaming</td></tr>
+                    <tr><td><code>GET</code></td><td><code>/voice/token</code></td><td>Get LiveKit token for voice sessions</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/mouse/move</code> · <code>/click</code> · <code>/scroll</code></td><td>Mouse control</td></tr>
+                    <tr><td><code>POST</code></td><td><code>/keyboard/send</code></td><td>Keystrokes and key combos</td></tr>
+                </table>
+            </div>
+
+            <p style="color:var(--text-3);font-size:var(--fs-sm);margin-top:var(--sp-4);">Full endpoint details in <a href="https://github.com/neurocomputer-in/neurocomputer/blob/main/neurocomputer/server.py" style="color:var(--accent);" target="_blank">server.py</a>.</p>
+        </section>
+
+        <footer id="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <h4>Neurocomputer</h4>
+                    <p>Programmable intelligence as composable engineering.</p>
+                </div>
+                <div class="footer-cols">
+                    <div class="footer-col">
+                        <h5>Read</h5>
+                        <a href="framework.html">The Framework</a>
+                        <a href="neurolang.html">NeuroLang</a>
+                        <a href="architecture.html">Architecture</a>
+                        <a href="research.html">Research</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Build</h5>
+                        <a href="apps.html">Apps</a>
+                        <a href="docs.html">Documentation</a>
+                        <a href="blog.html">Blog</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer" target="_blank">GitHub</a>
+                        <a href="https://github.com/neurocomputer-in/neurocomputer/issues" target="_blank">Issues</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">© 2026 Neurocomputer. Open source.</div>
+        </footer>
+    </div>
+
+    <script src="js/scene.js"></script>
+    <script>
+        gsap.to('#nav', { opacity: 1, duration: 0.6, delay: 0.2 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.to(entry.target, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.section, footer').forEach(el => {
+            el.style.transform = 'translateY(30px)';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

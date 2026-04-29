@@ -1,0 +1,277 @@
+/* ═══════════════════════════════════════════════════════════
+   Neurocomputer — reveal.js theme override
+   Matches the main site: dark, glass, green accent.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+    --r-bg:        #050507;
+    --r-text-1:    #ffffff;
+    --r-text-2:    #a0a0ab;
+    --r-text-3:    #6b6b76;
+    --r-accent:    #00e5a0;
+    --r-accent-2:  #667eea;
+    --r-accent-3:  #764ba2;
+    --r-border:    rgba(255,255,255,0.08);
+    --r-surface:   rgba(255,255,255,0.03);
+}
+
+.reveal {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--r-text-1);
+    font-weight: 300;
+    background: var(--r-bg);
+}
+
+.reveal-viewport {
+    background: var(--r-bg) !important;
+}
+
+.reveal .slides {
+    text-align: left;
+}
+
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: var(--r-text-1);
+    text-transform: none;
+    line-height: 1.1;
+    margin-bottom: 0.5em;
+}
+.reveal h1 { font-size: 3.6em; }
+.reveal h2 { font-size: 2.4em; }
+.reveal h3 { font-size: 1.7em; }
+.reveal h4 { font-size: 1.2em; color: var(--r-accent); }
+
+.reveal h1 .highlight,
+.reveal h2 .highlight {
+    background: linear-gradient(135deg, var(--r-accent), var(--r-accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.reveal p {
+    color: var(--r-text-2);
+    font-size: 0.95em;
+    line-height: 1.7;
+}
+.reveal p strong { color: var(--r-text-1); font-weight: 600; }
+.reveal em { color: var(--r-text-1); font-style: italic; }
+
+.reveal ul, .reveal ol {
+    margin-left: 1em;
+    color: var(--r-text-2);
+}
+.reveal li {
+    margin-bottom: 0.5em;
+    line-height: 1.6;
+}
+.reveal li strong { color: var(--r-text-1); }
+
+.reveal a {
+    color: var(--r-accent);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(0,229,160,0.4);
+}
+
+/* tag / label */
+.reveal .tag {
+    display: inline-block;
+    color: var(--r-accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55em;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border: 1px solid rgba(0,229,160,0.3);
+    border-radius: 999px;
+    background: rgba(0,229,160,0.05);
+    margin-bottom: 1em;
+}
+
+/* code */
+.reveal code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--r-accent);
+    font-size: 0.85em;
+}
+.reveal pre {
+    box-shadow: none;
+    background: #0a0a0f;
+    border: 1px solid var(--r-border);
+    border-radius: 8px;
+    padding: 1em 1.2em;
+    width: 100%;
+    margin: 0.5em 0;
+}
+.reveal pre code {
+    background: transparent;
+    color: var(--r-text-2);
+    font-size: 0.7em;
+    line-height: 1.6;
+    padding: 0;
+    display: block;
+    overflow-x: auto;
+    max-height: none;
+    white-space: pre;
+}
+
+/* tables */
+.reveal table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.7em;
+}
+.reveal th, .reveal td {
+    text-align: left;
+    padding: 0.5em 0.8em;
+    border: none;
+    border-bottom: 1px solid var(--r-border);
+}
+.reveal th {
+    color: var(--r-accent);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.75em;
+}
+.reveal td {
+    color: var(--r-text-2);
+}
+.reveal td:first-child {
+    color: var(--r-text-1);
+    font-weight: 500;
+}
+
+/* glass card inside slide */
+.reveal .gcard {
+    padding: 1em 1.2em;
+    background: var(--r-surface);
+    border: 1px solid var(--r-border);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+/* grid helpers */
+.reveal .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2em;
+    align-items: start;
+}
+.reveal .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1em;
+    align-items: stretch;
+}
+.reveal .grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 0.8em;
+}
+
+/* big-stat */
+.reveal .bigstat {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 2.5em;
+    color: var(--r-accent);
+    line-height: 1;
+}
+.reveal .bigstat-lbl {
+    font-size: 0.5em;
+    color: var(--r-text-3);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 0.3em;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ascii art / diagram block */
+.reveal .ascii {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--r-accent);
+    font-size: 0.55em;
+    line-height: 1.5;
+    white-space: pre;
+    background: rgba(0,229,160,0.04);
+    border: 1px solid rgba(0,229,160,0.15);
+    border-radius: 8px;
+    padding: 1em;
+}
+
+/* progress bar */
+.reveal .progress {
+    color: var(--r-accent) !important;
+    height: 3px;
+}
+
+/* controls */
+.reveal .controls {
+    color: var(--r-accent);
+}
+
+/* slide-number bottom-right */
+.reveal .slide-number {
+    background: rgba(5,5,7,0.6);
+    color: var(--r-text-3);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65em;
+    border-radius: 6px;
+}
+
+/* footer brand on each slide */
+.reveal .slide-footer {
+    position: absolute;
+    bottom: 24px;
+    left: 32px;
+    color: var(--r-text-3);
+    font-size: 0.5em;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* hero slide */
+.reveal .hero-slide h1 {
+    font-size: 4.2em;
+    line-height: 1.05;
+}
+.reveal .hero-slide .sub {
+    color: var(--r-text-2);
+    font-size: 1em;
+    max-width: 800px;
+    margin-top: 1em;
+    font-weight: 300;
+    line-height: 1.6;
+}
+
+/* quote */
+.reveal .pull {
+    border-left: 3px solid var(--r-accent);
+    padding: 0.5em 1em;
+    background: rgba(0,229,160,0.04);
+    font-family: 'Outfit', sans-serif;
+    font-style: italic;
+    font-size: 0.95em;
+    color: var(--r-text-1);
+    line-height: 1.5;
+    border-radius: 0 8px 8px 0;
+    margin: 0.5em 0;
+}
+
+/* fragment fade */
+.reveal .fragment.highlight-accent.visible { color: var(--r-accent); }
+
+/* print-pdf helper — keep dark bg */
+@media print {
+    .reveal-viewport, .reveal { background: var(--r-bg) !important; }
+}

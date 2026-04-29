@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, Check, Plus, Pencil } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -46,7 +47,7 @@ export default function WorkspaceSwitcher({ open, onClose }: { open: boolean; on
     setEditingId(null);
   };
 
-  return (
+  return typeof window !== 'undefined' ? createPortal(
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={onClose}
@@ -182,6 +183,7 @@ export default function WorkspaceSwitcher({ open, onClose }: { open: boolean; on
           </div>
         )}
       </motion.div>
-    </div>
-  );
+    </div>,
+    document.body
+  ) : null;
 }

@@ -9,21 +9,10 @@ import {
   useSortable, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  Brain, Globe, Code, Briefcase, Terminal, Layers,
-  Search, Pen, BarChart2, Folder, Mail, Calendar, StickyNote, Compass, Mic, Languages, Tv2,
-} from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setMobileOrder } from '@/store/iconsSlice';
 import { APP_MAP, AppDef } from '@/lib/appRegistry';
-
-const ICON_MAP: Record<string, any> = {
-  brain: Brain, globe: Globe, code: Code, briefcase: Briefcase,
-  terminal: Terminal, layers: Layers,
-  search: Search, pen: Pen, barchart: BarChart2, folder: Folder,
-  mail: Mail, calendar: Calendar, note: StickyNote, compass: Compass,
-  mic: Mic, languages: Languages, tv: Tv2,
-};
+import AppIconView from './AppIconView';
 
 function MobileIcon({ appId, onLaunch }: { appId: string; onLaunch: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: appId });
@@ -33,7 +22,6 @@ function MobileIcon({ appId, onLaunch }: { appId: string; onLaunch: () => void }
   const tapRef = useRef<{ t: number; x: number; y: number } | null>(null);
 
   if (!app) return null;
-  const LucideIcon = ICON_MAP[app.icon] || Globe;
 
   return (
     <div
@@ -65,13 +53,14 @@ function MobileIcon({ appId, onLaunch }: { appId: string; onLaunch: () => void }
       >
         <div style={{
           width: 60, height: 60, borderRadius: 16,
-          background: `linear-gradient(145deg, ${app.color}ee 0%, ${app.color}99 100%)`,
+          background: app.iconImage ? 'transparent' : `linear-gradient(145deg, ${app.color}ee 0%, ${app.color}99 100%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: `0 4px 14px ${app.color}55, 0 2px 6px rgba(0,0,0,0.35)`,
+          overflow: 'hidden',
           transform: isDragging ? 'scale(1.1)' : 'scale(1)',
           transition: 'transform 0.15s',
         }}>
-          <LucideIcon size={28} color="#fff" strokeWidth={1.6} />
+          {app.iconImage ? <AppIconView app={app} fill /> : <AppIconView app={app} size={32} />}
         </div>
         <span style={{
           fontSize: 10, fontWeight: 500,
