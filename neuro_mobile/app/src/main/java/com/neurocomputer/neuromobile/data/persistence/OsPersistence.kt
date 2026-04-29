@@ -28,21 +28,21 @@ open class OsPersistence @Inject constructor(@ApplicationContext private val con
     private fun iconsKey(ws: String, proj: String) =
         stringPreferencesKey("neuro_icons_${ws}_${proj}")
 
-    override open suspend fun saveOsState(ws: String, proj: String, state: PersistedOsState) {
+    override suspend fun saveOsState(ws: String, proj: String, state: PersistedOsState) {
         context.osDataStore.edit { it[osKey(ws, proj)] = state.toJson() }
     }
 
-    override open suspend fun loadOsState(ws: String, proj: String): PersistedOsState? = runCatching {
+    override suspend fun loadOsState(ws: String, proj: String): PersistedOsState? = runCatching {
         context.osDataStore.data.first()[osKey(ws, proj)]?.toPersistedOsState()
     }.onFailure { e ->
         android.util.Log.w("OsPersistence", "loadOsState failed ws=$ws proj=$proj", e)
     }.getOrNull()
 
-    override open suspend fun saveIconsState(ws: String, proj: String, state: PersistedIconsState) {
+    override suspend fun saveIconsState(ws: String, proj: String, state: PersistedIconsState) {
         context.osDataStore.edit { it[iconsKey(ws, proj)] = state.toJson() }
     }
 
-    override open suspend fun loadIconsState(ws: String, proj: String): PersistedIconsState? = runCatching {
+    override suspend fun loadIconsState(ws: String, proj: String): PersistedIconsState? = runCatching {
         context.osDataStore.data.first()[iconsKey(ws, proj)]?.toPersistedIconsState()
     }.onFailure { e ->
         android.util.Log.w("OsPersistence", "loadIconsState failed ws=$ws proj=$proj", e)

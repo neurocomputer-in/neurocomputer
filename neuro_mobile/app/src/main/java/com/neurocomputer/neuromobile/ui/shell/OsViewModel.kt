@@ -25,9 +25,6 @@ class OsViewModel @Inject constructor(
     private val persistence: OsPersistencePort,
 ) : ViewModel() {
 
-    // No-arg constructor for unit tests — avoids Android DataStore dependency
-    constructor() : this(NoOpOsPersistence())
-
     private val _state = MutableStateFlow(OsState())
     val state: StateFlow<OsState> = _state.asStateFlow()
 
@@ -38,6 +35,7 @@ class OsViewModel @Inject constructor(
         @OptIn(FlowPreview::class)
         viewModelScope.launch {
             _state
+                .drop(1)
                 .debounce(500)
                 .collect { s -> persist(s) }
         }
@@ -151,12 +149,4 @@ class OsViewModel @Inject constructor(
             PersistedOsState(windows = s.windows, activeWindowId = s.activeWindowId)
         )
     }
-}
-
-// Unit-test stub — implements OsPersistencePort without touching Android DataStore
-private class NoOpOsPersistence : OsPersistencePort {
-    override suspend fun saveOsState(ws: String, proj: String, state: PersistedOsState) {}
-    override suspend fun loadOsState(ws: String, proj: String) = null
-    override suspend fun saveIconsState(ws: String, proj: String, state: PersistedIconsState) {}
-    override suspend fun loadIconsState(ws: String, proj: String) = null
 }

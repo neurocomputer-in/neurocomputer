@@ -31,7 +31,7 @@ class IconsViewModel @Inject constructor(
     init {
         @OptIn(FlowPreview::class)
         viewModelScope.launch {
-            _state.debounce(500).collect { persist(it) }
+            _state.drop(1).debounce(500).collect { persist(it) }
         }
     }
 

@@ -27,7 +27,7 @@ class OsViewModelTest {
         tabs = listOf(makeTab(cid)), activeTabId = "tab-$cid",
     )
 
-    private fun vm() = OsViewModel()  // no-arg constructor for unit tests
+    private fun vm() = testOsViewModel()
 
     @Test fun `openWindow adds window and sets activeWindowId`() {
         val vm = vm()
