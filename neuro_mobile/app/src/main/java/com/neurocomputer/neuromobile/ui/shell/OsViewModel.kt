@@ -103,8 +103,10 @@ class OsViewModel @Inject constructor(
                     val remaining = w.tabs.filter { it.id != tabId }
                     w.copy(
                         tabs = remaining,
-                        activeTabId = if (w.activeTabId == tabId)
-                            remaining.last().id else w.activeTabId,
+                        activeTabId = if (w.activeTabId == tabId) {
+                            val closedIndex = w.tabs.indexOfFirst { it.id == tabId }
+                            remaining[minOf(closedIndex, remaining.lastIndex)].id
+                        } else w.activeTabId,
                     )
                 }
             })

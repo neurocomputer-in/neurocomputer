@@ -79,4 +79,22 @@ class OsViewModelTest {
         vm.focusWindow("w-1")
         assertEquals("w-1", vm.state.value.activeWindowId)
     }
+
+    @Test fun `closeTab picks adjacent tab not last tab`() {
+        val vm = vm()
+        val tabA = makeTab("a").copy(id = "tab-a")
+        val tabB = makeTab("b").copy(id = "tab-b")
+        val tabC = makeTab("c").copy(id = "tab-c")
+        val win = WindowState(
+            id = "w-1", zIndex = 1, minimized = false,
+            tabs = listOf(tabA, tabB, tabC), activeTabId = "tab-b",
+        )
+        vm.openWindow(win)
+        vm.closeTab("w-1", "tab-b")  // close middle tab while it's active
+        val remaining = vm.state.value.windows.first()
+        // Should pick tabC (index 1 in remaining [tabA, tabC]) not tabA (last would be tabC which is also correct here)
+        // But if we close tabC (last), it should pick tabB (now last = index 1)
+        assertEquals(2, remaining.tabs.size)
+        assertEquals("tab-c", remaining.activeTabId)  // index 1 in [tabA, tabC] = tabC
+    }
 }
