@@ -8,15 +8,24 @@ A neuro can be a model, a memory, a context, a prompt, a skill, a workflow, a to
 
 ## The Trinity
 
-Neurocomputer is one third of a three-name system co-developed with [NeuroLang](./neurolang/):
+Three names. One system. See [`docs/TRINITY.md`](./docs/TRINITY.md) for the canonical definition.
 
-| | What | Where |
-|---|---|---|
-| **NeuroLang** | The Python library — typed primitives, plans-as-values, composition | [`./neurolang/`](./neurolang/) (vendored) |
-| **NeuroNet** | The live runtime — agents, memory, plans-in-flight, effects | inside any process running NeuroLang code |
-| **Neurocomputer** | The IDE + execution environment — fused, like a Lisp Machine | this repo |
+| | Role | What it is | Where |
+|---|---|---|---|
+| **NeuroLang** | the *language* | Typed Python primitives, plans-as-values, composition syntax. The thing you write in. | [`./neurolang/`](./neurolang/) (vendored) |
+| **NeuroNet** | the *program* | A composed network of neuros — runnable, shareable, installable. The thing you ship. | Output of NeuroLang. Lives in `~/.neurolang/neuros/`. |
+| **Neurocomputer** | the *environment* | IDE + execution environment + OS shell that hosts NeuroNets as apps. The thing you run on. | this repo |
 
-NeuroLang is the **language**. NeuroNet is the **runtime**. Neurocomputer is the **environment**.
+NeuroLang is the **language**. NeuroNet is the **program**. Neurocomputer is the **environment** — write in NeuroLang, ship a NeuroNet, run on Neurocomputer.
+
+### In Images
+
+![Neurocomputer — The AI-Native OS for Thinkers, Builders, and Creators.](screenshots/desk_mobile_home.png)
+
+<!-- HERO IMAGES: Once generated, add side-by-side triptych here.
+     See docs/hero-image-prompts.md for NeuroLang and NeuroNet prompts.
+     Files go to: screenshots/neurolang_mobile_home.png and screenshots/neuronet_mobile_home.png
+-->
 
 ## What you get
 
