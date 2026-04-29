@@ -26,6 +26,8 @@ open class OsPersistence @Inject constructor(@ApplicationContext private val con
 
     open suspend fun loadOsState(ws: String, proj: String): PersistedOsState? = runCatching {
         context.osDataStore.data.first()[osKey(ws, proj)]?.toPersistedOsState()
+    }.onFailure { e ->
+        android.util.Log.w("OsPersistence", "loadOsState failed ws=$ws proj=$proj", e)
     }.getOrNull()
 
     open suspend fun saveIconsState(ws: String, proj: String, state: PersistedIconsState) {
@@ -34,5 +36,7 @@ open class OsPersistence @Inject constructor(@ApplicationContext private val con
 
     open suspend fun loadIconsState(ws: String, proj: String): PersistedIconsState? = runCatching {
         context.osDataStore.data.first()[iconsKey(ws, proj)]?.toPersistedIconsState()
+    }.onFailure { e ->
+        android.util.Log.w("OsPersistence", "loadIconsState failed ws=$ws proj=$proj", e)
     }.getOrNull()
 }

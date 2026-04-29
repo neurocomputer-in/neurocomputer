@@ -1,6 +1,7 @@
 package com.neurocomputer.neuromobile.data.persistence
 
 import com.neurocomputer.neuromobile.data.model.WindowState
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -13,7 +14,7 @@ data class PersistedOsState(
 @Serializable
 data class PersistedIconsState(
     val mobileOrder: List<String>,  // AppId names
-    val dockPins: List<String>,
+    @SerialName("mobileDock") val dockPins: List<String>,
 )
 
 val osJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
