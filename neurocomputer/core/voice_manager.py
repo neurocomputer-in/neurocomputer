@@ -24,12 +24,16 @@ from livekit.agents import (
     ChatContext,
 )
 from livekit.agents.voice.room_io import RoomOptions
-from livekit.plugins import silero, elevenlabs, openai
+from livekit.plugins import silero
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from core.brain import Brain
 from core.pubsub import hub
 from core.db import db
 from core.sarvam_stt import SarvamSTT
+from core.voice.sentence_pump import SentencePumpLLM
+from core.voice.barge_in import BargeInController
+from core.voice.sarvam_tts import SarvamTTS
 from core import tmux_manager
 
 logger = logging.getLogger("voice-manager")
@@ -49,193 +53,7 @@ class VoiceSession:
     brain: Brain
     _task: Optional[asyncio.Task] = None
     _http_session: Optional[aiohttp.ClientSession] = None
-
-
-class InfinityBrainLLM(llm.LLM):
-    """
-    Custom LLM adapter routing to Brain instead of a direct model.
-    Publishes voice transcript events via DataChannel for frontend.
-    """
-
-    def __init__(self, brain: Brain, conversation_id: str, agent_id: str, room: rtc.Room):
-        super().__init__()
-        self._brain = brain
-        self._cid = conversation_id
-        self._agent_id = agent_id
-        self._room = room
-
-    def chat(
-        self,
-        *,
-        chat_ctx: ChatContext,
-        tools: list | None = None,
-        conn_options=None,
-        **kwargs,
-    ) -> "llm.LLMStream":
-        user_message = ""
-        for msg in reversed(chat_ctx.items):
-            if msg.role == "user":
-                user_message = msg.text_content
-                break
-
-        if not user_message:
-            user_message = "Hello"
-
-        logger.info(f"[Voice] User said: {user_message[:100]}")
-
-        return InfinityBrainStream(
-            llm=self,
-            brain=self._brain,
-            conversation_id=self._cid,
-            agent_id=self._agent_id,
-            room=self._room,
-            user_message=user_message,
-            chat_ctx=chat_ctx,
-            tools=tools or [],
-            conn_options=conn_options,
-        )
-
-
-class InfinityBrainStream(llm.LLMStream):
-    """Streams Brain response into LiveKit AgentSession TTS pipeline."""
-
-    def __init__(
-        self,
-        *,
-        llm: InfinityBrainLLM,
-        brain: Brain,
-        conversation_id: str,
-        agent_id: str,
-        room: rtc.Room,
-        user_message: str,
-        chat_ctx: ChatContext,
-        tools: list,
-        conn_options,
-    ):
-        from livekit.agents.types import DEFAULT_API_CONNECT_OPTIONS
-        super().__init__(
-            llm=llm,
-            chat_ctx=chat_ctx,
-            tools=tools,
-            conn_options=conn_options or DEFAULT_API_CONNECT_OPTIONS,
-        )
-        self._brain = brain
-        self._cid = conversation_id
-        self._agent_id = agent_id
-        self._room = room
-        self._user_message = user_message
-
-    async def _publish_voice_event(self, topic: str, data: dict):
-        """Publish voice event to frontend via LiveKit DataChannel."""
-        if not self._room or not self._room.local_participant:
-            return
-        try:
-            payload = json.dumps({"topic": topic, **data})
-            await self._room.local_participant.publish_data(
-                payload.encode("utf-8"),
-                reliable=True,
-                topic=topic,
-            )
-        except Exception as e:
-            logger.error(f"[Voice] DataChannel publish error: {e}")
-
-    async def _run(self) -> None:
-        """Called by AgentSession when LLM turn is needed."""
-        try:
-            # Publish user transcript as final (STT already produced it)
-            user_msg_id = f"msg_{uuid.uuid4().hex[:12]}"
-            await self._publish_voice_event("voice.user_transcript", {
-                "text": self._user_message,
-                "is_final": True,
-                "message_id": user_msg_id,
-            })
-
-            # Persist user voice message to DB
-            await db.add_message(
-                conversation_id=self._cid,
-                sender="user",
-                msg_type="voice",
-                content=self._user_message,
-            )
-
-            # Process through Brain — suppress DataChannel broadcast
-            # since voice pipeline handles its own delivery
-            queue = hub.queue(self._cid)
-            self._brain._suppress_dc = True
-            try:
-                await self._brain.handle(
-                    self._cid, self._user_message, agent_id=self._agent_id,
-                    is_voice=True,
-                )
-            finally:
-                self._brain._suppress_dc = False
-
-            response = ""
-            agent_msg_id = f"msg_{uuid.uuid4().hex[:12]}"
-            timeout = 30
-            start_time = asyncio.get_event_loop().time()
-
-            while True:
-                try:
-                    remaining = timeout - (asyncio.get_event_loop().time() - start_time)
-                    if remaining <= 0:
-                        break
-
-                    msg = await asyncio.wait_for(queue.get(), timeout=remaining)
-                    title = msg.get("topic")
-                    data = msg.get("data")
-
-                    if title in ("task.done", "node.done") and response:
-                        break
-
-                    if title == "assistant" and isinstance(data, str) and data:
-                        response += data
-
-                        # Publish agent transcript chunk to frontend
-                        await self._publish_voice_event("voice.agent_transcript", {
-                            "chunk": data,
-                            "done": False,
-                        })
-
-                        # Feed chunk to TTS pipeline
-                        self._event_ch.send_nowait(
-                            llm.ChatChunk(
-                                id=agent_msg_id,
-                                delta=llm.ChoiceDelta(role="assistant", content=data),
-                            )
-                        )
-
-                except asyncio.TimeoutError:
-                    break
-
-            # Publish final agent transcript
-            if response:
-                await self._publish_voice_event("voice.agent_transcript", {
-                    "text": response,
-                    "done": True,
-                    "message_id": agent_msg_id,
-                })
-
-                # Persist agent voice response to DB
-                await db.add_message(
-                    conversation_id=self._cid,
-                    sender="agent",
-                    msg_type="voice",
-                    content=response,
-                )
-            else:
-                placeholder = "I'm thinking..."
-                self._event_ch.send_nowait(
-                    llm.ChatChunk(
-                        id="fallback",
-                        delta=llm.ChoiceDelta(role="assistant", content=placeholder),
-                    )
-                )
-
-            logger.info(f"[Voice] Response complete: {len(response)} chars")
-
-        except Exception as e:
-            logger.error(f"[Voice] Brain stream error: {e}", exc_info=True)
+    _barge_in: Optional["BargeInController"] = None
 
 
 class TmuxEchoLLM(llm.LLM):
@@ -454,8 +272,8 @@ class VoiceManager:
             agent = Agent(
                 instructions="You are Neuro, a helpful AI voice assistant. Keep responses concise and conversational."
             )
-            llm_impl = InfinityBrainLLM(brain, conversation_id, agent_id, room)
-            logger.info("[Voice] Pipeline: Silero VAD → OpenAI Whisper STT → Brain → OpenAI TTS")
+            llm_impl = SentencePumpLLM(brain, conversation_id, agent_id, room)
+            logger.info("[Voice] Pipeline: Silero VAD + EOU → Sarvam STT → Brain (sentence-pumped) → Sarvam TTS")
 
         http_session = aiohttp.ClientSession()
 
@@ -463,13 +281,21 @@ class VoiceManager:
             llm=llm_impl,
             vad=silero.VAD.load(
                 min_speech_duration=0.05,
-                min_silence_duration=0.3,
+                min_silence_duration=0.2,
                 prefix_padding_duration=0.2,
                 activation_threshold=0.25,
             ),
-            stt=openai.STT(model="whisper-1"),
-            tts=openai.TTS(model="gpt-4o-mini-tts", voice="nova"),
+            stt=SarvamSTT(),
+            tts=SarvamTTS(),
+            turn_detection=MultilingualModel(),
+            allow_interruptions=False,
         )
+
+        # Track agent-speaking state so BargeInController can decide whether to cancel
+        session._agent_speaking = False
+
+        barge_in = BargeInController(session)
+        await barge_in.start()
 
         # Publish voice activity states to frontend
         async def _pub_state(state: str):
@@ -484,21 +310,25 @@ class VoiceManager:
         @session.on("user_started_speaking")
         def _on_speak_start():
             logger.info("[Voice] VAD: user started speaking")
+            barge_in.on_user_started_speaking()
             asyncio.create_task(_pub_state("listening"))
 
         @session.on("user_stopped_speaking")
         def _on_speak_stop():
             logger.info("[Voice] VAD: user stopped speaking")
+            barge_in.on_user_stopped_speaking()
             asyncio.create_task(_pub_state("thinking"))
 
         @session.on("agent_started_speaking")
         def _on_agent_speak():
             logger.info("[Voice] Agent started speaking")
+            session._agent_speaking = True
             asyncio.create_task(_pub_state("speaking"))
 
         @session.on("agent_stopped_speaking")
         def _on_agent_stop():
             logger.info("[Voice] Agent stopped speaking")
+            session._agent_speaking = False
             asyncio.create_task(_pub_state("idle"))
 
         task = asyncio.create_task(self._run_session(session, room, agent, conversation_id))
@@ -512,6 +342,7 @@ class VoiceManager:
             brain=brain,
             _task=task,
             _http_session=http_session,
+            _barge_in=barge_in,
         )
         self._sessions[conversation_id] = vs
 
@@ -591,6 +422,12 @@ class VoiceManager:
             )
         except Exception:
             pass
+
+        if vs._barge_in:
+            try:
+                await vs._barge_in.stop()
+            except Exception:
+                pass
 
         if vs._task and not vs._task.done():
             vs._task.cancel()
