@@ -21,6 +21,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.neurocomputer.neuromobile.data.repository.BackendUrlRepository
 import com.neurocomputer.neuromobile.data.repository.StartupRepository
 import com.neurocomputer.neuromobile.ui.screens.MainScreen
+import com.neurocomputer.neuromobile.ui.shell.NeuroOSShell
 import com.neurocomputer.neuromobile.ui.theme.NeuroColors
 import com.neurocomputer.neuromobile.ui.theme.NeuroTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,12 +53,7 @@ class MainActivity : ComponentActivity() {
 
             NeuroTheme {
                 if (isInitialized) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = NeuroColors.BackgroundDark
-                    ) {
-                        MainScreen()
-                    }
+                    NeuroOSShell()
                 } else {
                     // Loading screen while backend URL is being resolved
                     Surface(
