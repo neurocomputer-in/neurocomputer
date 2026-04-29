@@ -347,3 +347,43 @@ OR
 ---
 
 *Document at `/docs/OPEN_DECISIONS.md`. Maintained as decisions are resolved.*
+
+---
+
+## Cluster L — Trinity Rename (Deferred)
+
+**Status: deferred — docs reframed 2026-04-30, code unchanged.**
+
+The Trinity was reframed: NeuroNet now means *the program* (the artifact),
+not *the runtime contract*. Docs, README, and website already reflect the
+new framing. Code still uses the old meaning:
+
+- `NeuroNet` (Protocol) in `neurolang/runtime/protocol.py`
+- `LocalNeuroNet` in `neurolang/runtime/local.py`
+- Re-exports in `neurolang/__init__.py`
+
+### L1. Pending rename
+
+When we have appetite (pre-alpha, no external consumers — safe window):
+
+| Symbol | Current | Rename to |
+|---|---|---|
+| `NeuroNet` (Protocol) | runtime contract | `Runtime` (or `Host` / `NeuroHost` — TBD) |
+| `LocalNeuroNet` | in-process runtime impl | `LocalRuntime` |
+| `Plan` (or `Plan` + manifest wrapper) | compiled flow | `NeuroNet` (the program) |
+
+**Recommendation:** rename to `Runtime` for the Protocol (short, clear, no brand conflict). Expose a `NeuroNet` type as `Plan` + a manifest dataclass (`name: str`, `version: str`, `deps: list[str]`, `signature: str`) so a NeuroNet can be serialized, packaged, and installed.
+
+### L2. Blast radius
+
+- `neurolang/__init__.py` — re-export names change
+- `neurolang/runtime/protocol.py` — class rename
+- `neurolang/runtime/local.py` — class rename + `__repr__`
+- Any consumer in `neurocomputer/` that imports `NeuroNet` or `LocalNeuroNet` from `neurolang`
+- `FRAMEWORK.md` and `NEUROCODE_NEURONET.md` body text (already flagged for rewrite)
+
+### L3. Doc drift rule (until rename lands)
+
+In **Python imports**: `NeuroNet` means the old "runtime contract".
+In **prose**: `NeuroNet` means the new "program / artifact". Imports are
+the only surviving use of the old sense.
