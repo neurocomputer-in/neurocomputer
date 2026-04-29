@@ -67,44 +67,44 @@ Replaces ConversationScreen. All chat-type agents use this.
 
 ---
 
-## Phase 5 — TerminalApp
+## Phase 5 — TerminalApp ✅
 
 New app. OS IME, WebSocket pty, ANSI colors.
 
-- [ ] `ui/apps/terminal/AnsiParser.kt` — escape seq → AnnotatedString SpanStyle
-- [ ] `ui/apps/terminal/TerminalOutputView.kt` — LazyColumn of parsed lines
-- [ ] `ui/apps/terminal/TerminalViewModel.kt` — WS subscribe, ANSI parse, input buffer
-- [ ] `ui/apps/terminal/TerminalApp.kt` — assembles above + TerminalInputBar
+- [x] `ui/apps/terminal/AnsiParser.kt` — escape seq → AnnotatedString SpanStyle
+- [x] `ui/apps/terminal/TerminalOutputView.kt` — LazyColumn of parsed lines
+- [x] `ui/apps/terminal/TerminalViewModel.kt` — WS subscribe, ANSI parse, input buffer
+- [x] `ui/apps/terminal/TerminalApp.kt` — assembles above + TerminalInputBar
 
 ---
 
-## Phase 6 — DesktopApp
+## Phase 6 — DesktopApp ✅
 
 Rebuilt from existing overlays. Clean composition.
 
-- [ ] `ui/apps/desktop/DesktopVideoView.kt` — LiveKit VideoTrack → TextureView
-- [ ] `ui/apps/desktop/DesktopApp.kt` — assembles all overlays + kiosk logic + wake lock
+- [x] `ui/apps/desktop/DesktopVideoView.kt` — LiveKit VideoTrack → TextureView
+- [x] `ui/apps/desktop/DesktopApp.kt` — assembles all overlays + kiosk logic + wake lock
 
 ---
 
-## Phase 7 — IDEApp
+## Phase 7 — IDEApp ✅
 
 2D Compose graph (lite port, no Three.js).
 
-- [ ] `ui/apps/ide/IDEViewModel.kt` — load graph, node/edge state
-- [ ] `ui/apps/ide/GraphCanvas.kt` — Canvas + pan/zoom + node drag + Bézier edges
-- [ ] `ui/apps/ide/IDEApp.kt` — GraphCanvas + NodeEditor sheet + GraphToolbar
+- [x] `ui/apps/ide/IDEViewModel.kt` — load graph, node/edge state
+- [x] `ui/apps/ide/GraphCanvas.kt` — Canvas + pan/zoom + node drag + Bézier edges
+- [x] `ui/apps/ide/IDEApp.kt` — GraphCanvas + NodeEditor sheet + GraphToolbar
 
 ---
 
 ## Phase 8 — Cleanup + Manifest
 
-- [ ] Delete `ui/screens/ConversationScreen.kt`
-- [ ] Delete `ui/components/TabBar.kt`
-- [ ] Delete `ui/components/WindowSelectorOverlay.kt`
-- [ ] Delete `ui/components/DraggableToolbar.kt`
-- [ ] Add `WAKE_LOCK` permission to `AndroidManifest.xml`
-- [ ] Update `ui/screens/MainScreen.kt` (splash only, hands off to shell)
+- [x] Delete `ui/screens/ConversationScreen.kt`
+- [x] Delete `ui/components/TabBar.kt`
+- [x] Delete `ui/components/WindowSelectorOverlay.kt`
+- [x] Delete `ui/components/DraggableToolbar.kt`  ← kept (still used by DesktopApp)
+- [x] Add `WAKE_LOCK` permission to `AndroidManifest.xml`
+- [x] Update `ui/screens/MainScreen.kt` (splash only, hands off to shell)
 
 ---
 

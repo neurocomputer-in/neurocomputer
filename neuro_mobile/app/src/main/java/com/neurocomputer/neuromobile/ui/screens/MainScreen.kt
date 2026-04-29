@@ -19,6 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.neurocomputer.neuromobile.data.repository.BackendUrlRepository
+import com.neurocomputer.neuromobile.ui.shell.NeuroOSShell
 import com.neurocomputer.neuromobile.ui.theme.NeuroColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -52,7 +53,7 @@ fun MainScreen(
     val isReady by viewModel.isReady.collectAsState()
 
     if (isReady) {
-        ConversationScreen()
+        NeuroOSShell()
     } else {
         SplashScreen()
     }
