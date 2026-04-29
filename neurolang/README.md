@@ -8,15 +8,15 @@
 
 ## The Trinity
 
-NeuroLang is one third of a three-name system:
+NeuroLang is one third of a three-name system. See [`docs/TRINITY.md`](../docs/TRINITY.md) for the canonical definition.
 
-| | What it is | Where it lives |
-|---|---|---|
-| **NeuroLang** | The Python library — typed primitives, composition, plans-as-values | `pip install neurolang` (this repo) |
-| **NeuroNet** | The live runtime graph — agents, memory, plans-in-flight, effects | Inside any process running NeuroLang code |
-| **Neurocomputer** | The IDE + execution environment — fused, like a Lisp Machine | [`neurocomputer-in/neurocomputer`](https://github.com/neurocomputer-in/neurocomputer) (reference implementation) |
+| | Role | What it is | Where |
+|---|---|---|---|
+| **NeuroLang** | the *language* | Typed Python primitives, plans-as-values, composition syntax. The thing you write in. | `pip install neurolang` (this repo) |
+| **NeuroNet** | the *program* | A composed network of neuros — runnable, shareable, installable. The thing you ship. | Output of NeuroLang. Lives in `~/.neurolang/neuros/`. |
+| **Neurocomputer** | the *environment* | IDE + execution environment + OS shell that hosts NeuroNets as apps. The thing you run on. | [`neurocomputer-in/neurocomputer`](https://github.com/neurocomputer-in/neurocomputer) |
 
-NeuroLang is the **language**. NeuroNet is the **runtime**. Neurocomputer is the **environment** where you author, compile, execute, and visualize.
+NeuroLang is the **language**. NeuroNet is the **program**. Neurocomputer is the **environment** — write in NeuroLang, ship a NeuroNet, run on Neurocomputer.
 
 ---
 
