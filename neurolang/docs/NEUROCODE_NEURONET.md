@@ -1,3 +1,15 @@
+> **⚠ Reframing note (2026-04-30):** Since this document was written, the
+> Trinity has been reframed. **NeuroNet is now the *program*** — which aligns
+> well with this document's framing of "NeuroCode is what you write, NeuroNet
+> is what it becomes." The key update: "what it becomes" is now understood as
+> a *packaged runnable artifact* (not the live runtime graph). See
+> [`docs/TRINITY.md`](../../docs/TRINITY.md) for the canonical definition. The
+> body of this document remains valid in spirit; update "live runtime graph"
+> references when the code rename lands.
+
+---
+
+
 # NeuroCode ↔ NeuroNet — The Perfect Pair
 
 > **NeuroCode** is what you write. **NeuroNet** is what it becomes.
