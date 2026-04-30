@@ -3,7 +3,7 @@
   "description": "OpenCode Zen gateway — curated coding-agent-tuned models.",
   "kind": "model.llm",
   "provider": "opencode-zen",
-  "default_model": "opencode/claude-sonnet-4-6",
+  "default_model": "opencode/gpt-5.4-nano",
   "temperature": 0.3,
   "scope": "singleton",
   "inputs": [

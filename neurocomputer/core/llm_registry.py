@@ -190,7 +190,14 @@ def get_provider_catalog() -> List[Dict[str, Any]]:
 
 def get_default_llm_settings() -> Dict[str, str]:
     provider = normalize_provider(DEFAULT_PROVIDER)
+    # Return the configured default_model verbatim (with any namespace prefix
+    # like `opencode/...`). resolve_model() — which would strip the prefix —
+    # is applied later at API-call time, the same way user-PATCHed settings
+    # flow. Stripping here would diverge the persisted format between
+    # default-bootstrap and explicit-pick conversations.
+    cfg = PROVIDER_CONFIGS.get(provider) or {}
+    model = cfg.get("default_model") or resolve_model(provider, None)
     return {
         "provider": provider,
-        "model": resolve_model(provider, None),
+        "model": model,
     }
