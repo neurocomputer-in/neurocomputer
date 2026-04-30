@@ -63,7 +63,7 @@ PROVIDER_CONFIGS: Dict[str, Dict[str, Any]] = {
         "display_name": "OpenCode Zen",
         "env_key": "OPENCODE_API_KEY",
         "base_url": "https://opencode.ai/zen/v1",
-        "default_model": "opencode/claude-sonnet-4-6",
+        "default_model": "opencode/gpt-5.4-nano",
         "model_prefix": "opencode/",
         "headers": {},
         "aliases": {},
@@ -107,7 +107,7 @@ PROVIDER_CONFIGS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-DEFAULT_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "openrouter").strip().lower() or "openrouter"
+DEFAULT_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "opencode-zen").strip().lower() or "opencode-zen"
 
 # opencode CLI stores API keys at ~/.local/share/opencode/auth.json. If the
 # user has already run `opencode auth login`, we can reuse that key for the
